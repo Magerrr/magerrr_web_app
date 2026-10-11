@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Magerrr — Leaderboard</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#2C2E2A;text-decoration:none}a:hover{color:#2C2E2A}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #2C2E2A; font-family: Inter, system-ui, sans-serif; color: #F5F1E4; position: relative; overflow: hidden">
+  <div style="padding: 52px 20px 0; display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <a href="CommunityDetail.dc.html" aria-label="Kembali" style="width: 44px; height: 44px; border-radius: 50px; background: #000000; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+      <div style="font-family: Inter, sans-serif; font-weight: 500; font-size: 24px; flex-grow: 1; letter-spacing: -0.04em">Leaderboard</div>
+      <div style="height: 36px; padding: 0 12px; border-radius: 10px; background: #000000; display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500">Oktober<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 20px; background: #000000">
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+        <button type="button" onClick="{{t.pick}}" style="{{t.style}}">{{t.name}}</button>
+      </sc-for>
+    </div>
+    <div style="display: flex; gap: 6px">
+      <div style="padding: 6px 12px; border-radius: 50px; background: #FFFFFF; color: #2C2E2A; font-size: 12px; font-weight: 500">Shuttle Squad</div>
+      <div style="padding: 6px 12px; border-radius: 50px; border: 1px solid #2C2E2A; font-size: 12px; font-weight: 500; color: #F5F1E4">Teman</div>
+      <div style="padding: 6px 12px; border-radius: 50px; border: 1px solid #2C2E2A; font-size: 12px; font-weight: 500; color: #F5F1E4">Jakarta</div>
+    </div>
+    <div style="display: flex; align-items: flex-end; justify-content: center; gap: 10px; height: 230px; position: relative">
+      <svg width="350" height="60" viewBox="0 0 350 60" fill="none" style="position: absolute; top: 0; left: 0" aria-hidden="true"><path d="M30 20v10M25 25h10M320 10v10M315 15h10" stroke="#8ED462" stroke-width="3" stroke-linecap="round"/><circle cx="70" cy="50" r="3" fill="#FF705D"/><circle cx="290" cy="46" r="3" fill="#2C2E2A"/></svg>
+      <sc-for list="{{podium}}" as="p" hint-placeholder-count="3">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; width: 104px">
+          <div style="{{p.avatar}}">{{p.ini}}</div>
+          <div style="font-size: 13px; font-weight: 500">{{p.name}}</div>
+          <div style="font-size: 12px; font-weight: 500; color: #2C2E2A">{{p.score}}</div>
+          <div style="{{p.block}}"><div style="font-family: Inter, sans-serif; font-weight: 500; font-size: 28px; letter-spacing: -0.04em">{{p.rank}}</div></div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; top: 520px; background: #F5F1E4; border-radius: 28px 28px 0 0; padding: 16px 20px 0; color: #2C2E2A; display: flex; flex-direction: column; gap: 8px">
+    <div style="font-size: 12px; color: #2C2E2A">{{hint}}</div>
+    <sc-for list="{{rest}}" as="r" hint-placeholder-count="3">
+      <div style="{{r.row}}">
+        <div style="width: 22px; font-family: Inter, sans-serif; font-weight: 500; font-size: 15px; letter-spacing: -0.04em">{{r.rank}}</div>
+        <div style="{{r.avatar}}">{{r.ini}}</div>
+        <div style="flex-grow: 1; font-size: 14px; font-weight: 500">{{r.name}}</div>
+        <div style="font-size: 13px; font-weight: 500">{{r.score}}</div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { tab: 0 }; }
+  renderVals() {
+    const people = { DM: ['Dimas', '#2C2E2A'], SN: ['Sinta', '#8C5A3C'], NR: ['Nara', '#2C2E2A'], AL: ['Alya', '#2C2E2A'], RA: ['Raka (kamu)', '#FF705D'], YP: ['Yoga', '#2C2E2A'], FK: ['Fikri', '#2C2E2A'] };
+    const boards = [
+      { name: 'Streak', unit: ' mgg', hint: 'Minggu berturut-turut ikut minimal 1 mabar', rows: [['SN', 14], ['DM', 11], ['NR', 9], ['RA', 6], ['AL', 5], ['YP', 4]] },
+      { name: 'Paling Sering', unit: 'x', hint: 'Total mabar yang dihadiri bulan ini', rows: [['DM', 18], ['NR', 15], ['AL', 13], ['SN', 12], ['RA', 9], ['FK', 7]] },
+      { name: 'Juara', unit: ' trofi', hint: 'Kemenangan turnamen komunitas (semua waktu)', rows: [['AL', 4], ['DM', 3], ['YP', 2], ['SN', 1], ['FK', 1], ['RA', 0]] }
+    ];
+    const b = boards[this.state.tab];
+    const tabs = boards.map((x, i) => ({
+      name: x.name,
+      style: 'height: 38px; border-radius: 10px; border: none; font-size: 13px; font-weight: 500; ' + (this.state.tab === i ? 'background: #8ED462; color: #2C2E2A;' : 'background: transparent; color: #F5F1E4;'),
+      pick: () => this.setState({ tab: i })
+    }));
+    const mk = ([id, v], i) => ({ ini: id, name: people[id][0], color: people[id][1], score: v + b.unit, rank: i + 1 });
+    const all = b.rows.map(mk);
+    const heights = { 1: 120, 2: 90, 3: 66 };
+    const podium = [all[1], all[0], all[2]].map((p) => ({
+      ...p,
+      avatar: 'width: ' + (p.rank === 1 ? 60 : 50) + 'px; height: ' + (p.rank === 1 ? 60 : 50) + 'px; border-radius: 50%; font-weight: 500; font-size: 15px; display: flex; align-items: center; justify-content: center; border: 3px solid ' + (p.rank === 1 ? '#8ED462' : '#2C2E2A') + '; background: ' + p.color,
+      block: 'width: 100%; height: ' + heights[p.rank] + 'px; border-radius: 16px 16px 0 0; display: flex; justify-content: center; padding-top: 10px; box-sizing: border-box; ' + (p.rank === 1 ? 'background: #8ED462; color: #2C2E2A;' : 'background: #000000; color: #F5F1E4;')
+    }));
+    const rest = all.slice(3).map((p) => {
+      const me = p.ini === 'RA';
+      return {
+        ...p,
+        row: 'display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 16px; ' + (me ? 'background: #8ED462; border: 2px solid #2C2E2A;' : 'background: #FFFFFF; border: 1px solid #2C2E2A;'),
+        avatar: 'width: 34px; height: 34px; border-radius: 50%; color: #F5F1E4; font-size: 11.5px; font-weight: 500; display: flex; align-items: center; justify-content: center; background: ' + p.color
+      };
+    });
+    return { tabs, podium, rest, hint: b.hint };
+  }
+}
+</script>
+</body>
+</html>

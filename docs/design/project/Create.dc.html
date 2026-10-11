@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Magerrr — Buat Mabar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#2C2E2A;text-decoration:none}a:hover{color:#2C2E2A}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F5F1E4; font-family: Inter, system-ui, sans-serif; color: #2C2E2A; position: relative; overflow: hidden">
+  <div style="padding: 52px 20px 0; display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <a href="Home.dc.html" aria-label="Tutup" style="width: 44px; height: 44px; border-radius: 50px; background: #FFFFFF; border: 1px solid #2C2E2A; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2C2E2A" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></a>
+      <div style="font-family: Inter, sans-serif; font-weight: 500; font-size: 22px; flex-grow: 1; letter-spacing: -0.04em">Buat Mabar</div>
+      <button type="button" onClick="{{togglePriv}}" style="height: 36px; padding: 0 12px; border-radius: 50px; border: 1px solid #2C2E2A; background: #FFFFFF; font-size: 12.5px; font-weight: 500; color: #2C2E2A; display: flex; align-items: center; gap: 6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2C2E2A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>{{privLabel}}</button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <div style="font-size: 13px; font-weight: 500">Format</div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 4px; border-radius: 20px; background: #FFFFFF; border: 1px solid #2C2E2A">
+        <sc-for list="{{formats}}" as="f" hint-placeholder-count="3">
+          <button type="button" onClick="{{f.pick}}" aria-pressed="{{f.on}}" style="{{f.style}}">{{f.name}}</button>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+      <div style="border-radius: 20px; background: #FFFFFF; border: 1px solid #2C2E2A; padding: 9px 12px"><div style="font-size: 11.5px; color: #2C2E2A">Tanggal</div><div style="font-size: 14px; font-weight: 500">Sab, 11 Okt</div></div>
+      <div style="border-radius: 20px; background: #FFFFFF; border: 1px solid #2C2E2A; padding: 9px 12px"><div style="font-size: 11.5px; color: #2C2E2A">Jam</div><div style="font-size: 14px; font-weight: 500">19.00 – 21.00</div></div>
+    </div>
+    <div style="border-radius: 20px; background: #FFFFFF; border: 1px solid #2C2E2A; padding: 10px 12px; display: flex; align-items: center; gap: 12px">
+      <div style="width: 40px; height: 40px; border-radius: 10px; background: transparent; outline: 1px solid #2BA0FF; outline-offset: -1px; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2C2E2A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-7 7-12a7 7 0 0 0-14 0c0 5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg></div>
+      <div style="flex-grow: 1"><div style="font-size: 14px; font-weight: 500">GOR Bulungan · Lap. 3</div><div style="font-size: 12px; color: #2C2E2A">Karpet vinyl · Rp120rb/jam · <span style="color: #2C2E2A; font-weight: 500">Tersedia</span></div></div>
+      <a href="Booking.dc.html" style="font-size: 13px; font-weight: 500; color: #2C2E2A; padding: 12px 0">Ganti</a>
+    </div>
+    <div style="border-radius: 20px; background: #FFFFFF; border: 1px solid #2C2E2A; padding: 10px 14px; display: flex; align-items: center; gap: 12px">
+      <div style="flex-grow: 1"><div style="font-size: 14px; font-weight: 500">Jumlah pemain</div><div style="font-size: 12px; color: #2C2E2A">{{courtHint}}</div></div>
+      <button type="button" aria-label="Kurangi" onClick="{{dec}}" style="width: 44px; height: 44px; border-radius: 50px; border: 1.5px solid #2C2E2A; background: #FFFFFF; font-size: 20px; font-weight: 500; color: #2C2E2A; letter-spacing: -0.04em">−</button>
+      <div style="font-family: Inter, sans-serif; font-weight: 500; font-size: 22px; min-width: 28px; text-align: center; letter-spacing: -0.04em">{{n}}</div>
+      <button type="button" aria-label="Tambah" onClick="{{inc}}" style="width: 44px; height: 44px; border-radius: 50px; border: none; background: #2C2E2A; font-size: 20px; font-weight: 500; color: #2C2E2A; letter-spacing: -0.04em">+</button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <div style="font-size: 13px; font-weight: 500">Grade yang boleh gabung <span style="font-weight: 500; color: #2C2E2A">· {{gradeSummary}}</span></div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px">
+        <sc-for list="{{grades}}" as="g" hint-placeholder-count="4">
+          <button type="button" onClick="{{g.pick}}" aria-pressed="{{g.on}}" style="{{g.style}}">{{g.name}}</button>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <div style="font-size: 13px; font-weight: 500">Shuttlecock</div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 4px; border-radius: 20px; background: #FFFFFF; border: 1px solid #2C2E2A">
+        <sc-for list="{{koks}}" as="k" hint-placeholder-count="3">
+          <button type="button" onClick="{{k.pick}}" aria-pressed="{{k.on}}" style="{{k.style}}"><span>{{k.name}}</span><span style="font-size: 10.5px; font-weight: 500; opacity: 0.8">{{k.sub}}</span></button>
+        </sc-for>
+      </div>
+    </div>
+    <div style="border-radius: 20px; background: #2C2E2A; color: #F5F1E4; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px">
+      <div style="display: flex; justify-content: space-between; font-size: 12.5px; color: #F5F1E4"><div>Lapangan 2 jam</div><div>Rp240.000</div></div>
+      <div style="display: flex; justify-content: space-between; font-size: 12.5px; color: #F5F1E4"><div>{{kokLine}}</div><div>{{kokCost}}</div></div>
+      <div style="display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid #2A3850; padding-top: 6px"><div style="font-size: 13px; font-weight: 500">Patungan ÷ {{n}} pemain</div><div style="font-family: Inter, sans-serif; font-size: 20px; font-weight: 500; color: #2C2E2A; letter-spacing: -0.04em">{{per}}<span style="font-size: 12px; font-weight: 500; color: #F5F1E4">/org</span></div></div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <div style="font-size: 13px; font-weight: 500">Sistem main <span style="font-weight: 500; color: #2C2E2A">· {{sysHint}}</span></div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 4px; border-radius: 20px; background: #FFFFFF; border: 1px solid #2C2E2A">
+        <sc-for list="{{systems}}" as="s" hint-placeholder-count="3">
+          <button type="button" onClick="{{s.pick}}" aria-pressed="{{s.on}}" style="{{s.style}}">{{s.name}}</button>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 20px 28px; background: #F5F1E4">
+    <a href="Detail.dc.html" style="height: 56px; border-radius: 50px; background: #8ED462; border: 2px solid #2C2E2A; display: flex; align-items: center; justify-content: center; font-weight: 500; font-size: 15px">Publikasikan Mabar</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { n: 8, fmt: 0, grades: { D: true, C: true }, kok: 0, sys: 0, priv: false }; }
+  seg(names, cur, key, h, subs) {
+    return names.map((name, i) => ({
+      name, sub: subs ? subs[i] : '', on: cur === i ? 'true' : 'false',
+      style: 'height: ' + h + 'px; border-radius: 10px; border: none; font-size: 13px; font-weight: 500; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; ' + (cur === i ? 'background: #2C2E2A; color: #F5F1E4;' : 'background: transparent; color: #2C2E2A;'),
+      pick: () => this.setState({ [key]: i })
+    }));
+  }
+  rp(v) { return 'Rp' + String(v).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+  renderVals() {
+    const { n, fmt, kok, sys } = this.state;
+    const kokPrice = [40000, 25000, 0][kok];
+    const per = Math.ceil((240000 + kokPrice) / n / 500) * 500;
+    const perCourt = fmt === 0 ? 2 : 4;
+    const rotate = Math.max(0, n - perCourt);
+    const order = ['D', 'C', 'B', 'A'];
+    const gsel = this.state.grades;
+    const grades = order.map((g) => {
+      const on = !!gsel[g];
+      return {
+        name: g, on: on ? 'true' : 'false',
+        style: 'height: 40px; border-radius: 12px; font-size: 14px; font-weight: 500; color: #2C2E2A; ' + (on ? 'background: #8ED462; border: 2px solid #2C2E2A;' : 'background: #FFFFFF; border: 1px solid #2C2E2A;'),
+        pick: () => this.setState({ grades: { ...gsel, [g]: !on } })
+      };
+    });
+    const picked = order.filter((g) => gsel[g]);
+    const gradeSummary = picked.length === 0 ? 'pilih minimal satu' : picked.length === 4 ? 'semua grade' : 'Grade ' + picked.join(', ');
+    const sysHints = ['yang kalah gantian keluar', 'pasangan tetap, ganti lawan', 'semua ketemu semua'];
+    return {
+      n, per: this.rp(per),
+      formats: this.seg(['Ganda', 'Tunggal', 'Campuran'], fmt, 'fmt', 40).map((f, i) => ({ ...f, pick: () => this.setState({ fmt: i, n: i === 1 ? 4 : 8 }) })),
+      courtHint: rotate > 0 ? perCourt + ' main, ' + rotate + ' antre rotasi' : 'Pas satu lapangan',
+      grades, gradeSummary,
+      koks: this.seg(['Bulu', 'Sintetis', 'Bawa sendiri'], kok, 'kok', 44, ['1 slop · 40rb', '1 slop · 25rb', 'gratis']),
+      kokLine: kok === 2 ? 'Shuttlecock (bawa sendiri)' : 'Shuttlecock ' + ['bulu', 'sintetis'][kok] + ' 1 slop',
+      kokCost: this.rp(kokPrice),
+      systems: this.seg(['Rotasi', 'Fix pasangan', 'Round robin'], sys, 'sys', 40),
+      sysHint: sysHints[sys],
+      privLabel: this.state.priv ? 'Privat' : 'Publik',
+      togglePriv: () => this.setState({ priv: !this.state.priv }),
+      inc: () => this.setState({ n: Math.min(16, n + 1) }),
+      dec: () => this.setState({ n: Math.max(2, n - 1) })
+    };
+  }
+}
+</script>
+</body>
+</html>

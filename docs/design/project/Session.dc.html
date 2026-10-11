@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Magerrr — Sesi Main: Rotasi &amp; Skor</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#2C2E2A;text-decoration:none}a:hover{color:#2C2E2A}
+button{font-family:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F5F1E4; font-family: Inter, system-ui, sans-serif; color: #2C2E2A; position: relative; overflow: hidden">
+  <div style="padding: 52px 20px 0; display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <a href="Detail.dc.html" aria-label="Kembali" style="width: 44px; height: 44px; border-radius: 50px; background: #FFFFFF; border: 1px solid #2C2E2A; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2C2E2A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+      <div style="flex-grow: 1"><div style="font-size: 12px; color: #2C2E2A">Badminton Santai · GOR Bulungan Lap. 3</div><div style="font-family: Inter, sans-serif; font-weight: 500; font-size: 20px; letter-spacing: -0.04em">Sesi Main</div></div>
+      <div style="padding: 6px 10px; border-radius: 50px; background: transparent; outline: 1px solid #FF705D; outline-offset: -1px; color: #2C2E2A; font-size: 12px; font-weight: 500; display: flex; align-items: center; gap: 6px"><div style="width: 7px; height: 7px; border-radius: 50%; background: #FF705D"></div>42 mnt</div>
+    </div>
+    <div style="display: flex; gap: 6px; flex-wrap: wrap">
+      <div style="padding: 6px 10px; border-radius: 50px; background: transparent; outline: 1px solid #2C2E2A; outline-offset: -1px; color: #2C2E2A; font-size: 12px; font-weight: 500">Rotasi · kalah keluar</div>
+      <div style="padding: 6px 10px; border-radius: 50px; background: transparent; outline: 1px solid #2C2E2A; outline-offset: -1px; color: #2C2E2A; font-size: 12px; font-weight: 500">21 poin · 1 game</div>
+      <div style="padding: 6px 10px; border-radius: 50px; background: transparent; outline: 1px solid #2BA0FF; outline-offset: -1px; color: #2C2E2A; font-size: 12px; font-weight: 500">8 pemain · Grade C–D</div>
+    </div>
+    <div style="border-radius: 20px; background: #2C2E2A; color: #F5F1E4; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <div style="font-size: 12px; font-weight: 500; letter-spacing: -0.02em; color: #F5F1E4">GAME KE-{{game}} · SEDANG MAIN</div>
+        <div style="font-size: 12px; color: #F5F1E4">{{target}}</div>
+      </div>
+      <div style="border-radius: 20px; background: #000000; padding: 12px; display: grid; grid-template-columns: minmax(0, 1fr) 2px minmax(0, 1fr); gap: 12px; align-items: center">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <div style="font-size: 13px; font-weight: 500; text-align: center">{{aName}}</div>
+          <div style="font-family: Inter, sans-serif; font-weight: 500; font-size: 52px; line-height: 1; color: {{aColor}}; letter-spacing: -0.06em">{{sa}}</div>
+          <div style="display: flex; gap: 8px">
+            <button type="button" aria-label="Kurangi poin tim kiri" onClick="{{aDec}}" style="width: 44px; height: 44px; border-radius: 50px; border: 1.5px solid #2C2E2A; background: transparent; color: #F5F1E4; font-size: 20px; font-weight: 500; letter-spacing: -0.04em">−</button>
+            <button type="button" aria-label="Tambah poin tim kiri" onClick="{{aInc}}" style="width: 44px; height: 44px; border-radius: 50px; border: none; background: #8ED462; color: #2C2E2A; font-size: 20px; font-weight: 500; letter-spacing: -0.04em">+1</button>
+          </div>
+        </div>
+        <div style="height: 120px; background: #2C2E2A"></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <div style="font-size: 13px; font-weight: 500; text-align: center">{{bName}}</div>
+          <div style="font-family: Inter, sans-serif; font-weight: 500; font-size: 52px; line-height: 1; color: {{bColor}}; letter-spacing: -0.06em">{{sb}}</div>
+          <div style="display: flex; gap: 8px">
+            <button type="button" aria-label="Kurangi poin tim kanan" onClick="{{bDec}}" style="width: 44px; height: 44px; border-radius: 50px; border: 1.5px solid #2C2E2A; background: transparent; color: #F5F1E4; font-size: 20px; font-weight: 500; letter-spacing: -0.04em">−</button>
+            <button type="button" aria-label="Tambah poin tim kanan" onClick="{{bInc}}" style="width: 44px; height: 44px; border-radius: 50px; border: none; background: #8ED462; color: #2C2E2A; font-size: 20px; font-weight: 500; letter-spacing: -0.04em">+1</button>
+          </div>
+        </div>
+      </div>
+      <button type="button" onClick="{{finish}}" style="height: 48px; border-radius: 50px; border: 2px solid #8ED462; background: transparent; color: #2C2E2A; font-size: 14px; font-weight: 500">{{finishLabel}}</button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline"><div style="font-weight: 500; font-size: 15px">Antrean berikutnya</div><div style="font-size: 12px; color: #2C2E2A">Diacak seimbang per grade</div></div>
+      <div style="border-radius: 20px; background: #FFFFFF; border: 1px solid #2C2E2A; padding: 4px 14px; display: flex; flex-direction: column">
+        <sc-for list="{{queue}}" as="q" hint-placeholder-count="4">
+          <div style="{{q.row}}">
+            <div style="width: 26px; height: 26px; border-radius: 10px; background: {{q.numBg}}; color: {{q.numFg}}; font-size: 12px; font-weight: 500; display: flex; align-items: center; justify-content: center">{{q.no}}</div>
+            <div style="width: 32px; height: 32px; border-radius: 50%; background: {{q.color}}; color: #F5F1E4; font-size: 11px; font-weight: 500; display: flex; align-items: center; justify-content: center">{{q.ini}}</div>
+            <div style="flex-grow: 1; font-size: 14px; font-weight: 500">{{q.name}}</div>
+            <div style="padding: 3px 8px; border-radius: 6px; background: transparent; outline: 1px solid #2C2E2A; outline-offset: -1px; color: #2C2E2A; font-size: 11px; font-weight: 500">Grade {{q.grade}}</div>
+            <div style="font-size: 12px; color: #2C2E2A; width: 54px; text-align: right">{{q.tag}}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="border-radius: 20px; background: #FFFFFF; border: 1px solid #2C2E2A; padding: 12px 14px; display: flex; align-items: center; gap: 12px">
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true"><circle cx="17" cy="27" r="5" fill="#2C2E2A"/><path d="M13 23L8 6h18l-5 17" stroke="#2C2E2A" stroke-width="2" stroke-linejoin="round"/><path d="M14 6l1.5 17M20 6l-1.5 17M10 13h14" stroke="#2C2E2A" stroke-width="1.5"/></svg>
+      <div style="flex-grow: 1"><div style="font-size: 14px; font-weight: 500">Kok terpakai {{kok}} dari 12</div><div style="font-size: 12px; color: #2C2E2A">{{kokHint}}</div></div>
+      <button type="button" aria-label="Tambah kok terpakai" onClick="{{kokInc}}" style="height: 44px; padding: 0 14px; border-radius: 50px; border: none; background: #2C2E2A; color: #2C2E2A; font-size: 13px; font-weight: 500">+ Kok</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = { a: [0, 1], b: [2, 3], queue: [4, 5, 6, 7], sa: 17, sb: 14, game: 5, kok: 4 };
+  }
+  renderVals() {
+    const P = [
+      ['Raka', 'RA', 'C', '#FF705D'], ['Dimas', 'DM', 'C', '#2C2E2A'], ['Sinta', 'SN', 'D', '#8C5A3C'], ['Fikri', 'FK', 'C', '#2C2E2A'],
+      ['Alya', 'AL', 'B', '#2C2E2A'], ['Yoga', 'YP', 'D', '#2C2E2A'], ['Nara', 'NR', 'C', '#2C2E2A'], ['Bima', 'BM', 'D', '#2C2E2A']
+    ];
+    const { a, b, queue, sa, sb, game, kok } = this.state;
+    const pair = (t) => P[t[0]][0] + ' / ' + P[t[1]][0];
+    const done = (sa >= 21 || sb >= 21);
+    const clamp = (v) => Math.max(0, Math.min(30, v));
+    const finish = () => {
+      const aWins = sa >= sb;
+      const win = aWins ? a : b, lose = aWins ? b : a;
+      const q = [...queue, ...lose];
+      this.setState({ a: win, b: [q[0], q[1]], queue: q.slice(2), sa: 0, sb: 0, game: game + 1 });
+    };
+    const lead = sa === sb ? '' : sa > sb ? 'a' : 'b';
+    return {
+      game, sa, sb,
+      aName: pair(a), bName: pair(b),
+      aColor: lead === 'a' ? '#8ED462' : '#FFFFFF',
+      bColor: lead === 'b' ? '#8ED462' : '#FFFFFF',
+      target: done ? 'Game point tercapai' : 'Menuju 21',
+      aInc: () => this.setState({ sa: clamp(sa + 1) }), aDec: () => this.setState({ sa: clamp(sa - 1) }),
+      bInc: () => this.setState({ sb: clamp(sb + 1) }), bDec: () => this.setState({ sb: clamp(sb - 1) }),
+      finish,
+      finishLabel: done ? 'Game selesai · rotasi pemain' : 'Akhiri game lebih awal · rotasi',
+      queue: queue.map((id, i) => ({
+        no: i + 1, name: P[id][0], ini: P[id][1], grade: P[id][2], color: P[id][3],
+        tag: i < 2 ? 'Main next' : '±' + (i < 4 ? 15 : 30) + ' mnt',
+        numBg: i < 2 ? '#8ED462' : '#E0DBCE', numFg: '#2C2E2A',
+        row: 'display: flex; align-items: center; gap: 10px; padding: 9px 0;' + (i < queue.length - 1 ? ' border-bottom: 1px solid #D5D5D4;' : '')
+      })),
+      kok,
+      kokHint: kok >= 10 ? 'Hampir habis — tambah slop? Biaya dibagi otomatis.' : 'Tercatat ke patungan kok di akhir sesi',
+      kokInc: () => this.setState({ kok: Math.min(12, kok + 1) })
+    };
+  }
+}
+</script>
+</body>
+</html>

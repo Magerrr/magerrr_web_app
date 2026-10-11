@@ -1,0 +1,169 @@
+# ALGORITHMS — Spesifikasi logika & test vector
+
+Semua fungsi di sini adalah **fungsi murni** di `src/lib/core/`. Tidak ada IO, `Date.now()`, atau `Math.random()`. Acak memakai PRNG ber-seed (`mulberry32(seed)`).
+Setiap blok "Test vector" **harus** menjadi test Vitest apa adanya.
+
+## 0. Tipe dasar
+
+```ts
+type Side = 'A' | 'B';
+type Rupiah = number;            // integer >= 0 (kecuali net utang, boleh negatif)
+type MemberId = string;
+
+interface GameRules {            // dipilih per grup, bisa di-override per match
+  target: number;                // 21 | 15 | 11 | kustom (>= 5)
+  deuce: boolean;                // true: harus unggul 2 setelah mencapai target
+  cap: number;                   // batas maksimum, hanya dipakai jika deuce=true (BWF: 30)
+}
+interface MatchFormat { games: number }   // jumlah game maksimum, ganjil: 1 | 3 | 5
+const PRESETS = {
+  bwf21:  { target: 21, deuce: true,  cap: 30 },
+  poin15: { target: 15, deuce: true,  cap: 21 },
+  poin11: { target: 11, deuce: true,  cap: 15 },
+};
+```
+
+## 1. Aturan game & match
+
+`gameWinner(a, b, rules): Side | null`
+1. Untuk sisi `s` dengan skor `x` dan lawan `y`:
+2. Jika `deuce = false`: `s` menang bila `x >= target`.
+3. Jika `deuce = true`: `s` menang bila `x >= cap`, **atau** (`x >= target` **dan** `x - y >= 2`).
+4. Selain itu `null` (game belum selesai). Skor negatif / non-integer → lempar `RangeError`.
+
+`matchWinner(games: {a,b}[], rules, format): Side | null`
+- Hitung kemenangan game yang `gameWinner != null`. Menang bila mencapai `ceil(format.games / 2)`.
+- Game tak selesai (winner null) tidak dihitung. Jika sudah ada pemenang, game tambahan setelahnya ditolak (`RangeError`).
+
+Test vector `gameWinner` (rules = bwf21 kecuali disebut):
+| a | b | hasil |
+|---|---|---|
+| 21 | 19 | A |
+| 21 | 20 | null |
+| 22 | 20 | A |
+| 20 | 20 | null |
+| 29 | 29 | null |
+| 30 | 29 | A |
+| 29 | 30 | B |
+| 21 | 0 | A |
+| 0 | 0 | null |
+| 15 | 14 (poin15 deuce=false → `{target:15,deuce:false,cap:15}`) | A |
+| 15 | 14 (poin15 deuce=true) | null |
+| 16 | 14 (poin15 deuce=true) | A |
+
+Test vector `matchWinner` (bwf21, games=3): `[{21,15},{18,21},{21,17}]` → A · `[{21,15},{21,10}]` → A · `[{21,15},{18,21}]` → null · `[{21,15},{21,10},{5,3}]` → `RangeError`.
+
+## 2. Klasemen (leaderboard)
+
+Input: daftar match `completed` (status `void`/`running` diabaikan), tiap match punya `players: {A: MemberId[], B: MemberId[]}`, `games`, `winner`, dan `sessionDate`.
+Pada **ganda, kedua pemain di satu sisi dikreditkan sama**.
+
+`standings(matches, config, period, now): Row[]`
+- `config`: `{ winPoints=3, lossPoints=0, lossBonus?: {maxMargin: number, points: number}, minMatches=0 }`
+- Kolom per pemain: `played, won, lost, winRate (won/played; 0 jika played=0), pointsFor, pointsAgainst, pointDiff, tablePoints`.
+- `pointsFor/Against`: jumlah poin rally semua game, dari sisi pemain.
+- `tablePoints = won*winPoints + lost*lossPoints + (jumlah kekalahan tipis * lossBonus.points)`; kekalahan tipis = |Σ pointsFor − Σ pointsAgainst| pada match itu ≤ `maxMargin`.
+- Pemain dengan `played < minMatches` tetap tampil tapi `ranked=false` dan diletakkan setelah semua yang ranked.
+- Urutan: `tablePoints` ↓, `winRate` ↓, `pointDiff` ↓, `played` ↓, lalu `memberId` ↑ (deterministik). Peringkat sama (`rank` sama) hanya bila keempat kriteria pertama identik.
+- `period`: `{kind:'session', sessionId}` | `{kind:'month', year, month}` (bulan kalender `Asia/Jakarta`) | `{kind:'season', seasonId}` | `{kind:'all'}`.
+
+Test vector (winPoints 3, lossPoints 0, tanpa bonus). Tiga match ganda, 1 game, tanpa seri:
+- M1: A=[p1,p2] vs B=[p3,p4], 21–15, A menang.
+- M2: A=[p1,p3] vs B=[p2,p4], 21–19, A menang.
+- M3: A=[p1,p4] vs B=[p2,p3], 18–21, B menang.
+
+| pemain | main | menang | kalah | pointsFor | pointsAgainst | pointDiff | tablePoints |
+|---|---|---|---|---|---|---|---|
+| p1 | 3 | 2 | 1 | 60 | 55 | +5 | 6 |
+| p2 | 3 | 2 | 1 | 61 | 54 | +7 | 6 |
+| p3 | 3 | 2 | 1 | 57 | 58 | −1 | 6 |
+| p4 | 3 | 0 | 3 | 52 | 63 | −11 | 0 |
+
+Urutan hasil: **p2, p1, p3, p4** (tablePoints dan winRate sama untuk p1–p3; dipisah oleh pointDiff). Invarian: Σ pointsFor = Σ pointsAgainst = 230.
+
+Dengan `lossBonus {maxMargin: 3, points: 1}` (selisih = total poin rally dalam match): kekalahan tipis = p1 (M3, selisih 3), p2 (M2, selisih 2), p4 (M2 selisih 2, M3 selisih 3). Hasil `tablePoints`: p1=7, p2=7, p3=6, p4=2 → urutan **p2, p1, p3, p4**.
+
+Tambahan: `minMatches=4` → semua `ranked=false` (main 3); period `session` dengan hanya M1 → p1,p2 peringkat berbagi (3 poin, selisih +6) dan urut id.
+
+## 3. Statistik pasangan (ganda)
+
+`pairStats(matches)` → untuk setiap pasangan terurut `(minId, maxId)` yang pernah satu sisi: `played, won, pointDiff`. Tunggal tidak dihitung. `bestPartner(memberId, minTogether=3)` = pasangan dengan `winRate` tertinggi dari yang `played >= minTogether` (tie-break `pointDiff`, lalu id).
+
+## 4. Rotasi & pembagian lapangan
+
+Mode sistem main (`play_mode`): `kocok` (default), `rotasi` (kalah keluar), `fix_pasangan`, `round_robin`. Prioritas MVP: `kocok` P0, `rotasi` P0, `fix_pasangan` P1, `round_robin` P2.
+
+### 4.1 `rotasi` — kalah keluar (mengikuti desain `Session.dc.html`)
+State: `courts: {A: MemberId[], B: MemberId[]}[]`, `queue: MemberId[]` (FIFO bersama).
+`afterGame(state, courtIdx, winner)`:
+1. `winners` = sisi pemenang tetap di lapangan; `losers` = sisi kalah.
+2. `q = [...queue, ...losers]` (urutan pemain kalah dipertahankan).
+3. Sisi lawan baru = `q.slice(0, sideSize)`; `queue = q.slice(sideSize)`. `sideSize` = 2 (ganda) / 1 (tunggal).
+4. Jika `q.length < sideSize`: lapangan menunggu (`waiting`), tidak ada error.
+
+Test vector (ganda): `a=[0,1] b=[2,3] queue=[4,5,6,7]`, pemenang A → `a=[0,1] b=[4,5] queue=[6,7,2,3]`. Pemenang B → `b=[2,3]` tetap, `a=[4,5]`, `queue=[6,7,0,1]`.
+Tunggal: `a=[0] b=[1] queue=[2,3]`, pemenang A → `a=[0] b=[2] queue=[3,1]`.
+Pemain 6, dua pemain antre minimal: `a=[0,1] b=[2,3] queue=[4,5]`, A menang → `b=[4,5] queue=[2,3]`.
+
+### 4.2 `kocok` — pasangan berganti tiap ronde
+`planRound(input, seed): Court[]`
+Input: `players: {id, rating, playedThisSession, roundsSinceLastPlayed}[]`, `courts: number` (lapangan kosong), `format: 'doubles'|'singles'`, `history: {partnerCount(id1,id2), opponentCount(id1,id2)}`.
+1. `perMatch = 4` (ganda) / `2` (tunggal). `n = players.length`; `m = min(courts, floor(n / perMatch))`. Jika `m = 0` → kembalikan `{courts: [], resting: semua, hint: 'kurang pemain'}`; jika ganda dan `n ∈ {2,3}` sertakan `hint: 'bisa tunggal'`.
+2. **Pilih pemain** (fairness dulu): urutkan `playedThisSession` ↑, lalu `roundsSinceLastPlayed` ↓, lalu hasil acak ber-seed. Ambil `m * perMatch` pertama = `playing`; sisanya `resting`.
+3. **Susun tim** (hanya ganda): cari susunan `playing` → `m` lapangan × 2 tim × 2 pemain yang meminimalkan
+   `cost = 10·Σ partnerCountSession + 1·Σ partnerCountAllTime + 3·Σ |ratingTimA − ratingTimB| + 1·Σ opponentCount`
+   - `partnerCount*` dihitung untuk tiap pasangan dalam tim; `opponentCount` untuk tiap pasangan lawan.
+   - Algoritma: untuk `m = 1` evaluasi 3 pasangan-ganda yang mungkin. Untuk `m > 1`: mulai dari permutasi ber-seed, lalu *local search* (tukar dua pemain mana pun jika menurunkan cost) hingga tak ada perbaikan atau 500 iterasi. Deterministik untuk seed yang sama.
+   - Pasangan yang sama **boleh** bertemu lagi (hanya penalti). Tidak ada larangan keras.
+4. `rating`: nilai grade (`A=4, B=3, C=2, D=1`) bila ada; jika tidak, `1 + 3 * winRate` dari data klasemen (0.5 → 2.5 untuk pemain baru).
+5. Tunggal: pasangkan `playing` berurutan setelah diurutkan agar |selisih rating| minimal, hindari lawan yang paling sering dihadapi (cost yang sama untuk `opponentCount`).
+
+Test vector `kocok`:
+- 8 pemain, 2 lapangan → 8 `playing`, 0 `resting`, tiap pemain tepat sekali.
+- 9 pemain, 2 lapangan → 8 `playing`; pemain yang `playedThisSession` terbesar (atau `roundsSinceLastPlayed` terkecil) di `resting`.
+- 3 pemain, ganda → `courts=[]`, `hint='bisa tunggal'`.
+- 4 pemain, `partnerCountSession(1,2)=3` dan lainnya 0 → hasil **tidak** memasangkan (1,2) bila ada alternatif (selalu ada).
+- Seed sama + input sama → output identik; seed beda boleh beda.
+- Property test (acak 200 input, N=2…30, M=1…5): tidak ada pemain ganda dalam satu ronde, `|playing| = m*perMatch`, `|playing|+|resting| = N`.
+
+## 5. Patungan (split bill)
+
+Input: `participants: MemberId[]` (hadir), `expenses: {id, amount: Rupiah, paidBy: MemberId, mode, shares?, ...}[]`, `hostId`, `roundTo: 1|500|1000`.
+
+### 5.1 Bagi satu biaya `shareExpense(expense, participants) → Map<MemberId, Rupiah>`
+- `mode='equal'` (peserta terpilih `S`, urut `memberId` ↑): `base = floor(amount/|S|)`, `r = amount - base*|S|`; `r` orang pertama mendapat `base+1`. Σ = amount (invarian).
+- `mode='custom'`: `shares` diberikan; wajib Σ = amount, kalau tidak lempar `RangeError`.
+- `mode='weighted'` (mis. menit main): bagi sebanding bobot memakai **largest remainder** (sisa terbesar, tie → `memberId` ↑). Σ = amount.
+
+### 5.2 Netto per orang `computeNet(expenses, participants) → Map<MemberId, number>`
+`net = Σ share − Σ amount yang dibayar orang itu`. Positif = berutang, negatif = menalangi. **Σ net = 0** (invarian, wajib dites).
+
+### 5.3 Pembulatan `applyRounding(net, roundTo, hostId)`
+1. Untuk tiap `net > 0` (debitur): `net' = ceil(net / roundTo) * roundTo`.
+2. `excess = Σ(net' − net)` atas semua debitur.
+3. Kreditur menerima kelebihan: `hostId` jika `net(host) < 0`; kalau tidak, kreditur dengan |net| terbesar (tie → `memberId` ↑). Net kreditur itu dikurangi `excess` (makin negatif).
+4. Σ net' = 0 (invarian).
+
+### 5.4 Transfer minimal `settle(net) → {from, to, amount}[]`
+Greedy: debitur diurutkan `net` ↓ (tie id ↑), kreditur `|net|` ↓. Ambil pasangan teratas, transfer `min(net_d, |net_c|)`, kurangi, ulangi sampai nol. Jumlah transfer ≤ (n−1). Deterministik.
+
+Test vector:
+1. **Dasar:** peserta 8 (Raka host, p2…p8). Biaya: lapangan 240000 dibayar Raka, kok 40000 dibayar Raka, `equal` ke 8, `roundTo=500`. Per orang 35000 → Raka net −245000, tiap lainnya +35000; `settle` = 7 transfer × 35000 ke Raka. Σ net = 0.
+2. **Pembulatan:** lapangan 240000 + kok 25000 = 265000 (dibayar Raka), 8 peserta, `roundTo=500`. Share mentah 33125 → debitur dibulatkan 33500 (7 orang = 234500); kelebihan 2625 dikreditkan ke Raka; net Raka = −234500; 7 transfer × 33500. **Cocok dengan kalkulasi layar `Create.dc.html`** (`ceil(total/n/500)*500`).
+3. **Sisa pembagian:** 100000 `equal` ke 3 → share `[33334, 33333, 33333]` mengikuti urutan id.
+4. **Beberapa penalang:** A bayar lapangan 200000, B bayar kok 60000, 4 peserta (A,B,C,D) equal, `roundTo=1` → share 65000 tiap orang; net A = −135000, B = +5000, C = +65000, D = +65000. `settle` ≤ 3 transfer: C→A 65000, D→A 65000, B→A 5000.
+5. **Custom tak seimbang** (Σ ≠ amount) → `RangeError`.
+6. Property: untuk input acak, Σ net = 0 sebelum & sesudah rounding; semua `amount` transfer > 0 dan integer.
+
+### 5.5 Kok per slop (P1)
+`shuttleCost({pricePerSlop, used, perSlop=12}) = ceil(pricePerSlop * used / perSlop / 100) * 100`. Contoh: 40000, 4 dipakai → `13400`; 12 dipakai → 40000. Hasilnya menjadi satu `expense` biasa.
+
+## 6. Recap sorotan `buildRecap(session, matches, expenses)` (P0)
+Output: `{ champion, bestPair, tightestGame, biggestWin, longestWinStreak, mostPlayed, totals }`.
+- `champion`: peringkat 1 `standings` dengan period=`session` (tie → seri, tampilkan semua).
+- `bestPair`: pasangan dengan win rate tertinggi di sesi (`played >= 2`; jika tak ada, `null`).
+- `tightestGame`: game dengan |a−b| terkecil di antara game selesai (tie → game terbaru). `biggestWin`: |a−b| terbesar.
+- `longestWinStreak`: kemenangan beruntun terpanjang per pemain menurut urutan `matches.order`.
+- `mostPlayed`: pemain dengan `played` terbanyak (tie → semua).
+- `totals`: jumlah match, game, total biaya, per orang (dari 5.x), jumlah lunas.
+Jika data kosong, field terkait `null` (UI menyembunyikan kartu), bukan error.
