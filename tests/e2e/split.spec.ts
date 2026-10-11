@@ -243,3 +243,52 @@ test("vector §5 #3–#5 lewat form: sisa pembagian, beberapa penalang, custom t
   expect((await guestCtx.request.patch(`${s.api}/settlements/${any!.id}`, { data: { action: "paid" } })).status()).toBe(403);
   await guestCtx.close();
 });
+
+test("saldo lintas sesi (P10): bersih per orang, transfer lunas tidak dihitung, ringkasan di beranda & profil", async ({ page }) => {
+  // Sesi 1: sewa 30.000/jam × 2 lapangan × 2 jam = 120.000 ditalangi host → p2 & p3 masing-masing bayar 40.000 ke host.
+  const s = await billSession(page, ["p2", "p3"], { costs: { courtPerHour: 30000, shuttle: null } });
+  const everyone = [s.host, s.ids.p2, s.ids.p3];
+  const { data: p3Row } = await admin().from("settlements").select("id").eq("session_id", s.sessionId).eq("from_member", s.ids.p3).single();
+  expect((await page.request.patch(`${s.api}/settlements/${p3Row!.id}`, { data: { action: "paid" } })).status()).toBe(200);
+
+  // Sesi 2: p2 menalangi minum 30.000 → host & p3 masing-masing bayar 10.000 ke p2.
+  const second = await page.request.post(`/api/groups/${s.groupId}/sessions`, {
+    data: { date: "2026-10-16", time: "19:00", durationMin: 120, venue: "GOR Dua", courtCount: 1, playMode: "kocok", rules: null, matchGames: null, note: null, attendeeIds: everyone, costs: { courtPerHour: null, shuttle: null } },
+  });
+  const api2 = `/api/groups/${s.groupId}/sessions/${(await second.json()).id}`;
+  const drink = await page.request.post(`${api2}/expenses`, {
+    data: { name: "Minum", amount: 30000, paidBy: s.ids.p2, preset: "drink", split: { mode: "equal", members: everyone } },
+  });
+  expect(drink.status()).toBe(201);
+
+  // Beranda grup (ponsel): ringkasan saldo pengunjung.
+  await page.goto(`/g/${s.groupId}`);
+  await expect(page.getByRole("link", { name: /Saldo patungan/ })).toContainText("Kamu akan terima Rp30.000");
+  await page.getByRole("link", { name: /Saldo patungan/ }).click();
+  await expect(page.getByRole("heading", { name: "Saldo patungan", level: 1 })).toBeVisible();
+
+  // Saldo host: terima 40.000 dari p2, bayar 10.000 ke p2 → bersih terima 30.000; p3 sudah lunas → tidak muncul.
+  const mine = page.getByTestId("counterpart");
+  await expect(mine).toHaveCount(1);
+  await expect(mine).toContainText("Terima dari p2");
+  await expect(mine).toContainText("Rp30.000");
+  await expect(mine).toContainText("Bersih dari kamu bayar Rp10.000 dan terima Rp40.000");
+  await expect(mine.getByRole("link")).toHaveText([/GOR Dua/, /GOR Patungan/]);
+
+  // Semua anggota: utang terbesar dulu.
+  const rows = page.getByTestId("balance-row");
+  await expect(rows).toHaveCount(3);
+  await expect(rows.nth(0)).toContainText("p2");
+  await expect(rows.nth(0)).toContainText("Belum bayar Rp40.000 · belum diterima Rp20.000");
+  await expect(rows.nth(0)).toContainText("Kurang bayar Rp20.000");
+  await expect(rows.nth(1)).toContainText("p3");
+  await expect(rows.nth(1)).toContainText("Kurang bayar Rp10.000");
+  await expect(rows.nth(2)).toContainText("(kamu)");
+  await expect(rows.nth(2)).toContainText("Akan terima Rp30.000");
+
+  // Profil p2: total & bersih per orang.
+  await rows.nth(0).getByRole("link").click();
+  await expect(page.getByTestId("balance")).toHaveText("Belum dibayar Rp40.000 · Belum diterima Rp20.000");
+  await expect(page.getByTestId("counterparts")).toContainText(`Bersih kurang bayar ke ${s.hostName} Rp30.000`);
+  await expect(page.getByTestId("counterparts")).toContainText("Bersih akan terima dari p3 Rp10.000");
+});

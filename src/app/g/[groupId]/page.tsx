@@ -5,10 +5,12 @@ import { NoAccess } from "@/components/no-access";
 import { Badge, ButtonLink, Card, Page, TopBar, buttonClass, inputBase } from "@/components/ui";
 import { guestCookieName } from "@/lib/db/authz";
 import { unreadCount } from "@/lib/db/chat";
+import { counterpartBalances } from "@/lib/core/balance";
 import { getGroup } from "@/lib/db/groups";
 import { listMembers } from "@/lib/db/members";
+import { unpaidGroupSettlements } from "@/lib/db/profile";
 import { listSessions, type SessionSummary } from "@/lib/db/sessions";
-import { formatShortDateId, formatTimeRangeId } from "@/lib/format";
+import { formatRupiah, formatShortDateId, formatTimeRangeId } from "@/lib/format";
 import { pageAccess } from "./access";
 import { STATUS_LABEL, STATUS_TONE } from "./sesi/status";
 
@@ -22,12 +24,16 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
   const q = (await searchParams).q;
   const query = typeof q === "string" ? q.trim() : "";
   const { member, via } = access.membership;
-  const [group, members, sessions, unread] = await Promise.all([
+  const [group, members, sessions, unread, unpaid] = await Promise.all([
     getGroup(groupId),
     listMembers(groupId),
     listSessions(groupId, query),
     unreadCount(groupId, member.id),
+    unpaidGroupSettlements(groupId),
   ]);
+  const myNet = counterpartBalances(unpaid, member.id).reduce((sum, c) => sum + c.net, 0);
+  const balanceDetail =
+    myNet < 0 ? `Kamu kurang bayar ${formatRupiah(-myNet)}` : myNet > 0 ? `Kamu akan terima ${formatRupiah(myNet)}` : "Utang & piutang lintas sesi";
   const isAdmin = member.role === "admin" && via === "account";
   const guestToken = via === "guest" ? (await cookies()).get(guestCookieName(groupId))?.value : undefined;
   const hasActions = isAdmin || Boolean(guestToken);
@@ -130,6 +136,7 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
           <MenuLink href={`/g/${groupId}/leaderboard`} title="Leaderboard" detail="Klasemen ganda & pasangan terbaik" />
           <MenuLink href={`/g/${groupId}/musim`} title="Musim" detail="Klasemen per musim & juara" />
           <MenuLink href={`/g/${groupId}/anggota`} title="Anggota" detail={`${members.length} orang`} />
+          <MenuLink href={`/g/${groupId}/saldo`} title="Saldo patungan" detail={balanceDetail} />
           {isAdmin && <MenuLink href={`/g/${groupId}/pengaturan`} title="Pengaturan grup" detail="Aturan skor, poin klasemen, patungan" />}
         </nav>
       </div>

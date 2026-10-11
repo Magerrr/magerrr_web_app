@@ -6,6 +6,7 @@ import { LinkSelect } from "@/components/link-select";
 import { NoAccess } from "@/components/no-access";
 import { Badge, Card, Page, Split, TopBar, textLinkClass } from "@/components/ui";
 import { currentStreak, frequentOpponents, headToHead, longestWinStreak, playerMatches, recentForm, sideOf, type Outcome } from "@/lib/core/player";
+import { counterpartBalances } from "@/lib/core/balance";
 import { bestPartner, pairStats, partnersOf, standings } from "@/lib/core/standings";
 import { getGroup } from "@/lib/db/groups";
 import { loadKiko } from "@/lib/db/kiko";
@@ -85,6 +86,7 @@ export default async function MemberProfilePage({ params, searchParams }: PagePr
   const unpaid = settlements.filter((s) => s.status !== "paid");
   const owes = unpaid.filter((s) => s.from === memberId).reduce((sum, s) => sum + s.amount, 0);
   const owed = unpaid.filter((s) => s.to === memberId).reduce((sum, s) => sum + s.amount, 0);
+  const counterparts = counterpartBalances(settlements, memberId);
   const base = `/g/${groupId}/anggota/${memberId}`;
 
   return (
@@ -293,6 +295,22 @@ export default async function MemberProfilePage({ params, searchParams }: PagePr
                     {owed > 0 && `Belum diterima ${formatRupiah(owed)}`}
                     {owes === 0 && owed === 0 && "Semua tagihan lunas."}
                   </p>
+                  {counterparts.length > 0 && (
+                    <ul className="flex flex-col gap-1 text-small" data-testid="counterparts">
+                      {counterparts.map((c) => (
+                        <li key={c.memberId}>
+                          {c.net < 0
+                            ? `Bersih kurang bayar ke ${name(c.memberId)} ${formatRupiah(-c.net)}`
+                            : c.net > 0
+                              ? `Bersih akan terima dari ${name(c.memberId)} ${formatRupiah(c.net)}`
+                              : `Impas dengan ${name(c.memberId)}`}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <Link href={`/g/${groupId}/saldo`} className={textLinkClass}>
+                    Saldo patungan grup
+                  </Link>
                   <ul className="flex flex-col gap-2">
                     {settlements.slice(0, 20).map((s) => (
                       <li key={s.id} className="flex items-center gap-3 rounded-2xl border border-ink-black bg-pure-white px-4 py-3 text-small">

@@ -185,6 +185,16 @@ Test vector:
 ### 5.5 Kok per slop (P1)
 `shuttleCost({pricePerSlop, used, perSlop=12}) = ceil(pricePerSlop * used / perSlop / 100) * 100`. Contoh: 40000, 4 dipakai → `13400`; 12 dipakai → 40000. Hasilnya menjadi satu `expense` biasa.
 
+### 5.6 Saldo lintas sesi (P10, P1)
+Input: semua `settlements` grup `{from, to, amount, status}` dari semua sesi. Hanya `status = 'unpaid'` yang dihitung (termasuk yang menunggu konfirmasi). Pencatatan saja: saldo bersih **tidak** mengubah atau menggabungkan transfer per sesi; pelunasan tetap ditandai per sesi.
+- `memberBalances(settlements)` → per anggota yang terlibat: `owes` = Σ amount dengan `from` = dia, `owed` = Σ amount dengan `to` = dia, `net = owed − owes` (positif = akan menerima). Anggota dengan `owes = owed = 0` tidak muncul. Urut `net` ↑ (utang terbesar dulu), lalu id. Invarian: Σ net = 0.
+- `counterpartBalances(settlements, memberId)` → per lawan `x`: `owes` = Σ(memberId → x), `owed` = Σ(x → memberId), `net = owed − owes` (negatif = memberId masih harus bayar ke x), `count` = jumlah transfer belum lunas. Urut |net| ↓, lalu id. Lawan dengan `net = 0` tetap muncul (impas).
+
+Test vector: S1 p2→p1 35000 unpaid · S1 p3→p1 35000 **paid** · S2 p1→p2 20000 unpaid · S2 p3→p2 10000 unpaid.
+`memberBalances` → p3 (owes 10000, owed 0, net −10000), p2 (35000, 30000, −5000), p1 (20000, 35000, +15000).
+`counterpartBalances(·, p2)` → p1 (owes 35000, owed 20000, net −15000, count 2), p3 (owes 0, owed 10000, net +10000, count 1).
+`counterpartBalances(·, p3)` → p2 (net −10000); transfer lunas ke p1 tidak muncul. Tanpa transfer → `[]`.
+
 ## 6. Recap sorotan `buildRecap(session, matches, expenses)` (P0)
 Output: `{ champion, bestPair, tightestGame, biggestWin, longestWinStreak, mostPlayed, totals }`.
 - `champion`: peringkat 1 `standings` dengan period=`session` (tie → seri, tampilkan semua).
