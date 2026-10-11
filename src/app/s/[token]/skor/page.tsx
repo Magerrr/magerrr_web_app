@@ -2,11 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { PointBadge } from "@/components/point-badge";
 import { Badge, Card, Page, Split, textLinkClass } from "@/components/ui";
 import { getGroup } from "@/lib/db/groups";
 import { loadPlay, waitingList } from "@/lib/db/play";
 import { findSessionByShareToken } from "@/lib/db/sessions";
 import { getTournament } from "@/lib/db/tournaments";
+import { pointStatus } from "@/lib/core/scoring";
 import { formatDateId, formatTimeRangeId } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Skor langsung", robots: { index: false, follow: false } };
@@ -100,6 +102,7 @@ export default async function LiveScorePage({ params }: PageProps<"/s/[token]/sk
               {Array.from({ length: session.courtCount }, (_, i) => i + 1).map((courtNo) => {
                 const match = ctx.running.find((m) => m.courtNo === courtNo);
                 const game = match?.games.at(-1);
+                const points = match ? pointStatus(match.games, match.rules, { games: match.gamesMax }) : null;
                 return (
                   <Card key={courtNo} className="flex flex-col gap-3" data-testid={`live-court-${courtNo}`}>
                     <div className="flex items-baseline justify-between gap-2">
@@ -108,11 +111,15 @@ export default async function LiveScorePage({ params }: PageProps<"/s/[token]/sk
                     </div>
                     {match && game ? (
                       <div className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2">
-                        <span className="text-ui">{team(match.players.A)}</span>
+                        <span className="flex flex-wrap items-center gap-2 text-ui">
+                          {team(match.players.A)} <PointBadge kind={points?.A ?? null} />
+                        </span>
                         <span className="text-title tabular-nums" data-testid="live-score-A">
                           {game.a}
                         </span>
-                        <span className="text-ui">{team(match.players.B)}</span>
+                        <span className="flex flex-wrap items-center gap-2 text-ui">
+                          {team(match.players.B)} <PointBadge kind={points?.B ?? null} />
+                        </span>
                         <span className="text-title tabular-nums" data-testid="live-score-B">
                           {game.b}
                         </span>

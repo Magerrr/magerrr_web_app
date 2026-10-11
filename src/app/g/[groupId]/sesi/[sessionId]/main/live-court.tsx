@@ -2,11 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { PointBadge } from "@/components/point-badge";
 import { Button, Notice } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import { acknowledge, enqueue, flushQueue, pendingFor, type KeyValueStore } from "@/lib/offline-queue";
 import { gameWinner, matchWinner } from "@/lib/core/rules";
-import { addPoint, currentGame, removePoint } from "@/lib/core/scoring";
+import { addPoint, currentGame, pointStatus, removePoint, sideChange } from "@/lib/core/scoring";
 import type { GameScore, Side } from "@/lib/core/types";
 import { teamLabel, type LiveMatchView, type Names } from "./types";
 
@@ -167,12 +168,26 @@ export function LiveCourt({
   const live = useLiveScore(match.id, base, match.games, refresh);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  /** Ganti sisi (SC5) akibat perubahan skor terakhir; hilang di perubahan berikutnya. */
+  const [turn, setTurn] = useState<"game" | "interval" | null>(null);
   const format = { games: match.gamesMax };
   const winner = matchWinner(live.games, match.rules, format);
   const current = currentGame(live.games);
   const label = (side: Side) => teamLabel(match.players[side], names);
   const wins = (side: Side) => live.games.filter((g) => gameWinner(g.a, g.b, match.rules) === side).length;
   const leading = current.a === current.b ? null : current.a > current.b ? "A" : "B";
+  const points = pointStatus(live.games, match.rules, format);
+
+  function score(next: GameScore[]) {
+    if (next === live.games || live.completeQueued) return;
+    setTurn(sideChange(live.games, next, match.rules, format));
+    live.change(next);
+  }
+
+  function undo() {
+    setTurn(null);
+    live.undo();
+  }
 
   async function voidMatch() {
     if (!window.confirm("Batalkan match ini? Match tidak dihitung di klasemen.")) return;
@@ -194,6 +209,12 @@ export function LiveCourt({
         </p>
       </div>
       {tag && <p className="text-small">{tag}</p>}
+      {turn && (
+        <Notice>
+          Ganti sisi lapangan:{" "}
+          {turn === "game" ? `game ${current.no} dimulai.` : `skor mencapai ${Math.ceil(match.rules.target / 2)} di game penentu.`}
+        </Notice>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         {(["A", "B"] as const).map((side) => (
@@ -201,7 +222,7 @@ export function LiveCourt({
             key={side}
             type="button"
             disabled={winner !== null || live.completeQueued}
-            onClick={() => live.change(addPoint(live.games, side, match.rules, format))}
+            onClick={() => score(addPoint(live.games, side, match.rules, format))}
             className={`flex min-h-40 flex-col items-center justify-between gap-2 rounded-2xl border-2 border-ink-black p-3 disabled:cursor-default ${
               leading === side ? "bg-fresh-grass" : "bg-pure-white"
             }`}
@@ -214,7 +235,10 @@ export function LiveCourt({
             <span className="text-display tabular-nums" data-testid={`score-${side}`}>
               {side === "A" ? current.a : current.b}
             </span>
-            <span className="text-caption">{match.gamesMax > 1 ? `${wins(side)} game` : winner ? "" : "Tap +1"}</span>
+            <span className="flex flex-col items-center gap-1">
+              <PointBadge kind={points[side]} />
+              <span className="text-caption">{match.gamesMax > 1 ? `${wins(side)} game` : winner ? "" : "Tap +1"}</span>
+            </span>
           </button>
         ))}
       </div>
@@ -229,13 +253,13 @@ export function LiveCourt({
       )}
 
       <div className="grid grid-cols-3 gap-2">
-        <Button variant="secondary" onClick={() => live.change(removePoint(live.games, "A", match.rules))}>
+        <Button variant="secondary" onClick={() => score(removePoint(live.games, "A", match.rules))}>
           −1<span className="sr-only"> kurangi poin {label("A")}</span>
         </Button>
-        <Button variant="secondary" onClick={live.undo} disabled={!live.canUndo}>
+        <Button variant="secondary" onClick={undo} disabled={!live.canUndo}>
           Undo
         </Button>
-        <Button variant="secondary" onClick={() => live.change(removePoint(live.games, "B", match.rules))}>
+        <Button variant="secondary" onClick={() => score(removePoint(live.games, "B", match.rules))}>
           −1<span className="sr-only"> kurangi poin {label("B")}</span>
         </Button>
       </div>

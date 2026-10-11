@@ -37,3 +37,57 @@ export function currentGame(games: GameScore[]): { no: number; a: number; b: num
   const last = games[games.length - 1];
   return { no: games.length, a: last.a, b: last.b };
 }
+
+export type PointKind = "game" | "match";
+
+/** Game yang sedang dimainkan: game terakhir, atau game baru 0–0 bila game terakhir sudah selesai. */
+function openGame(games: GameScore[], rules: GameRules): { no: number; a: number; b: number; done: GameScore[] } {
+  const last = games[games.length - 1];
+  if (gameWinner(last.a, last.b, rules)) return { no: games.length + 1, a: 0, b: 0, done: games };
+  return { no: games.length, a: last.a, b: last.b, done: games.slice(0, -1) };
+}
+
+function gamesWon(games: GameScore[], rules: GameRules): Record<Side, number> {
+  const won = { A: 0, B: 0 };
+  for (const { a, b } of games) {
+    const side = gameWinner(a, b, rules);
+    if (side) won[side]++;
+  }
+  return won;
+}
+
+/** Game point / match point per sisi pada game berjalan (PRD SC5, ALGORITHMS §1b). */
+export function pointStatus(games: GameScore[], rules: GameRules, format: MatchFormat): Record<Side, PointKind | null> {
+  if (matchWinner(games, rules, format)) return { A: null, B: null };
+  const open = openGame(games, rules);
+  const won = gamesWon(open.done, rules);
+  const need = Math.ceil(format.games / 2);
+  const status = (side: Side): PointKind | null => {
+    const scored = side === "A" ? gameWinner(open.a + 1, open.b, rules) : gameWinner(open.a, open.b + 1, rules);
+    if (!scored) return null;
+    return won[side] + 1 === need ? "match" : "game";
+  };
+  return { A: status("A"), B: status("B") };
+}
+
+/**
+ * Ganti sisi akibat perubahan `before → after` (PRD SC5, ALGORITHMS §1b): `game` saat game baru dimulai,
+ * `interval` saat skor tertinggi di game penentu baru mencapai setengah target (bwf21: 11).
+ */
+export function sideChange(
+  before: GameScore[],
+  after: GameScore[],
+  rules: GameRules,
+  format: MatchFormat,
+): "game" | "interval" | null {
+  if (matchWinner(after, rules, format)) return null;
+  const from = openGame(before, rules);
+  const to = openGame(after, rules);
+  if (to.no > from.no) return "game";
+  if (to.no < from.no) return null;
+  const need = Math.ceil(format.games / 2);
+  const won = gamesWon(to.done, rules);
+  if (won.A !== need - 1 || won.B !== need - 1) return null;
+  const mid = Math.ceil(rules.target / 2);
+  return Math.max(from.a, from.b) < mid && Math.max(to.a, to.b) >= mid ? "interval" : null;
+}

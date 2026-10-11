@@ -80,9 +80,11 @@ test("kocok 3 ronde: deuce 20–20 → 22–20, 30–29 menutup game, undo, edit
   }
   await expect(court1.getByTestId("score-A")).toHaveText("20");
   await expect(court1.getByTestId("score-B")).toHaveText("20");
+  await expect(court1.getByText(/Match point|Game point/)).toHaveCount(0); // deuce: belum ada yang satu poin dari menang
   await plusA.click();
   await expect(court1.getByTestId("score-A")).toHaveText("21");
   await expect(plusA).toBeEnabled(); // 21–20 belum selesai
+  await expect(plusA).toContainText("Match point");
   await plusA.click();
   await expect(court1.getByText(/menang 22–20/)).toBeVisible();
   await expect(plusB).toBeDisabled();
@@ -236,4 +238,44 @@ test("koneksi putus: skor tetap di layar, status 'belum tersinkron', lalu tersin
   await expect(court.getByTestId("sync-status")).toHaveText("Tersimpan", { timeout: 10_000 });
   const { data } = await admin().from("games").select("score_a, score_b").eq("match_id", match.id);
   expect(data).toEqual([{ score_a: 2, score_b: 0 }]);
+});
+
+test("SC5: game point, ganti sisi saat game baru, dan interval 11 di game penentu", async ({ page, browser, baseURL }) => {
+  const s = await runningSession(page, { matchGames: 3 });
+  const api = `/api/groups/${s.groupId}/sessions/${s.sessionId}`;
+  const started = await page.request.post(`${api}/matches/start`, {
+    data: { matches: [{ courtNo: 1, kind: "doubles", A: [s.host, s.ids.p1], B: [s.ids.p2, s.ids.p3] }], seed: 1, queue: null },
+  });
+  expect(started.status()).toBe(201);
+  const [matchId] = (await started.json()).ids as string[];
+  expect((await page.request.put(`${api}/matches/${matchId}/score`, { data: { games: [{ a: 20, b: 15 }] } })).status()).toBe(200);
+
+  await page.goto(`/g/${s.groupId}/sesi/${s.sessionId}/main`);
+  const court = page.getByTestId("court-1");
+  const [plusA, plusB] = [court.getByRole("button", { name: /^Tambah poin/ }).nth(0), court.getByRole("button", { name: /^Tambah poin/ }).nth(1)];
+  await expect(plusA).toContainText("Game point"); // game 1 dari best of 3
+  await expect(plusB).not.toContainText(/point/);
+
+  // Game 1 selesai → game 2 dimulai, pemain pindah sisi.
+  await plusA.click();
+  await expect(court.getByText("Ganti sisi lapangan: game 2 dimulai.")).toBeVisible();
+  await expect(court.getByTestId("score-A")).toHaveText("0");
+  await plusB.click();
+  await expect(court.getByText(/Ganti sisi/)).toHaveCount(0);
+
+  // Game penentu: skor tertinggi mencapai 11 → ganti sisi; tidak muncul lagi di poin berikutnya.
+  expect((await page.request.put(`${api}/matches/${matchId}/score`, { data: { games: [{ a: 21, b: 15 }, { a: 15, b: 21 }, { a: 10, b: 8 }] } })).status()).toBe(200);
+  await page.reload();
+  await plusA.click();
+  await expect(court.getByText("Ganti sisi lapangan: skor mencapai 11 di game penentu.")).toBeVisible();
+  await plusB.click();
+  await expect(court.getByText(/Ganti sisi/)).toHaveCount(0);
+
+  // Match point terlihat di papan skor publik.
+  expect((await page.request.put(`${api}/matches/${matchId}/score`, { data: { games: [{ a: 21, b: 15 }, { a: 15, b: 21 }, { a: 20, b: 18 }] } })).status()).toBe(200);
+  const { data: token } = await admin().from("sessions").select("share_token").eq("id", s.sessionId).single();
+  const visitor = await (await browser.newContext({ baseURL })).newPage();
+  await visitor.goto(`/s/${token!.share_token}/skor`);
+  await expect(visitor.getByTestId("live-court-1")).toContainText("Match point");
+  await visitor.context().close();
 });

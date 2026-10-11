@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PRESETS } from "./rules";
-import { addPoint, currentGame, removePoint } from "./scoring";
+import { addPoint, currentGame, pointStatus, removePoint, sideChange } from "./scoring";
 import type { GameScore } from "./types";
 
 const bwf21 = PRESETS.bwf21;
@@ -65,5 +65,49 @@ describe("removePoint", () => {
 describe("currentGame", () => {
   it("nomor game aktif (1-based) dan skornya", () => {
     expect(currentGame([{ a: 21, b: 3 }, { a: 4, b: 2 }])).toEqual({ no: 2, a: 4, b: 2 });
+  });
+});
+
+describe("pointStatus — game point / match point (SC5, ALGORITHMS §1b)", () => {
+  const g = (...pairs: [number, number][]) => pairs.map(([a, b]) => ({ a, b }));
+  it.each([
+    [g([20, 15]), one, { A: "match", B: null }],
+    [g([20, 15]), bo3, { A: "game", B: null }],
+    [g([21, 15], [19, 20]), bo3, { A: null, B: "game" }],
+    [g([21, 15], [20, 19]), bo3, { A: "match", B: null }],
+    [g([29, 29]), one, { A: "match", B: "match" }],
+    [g([20, 20]), one, { A: null, B: null }],
+    [g([22, 20]), one, { A: null, B: null }],
+    [g([21, 15]), bo3, { A: null, B: null }],
+  ])("%j games=%j → %j", (games, format, expected) => {
+    expect(pointStatus(games, bwf21, format)).toEqual(expected);
+  });
+
+  it("tanpa deuce: 14–14 target 15 → kedua sisi match point", () => {
+    expect(pointStatus(g([14, 14]), { target: 15, deuce: false, cap: 15 }, one)).toEqual({ A: "match", B: "match" });
+  });
+});
+
+describe("sideChange — ganti sisi (SC5, ALGORITHMS §1b)", () => {
+  const g = (...pairs: [number, number][]) => pairs.map(([a, b]) => ({ a, b }));
+  it.each([
+    [g([10, 5]), g([11, 5]), one, "interval"],
+    [g([10, 5]), g([11, 5]), bo3, null],
+    [g([21, 15], [15, 21], [10, 8]), g([21, 15], [15, 21], [11, 8]), bo3, "interval"],
+    [g([11, 5]), g([11, 6]), one, null],
+    [g([11, 5]), g([10, 5]), one, null],
+    [g([20, 15]), g([21, 15], [0, 0]), bo3, "game"],
+    [g([21, 15], [20, 15]), g([21, 15], [21, 15]), bo3, null],
+  ])("%j → %j games=%j → %s", (before, after, format, expected) => {
+    expect(sideChange(before, after, bwf21, format)).toBe(expected);
+  });
+
+  it("poin15: interval di 8", () => {
+    expect(sideChange(g([7, 7]), g([8, 7]), PRESETS.poin15, one)).toBe("interval");
+  });
+
+  it("mengikuti addPoint: tap yang menutup game memberi 'game'", () => {
+    const before = g([20, 3]);
+    expect(sideChange(before, addPoint(before, "A", bwf21, bo3), bwf21, bo3)).toBe("game");
   });
 });

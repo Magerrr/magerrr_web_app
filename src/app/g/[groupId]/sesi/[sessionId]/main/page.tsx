@@ -3,8 +3,11 @@ import Link from "next/link";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { CopyLink } from "@/components/copy-link";
 import { NoAccess } from "@/components/no-access";
+import { PointBadge } from "@/components/point-badge";
 import { Badge, ButtonLink, Card, Notice, Page, TopBar } from "@/components/ui";
+import { pointStatus } from "@/lib/core/scoring";
 import { getGroup } from "@/lib/db/groups";
+import type { SessionMatch } from "@/lib/db/matches";
 import { publicEnv } from "@/lib/env";
 import { loadPlay, waitingList } from "@/lib/db/play";
 import { getSession, lastShuttlePrice } from "@/lib/db/sessions";
@@ -123,10 +126,13 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
                   <h3 className="text-lead">Lapangan {courtNo}</h3>
                   {match && tagOf(match) && <p className="text-small">{tagOf(match)}</p>}
                   {match ? (
-                    <p className="text-ui">
-                      {teamLabel(match.players.A, names)} <strong className="font-medium">{match.games.at(-1)?.a}–{match.games.at(-1)?.b}</strong>{" "}
-                      {teamLabel(match.players.B, names)}
-                    </p>
+                    <>
+                      <p className="text-ui">
+                        {teamLabel(match.players.A, names)} <strong className="font-medium">{match.games.at(-1)?.a}–{match.games.at(-1)?.b}</strong>{" "}
+                        {teamLabel(match.players.B, names)}
+                      </p>
+                      <PointBadges match={match} names={names} />
+                    </>
                   ) : (
                     <p className="text-small">Kosong</p>
                   )}
@@ -251,5 +257,16 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
         </section>
       </div>
     </Page>
+  );
+}
+
+function PointBadges({ match, names }: { match: SessionMatch; names: Names }) {
+  const points = pointStatus(match.games, match.rules, { games: match.gamesMax });
+  if (!points.A && !points.B) return null;
+  return (
+    <p className="flex flex-wrap gap-2">
+      <PointBadge kind={points.A} who={teamLabel(match.players.A, names)} />
+      <PointBadge kind={points.B} who={teamLabel(match.players.B, names)} />
+    </p>
   );
 }

@@ -53,6 +53,22 @@ Test vector `gameWinner` (rules = bwf21 kecuali disebut):
 
 Test vector `matchWinner` (bwf21, games=3): `[{21,15},{18,21},{21,17}]` → A · `[{21,15},{21,10}]` → A · `[{21,15},{18,21}]` → null · `[{21,15},{21,10},{5,3}]` → `RangeError`.
 
+### 1b. Game point, match point, ganti sisi (SC5, P1)
+
+`pointStatus(games, rules, format): { A: 'game'|'match'|null, B: … }`
+- Match sudah punya pemenang → keduanya `null`.
+- Game berjalan = game terakhir; bila game terakhir sudah selesai, game berjalan = game baru 0–0.
+- Sisi `s` berstatus **game point** bila +1 poin untuk `s` membuat `s` memenangkan game berjalan; **match point** bila kemenangan game itu sekaligus memenangkan match. Kedua sisi bisa berstatus sekaligus (mis. 29–29 bwf21).
+
+`sideChange(before, after, rules, format): 'game'|'interval'|null` — dipanggil untuk tiap perubahan skor `before → after`:
+- `'game'`: nomor game berjalan bertambah dan match belum punya pemenang (pemain pindah sisi tiap ganti game).
+- `'interval'`: nomor game sama, game berjalan adalah **game penentu** (game selesai yang dimenangkan A dan B sama-sama `ceil(games/2) − 1`), dan skor tertinggi naik dari `< mid` ke `≥ mid`, dengan `mid = ceil(target / 2)` (bwf21 → 11, poin15 → 8, poin11 → 6).
+- Selain itu `null` (termasuk −1 / undo).
+
+Test vector `pointStatus` (bwf21): `[{20,15}]` games=1 → `{A:'match',B:null}` · `[{20,15}]` games=3 → `{A:'game',B:null}` · `[{21,15},{19,20}]` games=3 → `{A:null,B:'game'}` · `[{21,15},{20,19}]` games=3 → `{A:'match',B:null}` · `[{29,29}]` games=1 → `{A:'match',B:'match'}` · `[{20,20}]` games=1 → `{A:null,B:null}` · `[{22,20}]` games=1 → `{A:null,B:null}` · `[{21,15}]` games=3 → `{A:null,B:null}` (game baru 0–0). `{target:15,deuce:false,cap:15}`, `[{14,14}]` games=1 → `{A:'match',B:'match'}`.
+
+Test vector `sideChange` (bwf21): `[{10,5}] → [{11,5}]` games=1 → `'interval'` · games=3 → `null` · `[{21,15},{15,21},{10,8}] → [{21,15},{15,21},{11,8}]` games=3 → `'interval'` · `[{11,5}] → [{11,6}]` games=1 → `null` · `[{11,5}] → [{10,5}]` games=1 → `null` · `[{20,15}] → [{21,15},{0,0}]` games=3 → `'game'` · `[{21,15},{20,15}] → [{21,15},{21,15}]` games=3 → `null` (match selesai) · poin15 `[{7,7}] → [{8,7}]` games=1 → `'interval'`.
+
 ## 2. Klasemen (leaderboard)
 
 Input: daftar match `completed` (status `void`/`running` diabaikan), tiap match punya `players: {A: MemberId[], B: MemberId[]}`, `games`, `winner`, dan `sessionDate`.
