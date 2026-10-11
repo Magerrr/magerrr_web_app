@@ -49,6 +49,8 @@ const eslintConfig = defineConfig([
     "coverage/**",
     "playwright-report/**",
     "test-results/**",
+    // Worktree agen Claude Code (salinan repo lengkap dengan .next sendiri)
+    ".claude/**",
   ]),
 ]);
 
