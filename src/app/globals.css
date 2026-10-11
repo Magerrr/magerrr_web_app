@@ -1,0 +1,172 @@
+@import "tailwindcss";
+
+/*
+ * Token Meadow (sumber: docs/design/project/ds/meadow/tokens.json, README.md di folder yang sama).
+ * Warna & radius memakai nama token Meadow persis; meadow-tokens.test.ts mencocokkannya dengan tokens.json.
+ * Palet bawaan Tailwind dimatikan agar komponen hanya bisa memakai warna Meadow.
+ *
+ * Aturan kontras (README Meadow):
+ * - Teks selalu ink-black (atau cream-paper di atas isi ink-black). Tidak pernah teks putih di atas pop.
+ * - stone-gray hanya untuk teks >= 24px atau border.
+ * - fresh-grass, sky-pop, coral-pop, sunshine-pop, hairline-mist dekoratif: bukan warna teks,
+ *   bukan satu-satunya batas kontrol. coral-pop bukan warna CTA utama.
+ */
+@theme static {
+  --color-*: initial;
+  --color-cream-paper: #f5f1e4;
+  --color-pure-white: #ffffff;
+  --color-sandstone: #e0dbce;
+  --color-ink-black: #2c2e2a;
+  --color-pure-ink: #000000;
+  --color-stone-gray: #80827f;
+  --color-hairline-mist: #d5d5d4;
+  --color-fresh-grass: #8ed462;
+  --color-sky-pop: #2ba0ff;
+  --color-coral-pop: #ff705d;
+  --color-sunshine-pop: #f5e211;
+  --color-surface-0: var(--color-cream-paper);
+  --color-surface-1: var(--color-pure-white);
+  --color-surface-2: var(--color-sandstone);
+
+  --radius-lg: 10px;
+  --radius-2xl: 20px;
+  --radius-3xl: 25.5px;
+  --radius-full: 50px;
+  --radius-full-2: 63.75px;
+
+  /* Spasi: unit Tailwind 4px = Meadow space-unit. space-20 → p-5, space-60 → 15, space-136 → 34. */
+  --spacing: 4px;
+
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Container query `@panel:`: dua panel di halaman bila lebar konten `Page` >= 960px (desktop tanpa sidebar
+     mulai 1024px, dengan sidebar grup mulai ~1264px). Dipakai sebagai ganti `lg:` agar sidebar tidak menyesakkan. */
+  --container-panel: 60rem;
+
+  --tracking-ui: -0.04em;
+  --tracking-display: -0.06em;
+
+  /* Skala teks per peran, dipetakan dari gaya Meadow. small & caption adalah tambahan aplikasi
+     (layar desain memakai 12–14px); jangan pakai di bawah 12px. */
+  --text-display: 53px; /* Meadow 5xl */
+  --text-display--line-height: 1.15;
+  --text-display--letter-spacing: -0.06em;
+  --text-title: 30px; /* Meadow 3xl */
+  --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -0.06em;
+  --text-sub: 20px; /* Meadow xl */
+  --text-sub--line-height: 1.25;
+  --text-sub--letter-spacing: -0.04em;
+  --text-lead: 18px; /* Meadow lg-2 */
+  --text-lead--line-height: 1.25;
+  --text-lead--letter-spacing: -0.04em;
+  --text-body: 17px; /* Meadow lg */
+  --text-body--line-height: 1.5;
+  --text-ui: 15px; /* Meadow base: tombol, label, tag */
+  --text-ui--line-height: 1.25;
+  --text-ui--letter-spacing: -0.04em;
+  --text-small: 13px;
+  --text-small--line-height: 1.35;
+  --text-caption: 12px;
+  --text-caption--line-height: 1.4;
+}
+
+@layer base {
+  body {
+    background: var(--color-surface-0);
+    color: var(--color-ink-black);
+    font-weight: 500;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ink-black);
+    outline-offset: 2px;
+  }
+}
+
+/* Animasi maskot Kiko (src/components/kiko.tsx). Variabel --kiko-* diatur per suasana di komponen. */
+@keyframes kiko-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(var(--kiko-bounce, -5px));
+  }
+}
+@keyframes kiko-wag {
+  0%,
+  100% {
+    transform: rotate(calc(var(--kiko-wag, 11deg) * -1));
+  }
+  50% {
+    transform: rotate(var(--kiko-wag, 11deg));
+  }
+}
+@keyframes kiko-blink {
+  0%,
+  90%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+@keyframes kiko-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+@keyframes kiko-float {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+}
+
+@layer components {
+  .kiko .kiko-tail {
+    transform-box: view-box;
+    transform-origin: 132px 172px;
+  }
+  .kiko .kiko-eye {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .kiko .kiko-body {
+      animation: kiko-bounce var(--kiko-dur, 1.1s) ease-in-out infinite;
+    }
+    .kiko .kiko-tail {
+      animation: kiko-wag var(--kiko-tail, 1.2s) ease-in-out infinite;
+    }
+    .kiko .kiko-eye {
+      animation: kiko-blink 4s linear infinite;
+    }
+    .kiko .kiko-flicker {
+      animation: kiko-flicker 0.6s ease-in-out infinite;
+    }
+    .kiko .kiko-flicker-late {
+      animation-delay: -0.3s;
+    }
+    .kiko .kiko-zzz {
+      animation: kiko-float 3s ease-in-out infinite;
+    }
+    .kiko .kiko-zzz-late {
+      animation-delay: -1.5s;
+    }
+  }
+}
