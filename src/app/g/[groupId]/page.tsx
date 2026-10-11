@@ -135,6 +135,7 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
           <MenuLink href={`/g/${groupId}/kiko`} title="Kiko kamu" detail="Maskot yang tumbuh tiap kamu main" />
           <MenuLink href={`/g/${groupId}/leaderboard`} title="Leaderboard" detail="Klasemen ganda & pasangan terbaik" />
           <MenuLink href={`/g/${groupId}/musim`} title="Musim" detail="Klasemen per musim & juara" />
+          <MenuLink href={`/g/${groupId}/recap`} title="Recap bulan & musim" detail="Juara, sorotan, perubahan peringkat" />
           <MenuLink href={`/g/${groupId}/anggota`} title="Anggota" detail={`${members.length} orang`} />
           <MenuLink href={`/g/${groupId}/saldo`} title="Saldo patungan" detail={balanceDetail} />
           {isAdmin && <MenuLink href={`/g/${groupId}/pengaturan`} title="Pengaturan grup" detail="Aturan skor, poin klasemen, patungan" />}

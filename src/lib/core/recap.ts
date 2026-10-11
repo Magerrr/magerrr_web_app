@@ -44,26 +44,21 @@ export interface Recap {
 }
 
 /** Pemain dengan nilai maksimum (seri → semua, urut id); null bila maksimum <= 0. */
-function leaders(counts: Map<MemberId, number>): { value: number; memberIds: MemberId[] } | null {
+export function leaders(counts: Map<MemberId, number>): { value: number; memberIds: MemberId[] } | null {
   const value = Math.max(0, ...counts.values());
   if (value === 0) return null;
   const memberIds = [...counts].filter(([, v]) => v === value).map(([id]) => id).sort(compareId);
   return { value, memberIds };
 }
 
-export function buildRecap(session: RecapSession, matches: MatchRecord[], expenses: Expense[]): Recap {
-  const played = matches
-    .filter((m) => m.sessionId === session.id && m.status === "completed" && m.winner !== null)
-    .sort((x, y) => x.order - y.order);
+export type MatchHighlights = Pick<Recap, "tightestGame" | "biggestWin" | "longestWinStreak" | "mostPlayed">;
 
-  // Juara sesi memakai poin grup tanpa minMatches (L8 untuk klasemen jangka panjang).
-  const table = standings(played, { ...session.scoring, minMatches: 0 }, { kind: "session", sessionId: session.id });
-  const champion = table.filter((row) => row.rank === 1);
-
-  // pairStats sudah urut win rate ↓, selisih ↓, id ↑
-  const bestPair = pairStats(played).find((p) => p.played >= 2);
-
-  // Urutan kronologis game: match.order lalu nomor game; seri → yang terbaru.
+/**
+ * Sorotan dari match selesai yang sudah urut kronologis (§6): rally terketat & kemenangan terbesar
+ * (seri → yang terbaru), win streak terpanjang, paling banyak main. Dipakai recap sesi & periode (§7).
+ */
+export function matchHighlights(played: MatchRecord[]): MatchHighlights {
+  // Urutan kronologis game: urutan match lalu nomor game; seri → yang terbaru.
   const games: GameHighlight[] = played.flatMap((m) =>
     m.games
       .map((g, i) => ({
@@ -95,6 +90,27 @@ export function buildRecap(session: RecapSession, matches: MatchRecord[], expens
   }
   const streakLeaders = leaders(longest);
   const playLeaders = leaders(count);
+  return {
+    tightestGame: pickLatest((best, g) => best.margin < g.margin),
+    biggestWin: pickLatest((best, g) => best.margin > g.margin),
+    longestWinStreak: streakLeaders && { length: streakLeaders.value, memberIds: streakLeaders.memberIds },
+    mostPlayed: playLeaders && { played: playLeaders.value, memberIds: playLeaders.memberIds },
+  };
+}
+
+export function buildRecap(session: RecapSession, matches: MatchRecord[], expenses: Expense[]): Recap {
+  const played = matches
+    .filter((m) => m.sessionId === session.id && m.status === "completed" && m.winner !== null)
+    .sort((x, y) => x.order - y.order);
+
+  // Juara sesi memakai poin grup tanpa minMatches (L8 untuk klasemen jangka panjang).
+  const table = standings(played, { ...session.scoring, minMatches: 0 }, { kind: "session", sessionId: session.id });
+  const champion = table.filter((row) => row.rank === 1);
+
+  // pairStats sudah urut win rate ↓, selisih ↓, id ↑
+  const bestPair = pairStats(played).find((p) => p.played >= 2);
+
+  const { tightestGame, biggestWin, longestWinStreak, mostPlayed } = matchHighlights(played);
 
   const bill =
     expenses.length > 0
@@ -110,10 +126,10 @@ export function buildRecap(session: RecapSession, matches: MatchRecord[], expens
   return {
     champion: champion.length > 0 ? champion : null,
     bestPair: bestPair ?? null,
-    tightestGame: pickLatest((best, g) => best.margin < g.margin),
-    biggestWin: pickLatest((best, g) => best.margin > g.margin),
-    longestWinStreak: streakLeaders && { length: streakLeaders.value, memberIds: streakLeaders.memberIds },
-    mostPlayed: playLeaders && { played: playLeaders.value, memberIds: playLeaders.memberIds },
+    tightestGame,
+    biggestWin,
+    longestWinStreak,
+    mostPlayed,
     totals: {
       matches: played.length,
       games: played.reduce((s, m) => s + m.games.length, 0),

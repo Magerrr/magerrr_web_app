@@ -204,3 +204,21 @@ Output: `{ champion, bestPair, tightestGame, biggestWin, longestWinStreak, mostP
 - `mostPlayed`: pemain dengan `played` terbanyak (tie → semua).
 - `totals`: jumlah match, game, total biaya, per orang (dari 5.x), jumlah lunas.
 Jika data kosong, field terkait `null` (UI menyembunyikan kartu), bukan error.
+
+## 7. Recap periode `buildPeriodRecap(matches, scoring, period, previous)` (R6, P1)
+
+Recap bulan (`period.kind = 'month'`, WIB) atau musim (`'season'`). Hanya match **ganda** `completed` di periode (sama dengan leaderboard, L11). Tidak disimpan; dihitung setiap kali.
+- `totals`: jumlah match, game, sesi (sesi berbeda yang punya match), pemain.
+- `champion`: baris ranked peringkat 1 klasemen periode (§2, `minMatches` grup berlaku; seri → semua); `null` bila tidak ada. `podium`: maks. 3 baris ranked teratas.
+- `bestPair`: pasangan teratas `pairStats` dengan `played >= 3` (§3); `null` bila tak ada.
+- `tightestGame`, `biggestWin`, `longestWinStreak`, `mostPlayed`: aturan §6, dengan urutan kronologis `sessionDate` ↑, `order` ↑, id ↑ (streak bisa menyambung antarsesi).
+- `mostSessions`: pemain dengan jumlah sesi berbeda terbanyak (seri → semua, urut id).
+- `rankChanges`: untuk tiap baris ranked periode ini: `previousRank` = peringkatnya di klasemen `previous` (null bila tidak ranked di sana atau `previous = null`), `change = previousRank − rank` (positif = naik), null bila `previousRank` null.
+- Periode pembanding: bulan → bulan kalender sebelumnya (`previousMonth`: Jan 2027 → Des 2026); musim → musim yang mulai tepat sebelumnya menurut `startsOn` (`previousSeasonId`), null bila musim pertama.
+
+Test vector — Oktober = match §2 (M1–M3, satu sesi s1); September: M0 A=[p4,p3] vs B=[p1,p2] 21–10, A menang (sesi s0).
+- `totals` Oktober: 3 match, 3 game, 1 sesi, 4 pemain. `champion` = [p2]. `bestPair` = null (tiap pasangan 1×). `mostPlayed` = 3, [p1,p2,p3,p4]. `mostSessions` = 1, [p1,p2,p3,p4].
+- `longestWinStreak` = 2, [p1, p3] (p1 M,M,K; p3 K,M,M). `tightestGame` = M2 21–19. `biggestWin` = M1 21–15.
+- `rankChanges` vs September (p3, p4 peringkat 1 bersama; p1, p2 peringkat 3 bersama): p2 1 (dari 3, +2), p1 2 (dari 3, +1), p3 3 (dari 1, −2), p4 4 (dari 1, −3). Tanpa pembanding → semua `previousRank`/`change` null.
+- Periode tanpa match → totals 0, semua sorotan null, `podium`/`rankChanges` kosong.
+- `previousMonth({2027,1})` → `{2026,12}`; `previousSeasonId([{a,'2026-01-01'},{b,'2026-04-01'},{c,'2026-07-01'}], 'c')` → b, untuk a → null.

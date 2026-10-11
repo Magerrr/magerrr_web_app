@@ -63,6 +63,9 @@ export default async function SeasonsPage({ params }: PageProps<"/g/[groupId]/mu
           <Link href={leaderboardHref(open)} className={textLinkClass}>
             Lihat klasemen musim
           </Link>
+          <Link href={`/g/${groupId}/recap?periode=musim&musim=${open.id}`} className={textLinkClass}>
+            Recap musim sementara
+          </Link>
           {isAdmin && <CloseSeasonButton groupId={groupId} seasonId={open.id} name={open.name} />}
         </Card>
       ) : isAdmin ? (
@@ -95,6 +98,9 @@ export default async function SeasonsPage({ params }: PageProps<"/g/[groupId]/mu
                   </span>
                   <Link href={leaderboardHref(s)} className={textLinkClass}>
                     Klasemen akhir
+                  </Link>
+                  <Link href={`/g/${groupId}/recap?periode=musim&musim=${s.id}`} className={textLinkClass}>
+                    Recap {s.name}
                   </Link>
                 </li>
               );

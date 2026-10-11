@@ -147,6 +147,7 @@ test("aksesibilitas, target sentuh, dan lebar 320–1280px di semua halaman utam
     `${g}/sesi/${f.done}/patungan`,
     `${g}/pembayaran`,
     `${g}/saldo`,
+    `${g}/recap?bulan=2026-10`,
     `/s/${f.token}/tagihan`,
     `/s/${f.token}/recap`,
     `${g}/leaderboard?tab=form&periode=semua`,

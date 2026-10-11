@@ -130,6 +130,14 @@ export default async function LeaderboardPage({ params, searchParams }: PageProp
       </div>
 
       <PeriodDetail groupId={groupId} view={view} sources={sources} currentMonth={currentMonth} />
+      {board && board.matchCount > 0 && (view.periode === "bulan" || view.periode === "musim") && (
+        <Link
+          href={view.periode === "bulan" ? `/g/${groupId}/recap?bulan=${monthKey(view.bulan)}` : `/g/${groupId}/recap?periode=musim&musim=${view.musim}`}
+          className={textLinkClass}
+        >
+          Recap {view.periode === "bulan" ? formatMonthId(view.bulan) : (season?.name ?? "musim")}
+        </Link>
+      )}
 
       {view.periode === "musim" && board && season?.closedAt && (
         <p className="rounded-2xl border-2 border-ink-black bg-fresh-grass px-4 py-3 text-ui" data-testid="season-champion">

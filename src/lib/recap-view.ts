@@ -1,10 +1,11 @@
 // Teks sorotan recap untuk halaman & kartu gambar (PRD R2–R3). Data dari `buildRecap`.
+import type { PeriodRecap } from "@/lib/core/period-recap";
 import type { GameHighlight, Recap } from "@/lib/core/recap";
 import { formatRupiah } from "@/lib/format";
 
 type Names = Record<string, string>;
 
-export type HighlightKey = "champion" | "bestPair" | "tightestGame" | "biggestWin" | "longestWinStreak" | "mostPlayed";
+export type HighlightKey = "champion" | "bestPair" | "tightestGame" | "biggestWin" | "longestWinStreak" | "mostPlayed" | "mostSessions";
 
 export interface Highlight {
   key: HighlightKey;
@@ -25,14 +26,20 @@ function gameHighlight(g: GameHighlight, names: Names): { value: string; detail:
   };
 }
 
+type HighlightSource = Pick<Recap, "champion" | "bestPair" | "tightestGame" | "biggestWin" | "longestWinStreak" | "mostPlayed">;
+
 /** Kartu sorotan yang punya data, urutan tampil tetap; kosong → tidak ada kartu. */
-export function recapHighlights(recap: Recap, names: Names): Highlight[] {
+export function recapHighlights(
+  recap: HighlightSource,
+  names: Names,
+  championTitle: { one: string; shared: string } = { one: "Juara sesi", shared: "Juara bersama" },
+): Highlight[] {
   const out: Highlight[] = [];
   if (recap.champion) {
     const c = recap.champion[0];
     out.push({
       key: "champion",
-      title: recap.champion.length > 1 ? "Juara bersama" : "Juara sesi",
+      title: recap.champion.length > 1 ? championTitle.shared : championTitle.one,
       value: list(
         names,
         recap.champion.map((r) => r.memberId),
@@ -60,6 +67,22 @@ export function recapHighlights(recap: Recap, names: Names): Highlight[] {
   }
   if (recap.mostPlayed) {
     out.push({ key: "mostPlayed", title: "Paling banyak main", value: `${recap.mostPlayed.played} match`, detail: list(names, recap.mostPlayed.memberIds) });
+  }
+  return out;
+}
+
+/**
+ * Sorotan recap bulan / musim (R6): sama dengan recap sesi, ditambah "Paling rajin datang" bila periode
+ * punya lebih dari satu sesi. Periode yang masih berjalan → "Memimpin sementara".
+ */
+export function periodHighlights(recap: PeriodRecap, names: Names, ongoing: boolean): Highlight[] {
+  const out = recapHighlights(
+    recap,
+    names,
+    ongoing ? { one: "Memimpin sementara", shared: "Memimpin bersama" } : { one: "Juara", shared: "Juara bersama" },
+  );
+  if (recap.mostSessions && recap.totals.sessions > 1) {
+    out.push({ key: "mostSessions", title: "Paling rajin datang", value: `${recap.mostSessions.sessions} sesi`, detail: list(names, recap.mostSessions.memberIds) });
   }
   return out;
 }

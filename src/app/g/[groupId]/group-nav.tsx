@@ -31,6 +31,7 @@ export function GroupNav({ groupId, isAdmin, unread }: { groupId: string; isAdmi
     { href: `${base}/kiko`, label: "Kiko kamu" },
     { href: `${base}/leaderboard`, label: "Leaderboard" },
     { href: `${base}/musim`, label: "Musim" },
+    { href: `${base}/recap`, label: "Recap bulan & musim" },
     { href: `${base}/anggota`, label: "Anggota", nested: [`${base}/anggota`] },
     { href: `${base}/saldo`, label: "Saldo patungan" },
     { href: `${base}/pembayaran`, label: "Info pembayaran" },

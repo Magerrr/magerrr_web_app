@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { buildRecap, type RecapSession } from "@/lib/core/recap";
 import type { MatchRecord } from "@/lib/core/types";
-import { cardData, perPersonLabel, recapHighlights } from "./recap-view";
+import { buildPeriodRecap } from "@/lib/core/period-recap";
+import { cardData, perPersonLabel, periodHighlights, recapHighlights } from "./recap-view";
 
 const match = (id: string, order: number, A: string[], B: string[], a: number, b: number): MatchRecord => ({
   id,
@@ -87,5 +88,22 @@ describe("cardData", () => {
       champion: null,
       stats: [{ label: "Jumlah match", value: "0 match", detail: "0 game" }],
     });
+  });
+});
+
+describe("periodHighlights (R6)", () => {
+  const october = { kind: "month", year: 2026, month: 10 } as const;
+  const later = { ...match("m4", 1, ["p3", "p2"], ["p1", "p4"], 21, 5), sessionId: "s2", sessionDate: new Date("2026-10-16T12:00:00Z") };
+
+  it("bulan berjalan → memimpin sementara; satu sesi → tanpa 'paling rajin datang'", () => {
+    const highlights = periodHighlights(buildPeriodRecap(VECTOR, {}, october, null), NAMES, true);
+    expect(highlights[0]).toMatchObject({ key: "champion", title: "Memimpin sementara", value: "Dimas" });
+    expect(highlights.map((h) => h.key)).not.toContain("mostSessions");
+  });
+
+  it("periode selesai dengan beberapa sesi → juara & paling rajin datang", () => {
+    const highlights = periodHighlights(buildPeriodRecap([...VECTOR, later], {}, october, null), NAMES, false);
+    expect(highlights[0]).toMatchObject({ key: "champion", title: "Juara" });
+    expect(highlights.at(-1)).toEqual({ key: "mostSessions", title: "Paling rajin datang", value: "2 sesi", detail: "Raka & Dimas & Sinta & Nara" });
   });
 });

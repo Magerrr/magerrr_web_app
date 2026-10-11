@@ -77,6 +77,29 @@ test("musim: buat, sesi masuk menurut tanggal, tutup → arsip & juara musim (L9
   await page.goto(`/g/${group.id}/leaderboard?periode=musim&musim=${s1!.id}`);
   await expect(page.getByTestId("season-champion")).toHaveText("Musim September sudah selesai. Juara: p2.");
 
+  // R6: recap musim berjalan dibanding musim sebelumnya (September: p2, p1, p3, p4).
+  await page.goto(`/g/${group.id}/musim`);
+  await page.getByRole("link", { name: "Recap musim sementara" }).click();
+  await expect(page.getByRole("heading", { name: "Musim Oktober", level: 2 })).toBeVisible();
+  await expect(page.getByTestId("period-totals")).toHaveText("1 sesi · 1 match · 1 game · 4 pemain");
+  await expect(page.getByTestId("highlight-champion")).toContainText("Memimpin bersama");
+  await expect(page.getByText("Perubahan dibanding Musim September.", { exact: false })).toBeVisible();
+  const change = (text: string | RegExp) => page.getByTestId("rank-change").filter({ hasText: text });
+  await expect(change(/^1p3/)).toContainText("naik 2");
+  await expect(change(/^1p4/)).toContainText("naik 3");
+  await expect(change("(kamu)")).toContainText("turun 1");
+  await expect(change(/^3p2/)).toContainText("turun 2");
+
+  // R6: recap bulanan September (bulan selesai, tanpa pembanding Agustus → "Baru").
+  await page.getByRole("link", { name: "Bulanan" }).click();
+  await page.getByLabel("Bulan").selectOption({ label: "September 2026" });
+  await expect(page).toHaveURL(/bulan=2026-09/);
+  await expect(page.getByTestId("highlight-champion")).toContainText("Juarap2");
+  await expect(page.getByTestId("highlight-tightestGame")).toContainText("21–19");
+  await expect(page.getByTestId("rank-change")).toHaveCount(4);
+  await expect(page.getByTestId("rank-change").first()).toContainText("p2");
+  await expect(page.getByTestId("rank-change").filter({ hasText: "Baru" })).toHaveCount(4);
+
   // Bukan admin tidak bisa membuat / menutup musim.
   const guest = await browser.newContext({ baseURL });
   expect((await guest.request.post(`/api/join/${group.inviteCode}`, { data: { displayName: "Penonton" } })).status()).toBe(201);
