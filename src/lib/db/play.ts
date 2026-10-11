@@ -1,6 +1,7 @@
 import "server-only";
 import { assertValidPairs, autoPairs, fixedContext, pairKey, planFixedRound, type Pair } from "@/lib/core/fixed";
 import { kocokContext, planRound, type Grade, type PlanHint } from "@/lib/core/kocok";
+import { matchMinutes, restingPriority, rotationTurns, turnEta } from "@/lib/core/queue";
 import { afterGame, fillCourt, isWaiting, reconcileQueue, startRotation } from "@/lib/core/rotation";
 import { checkGames, type GameRules } from "@/lib/core/rules";
 import type { GameScore, MatchKind, MemberId, Teams } from "@/lib/core/types";
@@ -327,13 +328,49 @@ export async function voidMatch(ctx: PlayContext, actorId: string, matchId: stri
   if (error) dbError(error);
 }
 
-/** Yang menunggu: rotasi = urutan antrian; kocok = paling sedikit main dulu. */
-export function waitingList(ctx: PlayContext): string[] {
+export interface WaitingEntry {
+  /** satu pemain, atau dua untuk pasangan tetap */
+  ids: MemberId[];
+  /** match selesai di sesi ini */
+  played: number;
+  /** rotasi: 0 = masuk saat game berikutnya selesai; null = mode lain */
+  turn: number | null;
+  /** rotasi: perkiraan menit sampai masuk; null bila belum ada data durasi */
+  etaMin: number | null;
+}
+
+const MINUTE = 60_000;
+
+/** Antrian giliran (SC9, ALGORITHMS §4.4): yang menunggu, urut giliran / prioritas kocok. */
+export function waitingView(ctx: PlayContext, now: Date): WaitingEntry[] {
   const available = ctx.present.filter((id) => !ctx.onCourt.has(id));
-  if (ctx.session.playMode === "rotasi") {
-    return ctx.session.rotationQueue === null ? available : reconcileQueue(ctx.session.rotationQueue, ctx.present, [...ctx.onCourt]);
+  const done = ctx.matches.filter((m) => m.status === "completed");
+  const played = (id: MemberId) => done.filter((m) => m.players.A.includes(id) || m.players.B.includes(id)).length;
+
+  if (isRotation(ctx)) {
+    const queue = ctx.session.rotationQueue === null ? available : reconcileQueue(ctx.session.rotationQueue, ctx.present, [...ctx.onCourt]);
+    const courts = ctx.running.filter((m) => m.tournament === null && m.courtNo !== null);
+    // Belum ada lapangan rotasi berjalan → antrian belum bergerak; jenis dari match terakhir.
+    const kind = (courts[0] ?? ctx.matches.findLast((m) => m.status !== "void"))?.kind ?? "doubles";
+    const turns = rotationTurns(queue, kind);
+    const avg = matchMinutes(done.flatMap((m) => (m.completedAt ? [(m.completedAt.getTime() - m.startedAt.getTime()) / MINUTE] : [])));
+    const eta = turnEta(
+      courts.map((m) => Math.max(0, (now.getTime() - m.startedAt.getTime()) / MINUTE)),
+      avg,
+      (turns.at(-1) ?? -1) + 1,
+    );
+    return queue.map((id, i) => ({ ids: [id], played: played(id), turn: courts.length > 0 ? turns[i] : null, etaMin: eta[turns[i]] ?? null }));
   }
-  const played = (id: string) =>
-    ctx.matches.filter((m) => m.status === "completed" && (m.players.A.includes(id) || m.players.B.includes(id))).length;
-  return [...available].sort((a, b) => played(a) - played(b));
+
+  const { players } = kocokContext({ candidates: available.map((id) => ({ id, grade: null })), sessionMatches: ctx.matches, groupMatches: [] });
+  if (isFixed(ctx)) {
+    const pairs = (ctx.session.fixedPairs ?? []).filter(([a, b]) => available.includes(a) && available.includes(b));
+    const paired = new Set(pairs.flat());
+    const { states } = fixedContext({ pairs, ratings: new Map(), sessionMatches: ctx.matches });
+    return [
+      ...restingPriority(states).map((p) => ({ ids: [...p.members], played: p.playedThisSession, turn: null, etaMin: null })),
+      ...restingPriority(players.filter((p) => !paired.has(p.id))).map((p) => ({ ids: [p.id], played: p.playedThisSession, turn: null, etaMin: null })),
+    ];
+  }
+  return restingPriority(players).map((p) => ({ ids: [p.id], played: p.playedThisSession, turn: null, etaMin: null }));
 }

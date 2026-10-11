@@ -163,17 +163,59 @@ test("rotasi mereproduksi vector §4.1 (kalah keluar, antrian FIFO)", async ({ p
   const plusA = page.getByTestId("court-1").getByRole("button", { name: /^Tambah poin/ }).nth(0);
   for (let i = 0; i < 21; i++) await plusA.click();
   await page.getByRole("button", { name: "Selesai · rotasi" }).click();
-  await expect(page.getByTestId("waiting-list").getByRole("listitem").first()).toHaveText("1p6");
+  const rows = page.getByTestId("waiting-list").getByRole("listitem");
+  await expect(rows.first()).toContainText("p6");
   [m] = await runningMatches(s.sessionId);
   expect(m).toMatchObject({ A: sorted(0, 1), B: sorted(4, 5) });
   expect(await queue()).toEqual([P[6], P[7], P[2], P[3]]);
-  await expect(page.getByTestId("waiting-list").getByRole("listitem")).toHaveText(["1p6", "2p7", "3p2", "4p3"]);
+  // SC9: dua teratas masuk saat game berikutnya selesai; belum ada durasi sesi (match < 3 mnt) → tanpa perkiraan menit.
+  await expect(rows).toHaveText([/^1p6\s*Main berikutnya$/, /^2p7\s*Main berikutnya$/, /^3p2\s*Setelah 2 game$/, /^4p3\s*Setelah 2 game$/]);
+  await expect(page.getByText("Kamu sedang main di Lapangan 1.")).toBeVisible();
 
   // B menang → b=[4,5] tetap, a=[6,7], queue=[2,3,0,1]
   expect((await page.request.post(`${api}/matches/${m.id}/complete`, { data: { games: [{ a: 15, b: 21 }] } })).status()).toBe(200);
   [m] = await runningMatches(s.sessionId);
   expect(m).toMatchObject({ A: sorted(6, 7), B: sorted(4, 5) });
   expect(await queue()).toEqual([P[2], P[3], P[0], P[1]]);
+
+  // SC9: perkiraan waktu dari durasi match sesi ini (median 15 mnt), lapangan sudah berjalan 5 mnt.
+  const { data: done } = await admin().from("matches").select("id, completed_at").eq("session_id", s.sessionId).eq("status", "completed");
+  for (const d of done!) {
+    await admin().from("matches").update({ created_at: new Date(new Date(d.completed_at!).getTime() - 15 * 60_000).toISOString() }).eq("id", d.id);
+  }
+  await admin().from("matches").update({ created_at: new Date(Date.now() - 5 * 60_000).toISOString() }).eq("id", m.id);
+  await page.reload();
+  await expect(rows).toHaveText([/p2\s*Main berikutnya · ±10 mnt$/, /p3\s*Main berikutnya · ±10 mnt$/, /Kamu\s*Setelah 2 game · ±25 mnt$/, /p1\s*Setelah 2 game · ±25 mnt$/]);
+  await expect(page.getByText("Kamu antre ke-3: setelah 2 game (±25 mnt).")).toBeVisible();
+});
+
+test("SC9: mode kocok mengurutkan yang istirahat menurut jumlah main", async ({ page, browser, baseURL }) => {
+  const s = await runningSession(page, { courtCount: 1 });
+  const api = `/api/groups/${s.groupId}/sessions/${s.sessionId}`;
+  const started = await page.request.post(`${api}/matches/start`, {
+    data: { matches: [{ courtNo: 1, kind: "doubles", A: [s.host, s.ids.p1], B: [s.ids.p2, s.ids.p3] }], seed: 1, queue: null },
+  });
+  const [matchId] = (await started.json()).ids as string[];
+  expect((await page.request.post(`${api}/matches/${matchId}/complete`, { data: { games: [{ a: 21, b: 10 }] } })).status()).toBe(200);
+  const second = await page.request.post(`${api}/matches/start`, {
+    data: { matches: [{ courtNo: 1, kind: "doubles", A: [s.ids.p4, s.ids.p5], B: [s.ids.p6, s.ids.p7] }], seed: 2, queue: null },
+  });
+  expect(second.status()).toBe(201);
+
+  await page.goto(`/g/${s.groupId}/sesi/${s.sessionId}/main`);
+  const rows = page.getByTestId("waiting-list").getByRole("listitem");
+  await expect(page.getByRole("heading", { name: "Istirahat" })).toBeVisible();
+  await expect(rows).toHaveCount(4);
+  for (let i = 0; i < 4; i++) await expect(rows.nth(i)).toContainText("1× main");
+  await expect(page.getByText(/^Kamu istirahat di urutan ke-\d \(sudah 1× main\)\.$/)).toBeVisible();
+
+  // Penonton publik melihat antrian yang sama, tanpa penanda "Kamu".
+  const { data: token } = await admin().from("sessions").select("share_token").eq("id", s.sessionId).single();
+  const visitor = await (await browser.newContext({ baseURL })).newPage();
+  await visitor.goto(`/s/${token!.share_token}/skor`);
+  await expect(visitor.getByTestId("waiting-list").getByRole("listitem")).toHaveCount(4);
+  await expect(visitor.getByTestId("waiting-list")).not.toContainText("Kamu");
+  await visitor.context().close();
 });
 
 test("input skor manual best of 3, validasi skor, dan izin", async ({ page, browser, baseURL }) => {
@@ -262,6 +304,7 @@ test("SC5: game point, ganti sisi saat game baru, dan interval 11 di game penent
   await expect(court.getByTestId("score-A")).toHaveText("0");
   await plusB.click();
   await expect(court.getByText(/Ganti sisi/)).toHaveCount(0);
+  await expect(court.getByTestId("sync-status")).toHaveText("Tersimpan"); // jangan balapan dengan kiriman skor klien
 
   // Game penentu: skor tertinggi mencapai 11 → ganti sisi; tidak muncul lagi di poin berikutnya.
   expect((await page.request.put(`${api}/matches/${matchId}/score`, { data: { games: [{ a: 21, b: 15 }, { a: 15, b: 21 }, { a: 10, b: 8 }] } })).status()).toBe(200);
@@ -270,6 +313,7 @@ test("SC5: game point, ganti sisi saat game baru, dan interval 11 di game penent
   await expect(court.getByText("Ganti sisi lapangan: skor mencapai 11 di game penentu.")).toBeVisible();
   await plusB.click();
   await expect(court.getByText(/Ganti sisi/)).toHaveCount(0);
+  await expect(court.getByTestId("sync-status")).toHaveText("Tersimpan");
 
   // Match point terlihat di papan skor publik.
   expect((await page.request.put(`${api}/matches/${matchId}/score`, { data: { games: [{ a: 21, b: 15 }, { a: 15, b: 21 }, { a: 20, b: 18 }] } })).status()).toBe(200);

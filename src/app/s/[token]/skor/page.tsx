@@ -3,9 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { PointBadge } from "@/components/point-badge";
+import { WaitingList } from "@/components/waiting-list";
 import { Badge, Card, Page, Split, textLinkClass } from "@/components/ui";
 import { getGroup } from "@/lib/db/groups";
-import { loadPlay, waitingList } from "@/lib/db/play";
+import { loadPlay, waitingView } from "@/lib/db/play";
 import { findSessionByShareToken } from "@/lib/db/sessions";
 import { getTournament } from "@/lib/db/tournaments";
 import { pointStatus } from "@/lib/core/scoring";
@@ -25,27 +26,13 @@ export default async function LiveScorePage({ params }: PageProps<"/s/[token]/sk
   const names = Object.fromEntries(ctx.members.map((m) => [m.id, m.display_name]));
   const team = (ids: string[]) => ids.map((id) => names[id] ?? "?").join(" / ");
   const running = session.status === "running";
-  const waiting = running ? waitingList(ctx) : [];
+  const waiting = running ? waitingView(ctx, new Date()) : [];
   const recent = ctx.matches.filter((m) => m.status === "completed").reverse().slice(0, 5);
 
   const others =
     waiting.length > 0 || recent.length > 0 ? (
       <>
-        {waiting.length > 0 && (
-          <section aria-labelledby="berikutnya" className="flex flex-col gap-2">
-            <h2 id="berikutnya" className="text-sub">
-              {session.playMode === "rotasi" ? "Antrian berikutnya" : "Istirahat"}
-            </h2>
-            <ol className="flex flex-col divide-y divide-hairline-mist rounded-2xl border border-ink-black bg-pure-white">
-              {waiting.map((id, i) => (
-                <li key={id} className="flex min-h-11 items-center gap-3 px-4 text-ui">
-                  <span className="w-6 tabular-nums">{i + 1}</span>
-                  {names[id] ?? "?"}
-                </li>
-              ))}
-            </ol>
-          </section>
-        )}
+        {waiting.length > 0 && <WaitingList entries={waiting} names={names} rotation={session.playMode === "rotasi"} />}
 
         {recent.length > 0 && (
           <section aria-labelledby="terakhir" className="flex flex-col gap-2">

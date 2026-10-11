@@ -142,6 +142,15 @@ Test vector `kocok`:
 - Seed sama + input sama → output identik; seed beda boleh beda.
 - Property test (acak 200 input, N=2…30, M=1…5): tidak ada pemain ganda dalam satu ronde, `|playing| = m*perMatch`, `|playing|+|resting| = N`.
 
+### 4.4 Antrian giliran (SC9, P1)
+Untuk papan skor & skor langsung: siapa berikutnya dan kira-kira kapan turun. Semua fungsi murni; `now` diberikan pemanggil.
+- `rotationTurns(queue, kind): number[]` — mode `rotasi`: `turn[i] = floor(i / sideSize)`. Giliran 0 masuk saat game berikutnya (di lapangan mana pun) selesai, giliran `k` saat game ke-`k+1` selesai.
+- `matchMinutes(durations): number | null` — durasi khas satu match = **median** durasi match selesai sesi ini (menit, dari mulai sampai selesai) yang berada di `[3, 90]`, dibulatkan; `null` bila tidak ada. Batas bawah membuang input skor manual (durasi ≈ 0), batas atas membuang match yang lupa ditutup.
+- `turnEta(elapsed, avg, turns): (number | null)[]` — `elapsed` = menit berjalan tiap lapangan rotasi yang sedang main. Tiap lapangan selesai pada `max(avg − e, 0)`, lalu tiap `avg` menit sesudahnya. Perkiraan giliran `k` = waktu selesai ke-`k` (0-based) dari gabungan semua lapangan, dibulatkan. Tanpa lapangan berjalan atau `avg = null` → semua `null`.
+- `restingPriority(items)` — mode `kocok` / `fix_pasangan`: urutan istirahat sama dengan langkah pemilihan kocok (§4.2 langkah 2) tanpa unsur acak: `playedThisSession` ↑, `roundsSinceLastPlayed` ↓, lalu urutan masukan (stabil). Untuk `fix_pasangan` unitnya pasangan.
+
+Test vector: `rotationTurns([p1..p5], doubles)` → `[0,0,1,1,2]` · `rotationTurns([p1,p2,p3], singles)` → `[0,1,2]` · `matchMinutes([12,1,14,200,16])` → 14 · `matchMinutes([10,15])` → 13 · `matchMinutes([1,2])` → null · `turnEta([5,12], 15, 4)` → `[3,10,18,25]` · `turnEta([20], 15, 2)` → `[0,15]` · `turnEta([], 15, 2)` → `[null,null]` · `turnEta([5], null, 1)` → `[null]` · `restingPriority([{a,2,0},{b,1,1},{c,1,3},{d,2,2}])` (id, main, ronde sejak main) → `c, b, d, a`.
+
 ## 5. Patungan (split bill)
 
 Input: `participants: MemberId[]` (hadir), `expenses: {id, amount: Rupiah, paidBy: MemberId, mode, shares?, ...}[]`, `hostId`, `roundTo: 1|500|1000`.

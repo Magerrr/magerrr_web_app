@@ -4,12 +4,13 @@ import { AutoRefresh } from "@/components/auto-refresh";
 import { CopyLink } from "@/components/copy-link";
 import { NoAccess } from "@/components/no-access";
 import { PointBadge } from "@/components/point-badge";
+import { MyTurn, WaitingList } from "@/components/waiting-list";
 import { Badge, ButtonLink, Card, Notice, Page, TopBar } from "@/components/ui";
 import { pointStatus } from "@/lib/core/scoring";
 import { getGroup } from "@/lib/db/groups";
 import type { SessionMatch } from "@/lib/db/matches";
 import { publicEnv } from "@/lib/env";
-import { loadPlay, waitingList } from "@/lib/db/play";
+import { loadPlay, waitingView } from "@/lib/db/play";
 import { getSession, lastShuttlePrice } from "@/lib/db/sessions";
 import { getTournament, tournamentTag } from "@/lib/db/tournaments";
 import { formatShortDateId } from "@/lib/format";
@@ -57,7 +58,8 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
   const running = session.status === "running";
   const rotation = session.playMode === "rotasi";
   const canScore = isAdmin && running;
-  const waiting = waitingList(ctx);
+  const waiting = waitingView(ctx, new Date());
+  const myCourt = ctx.running.find((m) => m.players.A.includes(member.id) || m.players.B.includes(member.id))?.courtNo ?? null;
   const history = ctx.matches.filter((m) => m.status !== "running").reverse();
   const matchUrl = (id: string) => `/api/groups/${groupId}/sessions/${sessionId}/matches/${id}`;
   const hasAside = canScore || (running && (session.shuttle.used > 0 || waiting.length > 0));
@@ -84,6 +86,7 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
       {session.status === "planned" && (
         <Notice>{isAdmin ? "Mulai sesi dulu di halaman sesi untuk mencatat skor." : "Sesi belum dimulai."}</Notice>
       )}
+      {running && <MyTurn entries={waiting} courtNo={myCourt} viewerId={member.id} rotation={rotation} />}
 
       {/* Desktop: lapangan & riwayat di kiri; kok & antrian di kolom kanan. Ponsel: urutan DOM. */}
       <div
@@ -179,23 +182,7 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
               )
             )}
 
-            {running && waiting.length > 0 && (
-              <section aria-labelledby="menunggu" className="flex flex-col gap-2">
-                <h2 id="menunggu" className="text-sub">
-                  {rotation ? "Antrian berikutnya" : "Istirahat"}
-                </h2>
-                <ol className="flex flex-col divide-y divide-hairline-mist rounded-2xl border border-ink-black bg-pure-white" data-testid="waiting-list">
-                  {waiting.map((id, i) => (
-                    <li key={id} className="flex min-h-11 items-center gap-3 px-4">
-                      <span className={`flex size-7 items-center justify-center rounded-full text-caption ${i < 2 ? "bg-fresh-grass" : "bg-sandstone"}`}>
-                        {i + 1}
-                      </span>
-                      <span className="flex-1 text-ui">{names[id]}</span>
-                    </li>
-                  ))}
-                </ol>
-              </section>
-            )}
+            {running && waiting.length > 0 && <WaitingList entries={waiting} names={names} rotation={rotation} viewerId={member.id} />}
           </div>
         )}
 
