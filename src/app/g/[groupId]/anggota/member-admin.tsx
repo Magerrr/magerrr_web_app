@@ -1,0 +1,188 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { Badge, Button, Card, Field, Notice, buttonClass, inputBase, inputClass } from "@/components/ui";
+import { sendJson } from "@/lib/api-client";
+import type { Member } from "@/lib/db/authz";
+
+const GRADES = ["A", "B", "C", "D"] as const;
+
+export function InviteCard({ groupId, groupName, inviteUrl }: { groupId: string; groupName: string; inviteUrl: string }) {
+  const router = useRouter();
+  const [message, setMessage] = useState<{ tone: "info" | "error"; text: string } | null>(null);
+  const [pending, setPending] = useState(false);
+  const shareText = `Gabung grup ${groupName} di Magerrr: ${inviteUrl}`;
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setMessage({ tone: "info", text: "Tautan disalin." });
+    } catch {
+      setMessage({ tone: "error", text: "Tidak bisa menyalin otomatis. Salin tautan secara manual." });
+    }
+  }
+
+  async function rotate() {
+    if (!window.confirm("Buat tautan baru? Tautan lama langsung tidak berlaku.")) return;
+    setPending(true);
+    const result = await sendJson(`/api/groups/${groupId}/invite`, "POST");
+    setPending(false);
+    setMessage(result.ok ? { tone: "info", text: "Tautan baru dibuat. Tautan lama tidak berlaku lagi." } : { tone: "error", text: result.error });
+    if (result.ok) router.refresh();
+  }
+
+  return (
+    <Card className="flex flex-col gap-4">
+      <div>
+        <h2 className="text-sub">Tautan undangan</h2>
+        <p className="mt-1 text-small">Siapa pun yang punya tautan ini bisa gabung tanpa akun.</p>
+      </div>
+      <input
+        aria-label="Tautan undangan"
+        readOnly
+        value={inviteUrl}
+        onFocus={(e) => e.currentTarget.select()}
+        className={`${inputClass} text-small`}
+        data-testid="invite-url"
+      />
+      <div className="flex flex-wrap gap-2">
+        <Button variant="primary" onClick={copy}>
+          Salin
+        </Button>
+        <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noopener noreferrer" className={buttonClass("accent")}>
+          Bagikan ke WhatsApp
+        </a>
+        <Button variant="secondary" onClick={rotate} disabled={pending}>
+          Buat tautan baru
+        </Button>
+      </div>
+      {message && <Notice tone={message.tone}>{message.text}</Notice>}
+    </Card>
+  );
+}
+
+export function AddGuestForm({ groupId }: { groupId: string }) {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function submit() {
+    setPending(true);
+    setError(null);
+    const result = await sendJson(`/api/groups/${groupId}/members`, "POST", { displayName: name });
+    setPending(false);
+    if (!result.ok) return setError(result.error);
+    setName("");
+    router.refresh();
+  }
+
+  return (
+    <form action={submit} className="flex flex-col gap-3">
+      <Field label="Tambah pemain tamu" htmlFor="guest-name" hint="Untuk pemain tanpa HP atau yang belum buka tautan. Cukup nama panggilan.">
+        <div className="flex gap-2">
+          <input
+            id="guest-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={40}
+            required
+            autoComplete="off"
+            className={`${inputBase} min-w-0 flex-1`}
+          />
+          <Button type="submit" disabled={pending} className="min-h-13">
+            Tambah
+          </Button>
+        </div>
+      </Field>
+      {error && <Notice tone="error">{error}</Notice>}
+    </form>
+  );
+}
+
+export function MemberList({
+  groupId,
+  members,
+  selfId,
+  ownerUserId,
+  editable,
+}: {
+  groupId: string;
+  members: Member[];
+  selfId: string;
+  ownerUserId: string;
+  editable: boolean;
+}) {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  async function update(memberId: string, patch: Partial<Pick<Member, "grade" | "role">>) {
+    setBusy(memberId);
+    setError(null);
+    const result = await sendJson(`/api/groups/${groupId}/members/${memberId}`, "PATCH", patch);
+    setBusy(null);
+    if (!result.ok) return setError(result.error);
+    router.refresh();
+  }
+
+  return (
+    <section aria-labelledby="daftar-anggota" className="flex flex-col gap-3">
+      <h2 id="daftar-anggota" className="text-sub">
+        {members.length} anggota
+      </h2>
+      {error && <Notice tone="error">{error}</Notice>}
+      <ul className="flex flex-col divide-y divide-hairline-mist rounded-2xl border border-ink-black bg-pure-white">
+        {members.map((m) => {
+          const isOwner = m.user_id !== null && m.user_id === ownerUserId;
+          const canToggleRole = editable && m.user_id !== null && m.id !== selfId && !isOwner;
+          return (
+            <li key={m.id} className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center" data-testid="member-row">
+              <div className="flex min-w-0 flex-wrap items-center gap-2 sm:flex-1">
+                <Link href={`/g/${groupId}/anggota/${m.id}`} className="flex min-h-11 min-w-0 flex-1 items-center text-lead underline-offset-4 hover:underline">
+                  <span className="truncate">{m.display_name}</span>
+                </Link>
+                {m.role === "admin" && <Badge tone="accent">Admin</Badge>}
+                {m.user_id === null && <Badge tone="outline">Tamu</Badge>}
+                {m.id === selfId && <Badge>Kamu</Badge>}
+                {!editable && m.grade && <Badge>Grade {m.grade}</Badge>}
+              </div>
+              {editable && (
+                <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+                  <label className="flex items-center gap-2 text-small">
+                    Grade
+                    <select
+                      value={m.grade ?? ""}
+                      disabled={busy === m.id}
+                      onChange={(e) => update(m.id, { grade: (e.target.value || null) as Member["grade"] })}
+                      className="h-11 rounded-lg border-2 border-ink-black bg-pure-white px-3 text-ui"
+                    >
+                      <option value="">Tanpa grade</option>
+                      {GRADES.map((g) => (
+                        <option key={g} value={g}>
+                          {g}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {canToggleRole && (
+                    <Button
+                      variant="secondary"
+                      disabled={busy === m.id}
+                      onClick={() => update(m.id, { role: m.role === "admin" ? "member" : "admin" })}
+                    >
+                      {m.role === "admin" ? "Cabut admin" : "Jadikan admin"}
+                    </Button>
+                  )}
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {editable && <p className="text-caption">Grade A paling kuat, D pemula. Dipakai untuk kocok pasangan yang seimbang.</p>}
+    </section>
+  );
+}
