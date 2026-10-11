@@ -149,4 +149,23 @@ test("pasangan terbaik & partner terbaik dari match berulang", async ({ page }) 
   await expect(page.getByTestId("pair-row").first()).toContainText("3 main · 2–1 · selisih +15");
   await expect(page.getByTestId("pair-row").first()).toContainText("67%");
   await expect(page.getByTestId("my-best-partner")).toContainText("p2 · 2 menang dari 3 main (67%), selisih +15");
+
+  // L10: partner terbaik tiap pemain (p1–p2 dan p3–p4 sama-sama 3× main bareng).
+  const partnerRows = page.getByTestId("best-partner-row");
+  await expect(partnerRows).toHaveCount(4);
+  await expect(partnerRows.filter({ hasText: "(kamu)" })).toContainText("bareng p2 · 2 menang dari 3 (67%)");
+  await expect(partnerRows.filter({ hasText: /^p3/ })).toContainText("bareng p4 · 1 menang dari 3 (33%)");
+
+  // L10: profil menampilkan win rate dengan semua partner, termasuk yang baru sekali main bareng.
+  await partnerRows.filter({ hasText: /^p3/ }).getByRole("link").click();
+  await expect(page.getByRole("heading", { level: 1, name: "p3" })).toBeVisible();
+  const rows = page.getByTestId("partner-row");
+  await expect(rows).toHaveCount(3);
+  await expect(rows.nth(0)).toContainText("p4");
+  await expect(rows.nth(0)).toContainText("Terbaik");
+  await expect(rows.nth(0)).toContainText("3 main · 1–2");
+  await expect(rows.nth(1)).toContainText("p2");
+  await expect(rows.nth(1)).toContainText("1 main · 1–0 · selisih +3");
+  await expect(rows.nth(1)).toContainText("100%");
+  await expect(rows.nth(2)).toContainText("1 main · 1–0 · selisih +2"); // p1 (host)
 });

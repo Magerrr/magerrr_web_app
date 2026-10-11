@@ -105,6 +105,8 @@ Tambahan: `minMatches=4` → semua `ranked=false` (main 3); period `session` den
 
 `pairStats(matches)` → untuk setiap pasangan terurut `(minId, maxId)` yang pernah satu sisi: `played, won, pointDiff`. Tunggal tidak dihitung. `bestPartner(memberId, minTogether=3)` = pasangan dengan `winRate` tertinggi dari yang `played >= minTogether` (tie-break `pointDiff`, lalu id).
 
+`partnersOf(pairs, memberId)` (L10, P1) = semua partner seorang pemain tanpa ambang, urut `played` ↓, `winRate` ↓, `pointDiff` ↓, lalu id partner. Test vector (match §2): `partnersOf(pairStats([M1,M2,M3]), p1)` → p2 (1–0, +6), p3 (1–0, +2), p4 (0–1, −3) · untuk p3 → p2 (+3), p1 (+2), p4 (−6) · pemain tanpa match ganda → `[]`.
+
 ## 4. Rotasi & pembagian lapangan
 
 Mode sistem main (`play_mode`): `kocok` (default), `rotasi` (kalah keluar), `fix_pasangan`, `round_robin`. Prioritas MVP: `kocok` P0, `rotasi` P0, `fix_pasangan` P1, `round_robin` P2.

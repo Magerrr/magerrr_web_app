@@ -81,6 +81,8 @@ export interface Leaderboard {
   pairMin: number;
   /** partner terbaik `me` di periode ini (null bila belum memenuhi `pairMin`) */
   myBestPartner: PartnerStat | null;
+  /** partner terbaik tiap pemain (L10), urut klasemen; hanya yang memenuhi `pairMin` */
+  bestPartners: { memberId: MemberId; partner: PartnerStat }[];
   matchCount: number;
 }
 
@@ -107,6 +109,10 @@ export function buildLeaderboard(
     pairs: allPairs.filter((p) => p.played >= pairMin),
     pairMin,
     myBestPartner: me ? bestPartner(allPairs, me, pairMin) : null,
+    bestPartners: rows.flatMap((r) => {
+      const partner = bestPartner(allPairs, r.memberId, pairMin);
+      return partner ? [{ memberId: r.memberId, partner }] : [];
+    }),
     matchCount: counted.length,
   };
 }

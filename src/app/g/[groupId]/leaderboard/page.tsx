@@ -158,7 +158,7 @@ export default async function LeaderboardPage({ params, searchParams }: PageProp
       ) : view.tab === "klasemen" ? (
         <Standings board={board} names={names} me={member.id} minMatches={view.periode === "sesi" ? 0 : group.scoring.minMatches} groupId={groupId} />
       ) : view.tab === "pasangan" ? (
-        <Pairs board={board} names={names} me={member.id} />
+        <Pairs board={board} names={names} me={member.id} groupId={groupId} />
       ) : (
         <FormTable
           rows={[...board.ranked, ...board.unranked]}
@@ -427,13 +427,13 @@ function StandingTable({
   );
 }
 
-function Pairs({ board, names, me }: { board: Leaderboard; names: Names; me: string }) {
+function Pairs({ board, names, me, groupId }: { board: Leaderboard; names: Names; me: string; groupId: string }) {
   const name = (id: string) => names[id] ?? "?";
   const best = board.myBestPartner;
   return (
-    // Desktop: kartu partner terbaikmu di kiri, daftar pasangan di kanan.
-    <div className="flex flex-col gap-6 @panel:grid @panel:grid-cols-[22rem_minmax(0,1fr)] @panel:items-start @panel:gap-8">
-      <Card className="flex flex-col gap-2" data-testid="my-best-partner">
+    // Desktop: partner terbaikmu & partner tiap pemain di kiri, daftar pasangan di kanan.
+    <div className="flex flex-col gap-6 @panel:grid @panel:grid-cols-[22rem_minmax(0,1fr)] @panel:grid-rows-[auto_1fr] @panel:items-start @panel:gap-x-8">
+      <Card className="flex flex-col gap-2 @panel:col-start-1 @panel:row-start-1" data-testid="my-best-partner">
         <h2 className="text-lead">Partner terbaikmu</h2>
         {best ? (
           <p className="text-ui">
@@ -445,7 +445,7 @@ function Pairs({ board, names, me }: { board: Leaderboard; names: Names; me: str
         )}
       </Card>
 
-      <section aria-labelledby="pasangan-terbaik" className="flex min-w-0 flex-col gap-3">
+      <section aria-labelledby="pasangan-terbaik" className="flex min-w-0 flex-col gap-3 @panel:col-start-2 @panel:row-span-2 @panel:row-start-1">
         <h2 id="pasangan-terbaik" className="text-sub">
           Pasangan terbaik
         </h2>
@@ -483,6 +483,29 @@ function Pairs({ board, names, me }: { board: Leaderboard; names: Names; me: str
           </ol>
         )}
       </section>
+
+      {board.bestPartners.length > 0 && (
+        <section aria-labelledby="partner-tiap-pemain" className="flex min-w-0 flex-col gap-3 @panel:col-start-1 @panel:row-start-2">
+          <h2 id="partner-tiap-pemain" className="text-sub">
+            Partner terbaik tiap pemain
+          </h2>
+          <ul className="flex flex-col divide-y divide-hairline-mist rounded-2xl border border-ink-black bg-pure-white" data-testid="best-partners">
+            {board.bestPartners.map(({ memberId, partner }) => (
+              <li key={memberId} className={memberId === me ? "bg-fresh-grass first:rounded-t-2xl last:rounded-b-2xl" : undefined} data-testid="best-partner-row">
+                <Link href={`/g/${groupId}/anggota/${memberId}`} className="flex min-h-11 flex-col justify-center px-4 py-2">
+                  <span className="text-ui">
+                    {name(memberId)}
+                    {memberId === me && " (kamu)"}
+                  </span>
+                  <span className="text-small tabular-nums">
+                    bareng {name(partner.partnerId)} · {partner.won} menang dari {partner.played} ({formatPercent(partner.winRate)})
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }

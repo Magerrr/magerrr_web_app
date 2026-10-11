@@ -112,17 +112,25 @@ describe("buildLeaderboard", () => {
       [["p3", "p4"], 1, 3],
     ]);
     expect(session.myBestPartner).toMatchObject({ partnerId: "p2", played: 3, won: 2 });
+    // L10: partner terbaik tiap pemain, urut klasemen (p1, p2 menang 2; p3, p4 menang 1)
+    expect(session.bestPartners.map((b) => [b.memberId, b.partner.partnerId])).toEqual([
+      ["p1", "p2"],
+      ["p2", "p1"],
+      ["p3", "p4"],
+      ["p4", "p3"],
+    ]);
 
     const all = buildLeaderboard(repeat.slice(0, 2), {}, { kind: "all" }, { me: "p1" });
     expect(all.pairMin).toBe(3);
     expect(all.pairs).toEqual([]);
     expect(all.myBestPartner).toBeNull();
+    expect(all.bestPartners).toEqual([]);
     expect(buildLeaderboard(repeat, {}, { kind: "all" }).myBestPartner).toBeNull();
   });
 
   it("tanpa match → kosong", () => {
     const board = buildLeaderboard([], {}, { kind: "all" }, { me: "p1" });
-    expect(board).toMatchObject({ ranked: [], unranked: [], podium: [], pairs: [], myBestPartner: null, matchCount: 0 });
+    expect(board).toMatchObject({ ranked: [], unranked: [], podium: [], pairs: [], myBestPartner: null, bestPartners: [], matchCount: 0 });
   });
 });
 

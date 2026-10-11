@@ -191,6 +191,17 @@ export interface PartnerStat extends Omit<PairStat, "members"> {
   partnerId: MemberId;
 }
 
+/** Semua partner `memberId` tanpa ambang (L10): urut main ↓, win rate ↓, selisih ↓, id ↑. */
+export function partnersOf(pairs: PairStat[], memberId: MemberId): PartnerStat[] {
+  return pairs
+    .filter((p) => p.members.includes(memberId))
+    .map(({ members, ...stat }) => ({ ...stat, partnerId: members[0] === memberId ? members[1] : members[0] }))
+    .sort(
+      (x, y) =>
+        y.played - x.played || y.winRate - x.winRate || y.pointDiff - x.pointDiff || compareId(x.partnerId, y.partnerId),
+    );
+}
+
 /** Partner dengan win rate tertinggi dari pasangan yang main bareng >= minTogether. */
 export function bestPartner(
   pairs: PairStat[],

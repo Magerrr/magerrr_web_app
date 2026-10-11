@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   bestPartner,
+  partnersOf,
   inPeriod,
   jakartaMonth,
   pairStats,
@@ -213,6 +214,28 @@ describe("period", () => {
     const sept = { ...M3, sessionDate: new Date("2026-09-15T12:00:00Z") };
     const rows = standings([M1, M2, sept], {}, { kind: "month", year: 2026, month: 10 });
     expect(rows.every((r) => r.played === 2)).toBe(true);
+  });
+});
+
+describe("partnersOf (§3, L10)", () => {
+  it("vector §2: semua partner, urut main ↓, win rate ↓, selisih ↓", () => {
+    const pairs = pairStats(VECTOR);
+    expect(partnersOf(pairs, "p1").map((p) => [p.partnerId, p.won, p.lost, p.pointDiff])).toEqual([
+      ["p2", 1, 0, 6],
+      ["p3", 1, 0, 2],
+      ["p4", 0, 1, -3],
+    ]);
+    expect(partnersOf(pairs, "p3").map((p) => [p.partnerId, p.pointDiff])).toEqual([
+      ["p2", 3],
+      ["p1", 2],
+      ["p4", -6],
+    ]);
+    expect(partnersOf(pairs, "p9")).toEqual([]);
+  });
+
+  it("lebih sering main bareng di atas", () => {
+    const pairs = pairStats([M1, match("x", 9, ["p1", "p3"], ["p2", "p4"], [[21, 5]], "A"), match("y", 10, ["p1", "p2"], ["p3", "p4"], [[10, 21]], "B")]);
+    expect(partnersOf(pairs, "p1").map((p) => p.partnerId)).toEqual(["p2", "p3"]);
   });
 });
 

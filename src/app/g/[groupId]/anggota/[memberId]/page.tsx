@@ -6,7 +6,7 @@ import { LinkSelect } from "@/components/link-select";
 import { NoAccess } from "@/components/no-access";
 import { Badge, Card, Page, Split, TopBar, textLinkClass } from "@/components/ui";
 import { currentStreak, frequentOpponents, headToHead, longestWinStreak, playerMatches, recentForm, sideOf, type Outcome } from "@/lib/core/player";
-import { bestPartner, pairStats, standings } from "@/lib/core/standings";
+import { bestPartner, pairStats, partnersOf, standings } from "@/lib/core/standings";
 import { getGroup } from "@/lib/db/groups";
 import { loadKiko } from "@/lib/db/kiko";
 import { loadGroupMatches } from "@/lib/db/matches";
@@ -75,7 +75,9 @@ export default async function MemberProfilePage({ params, searchParams }: PagePr
   const mine = playerMatches(matches, memberId);
   const form = recentForm(matches, memberId);
   const streak = currentStreak(matches, memberId);
-  const partner = bestPartner(pairStats(matches), memberId);
+  const pairs = pairStats(matches);
+  const partner = bestPartner(pairs, memberId);
+  const partners = partnersOf(pairs, memberId);
   const opponents = frequentOpponents(matches, memberId);
   const lawan = (await searchParams).lawan;
   const rival = typeof lawan === "string" && opponents.some((o) => o.memberId === lawan) ? lawan : (opponents[0]?.memberId ?? null);
@@ -175,6 +177,31 @@ export default async function MemberProfilePage({ params, searchParams }: PagePr
                       : "Belum ada partner yang main bareng minimal 3 kali."}
                   </p>
                 </Card>
+
+                {partners.length > 0 && (
+                  <section aria-labelledby="semua-partner" className="flex flex-col gap-3">
+                    <h2 id="semua-partner" className="text-sub">
+                      Semua partner
+                    </h2>
+                    <p className="text-small">Win rate per pasangan ganda, urut paling sering main bareng.</p>
+                    <ul className="flex flex-col divide-y divide-hairline-mist rounded-2xl border border-ink-black bg-pure-white" data-testid="partners">
+                      {partners.map((p) => (
+                        <li key={p.partnerId} className="flex items-center gap-3 px-4 py-2" data-testid="partner-row">
+                          <Link href={`/g/${groupId}/anggota/${p.partnerId}`} className="flex min-h-11 min-w-0 flex-1 flex-col justify-center">
+                            <span className="flex flex-wrap items-center gap-2 text-ui">
+                              {name(p.partnerId)}
+                              {partner?.partnerId === p.partnerId && <Badge tone="accent">Terbaik</Badge>}
+                            </span>
+                            <span className="text-small tabular-nums">
+                              {p.played} main · {p.won}–{p.lost} · selisih {formatSigned(p.pointDiff)}
+                            </span>
+                          </Link>
+                          <span className="text-lead tabular-nums">{formatPercent(p.winRate)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
               </>
             )}
           </>
