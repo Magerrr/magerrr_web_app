@@ -23,7 +23,7 @@ test("host daftar via email, buat grup, tamu gabung lewat tautan undangan", asyn
   await guest.getByLabel("Nama panggilan").fill("Budi");
   await guest.getByRole("button", { name: "Gabung grup" }).click();
   await expect(guest).toHaveURL(groupUrl);
-  await expect(guest.getByText("sebagai Budi")).toBeVisible();
+  await expect(guest.getByText(/Selamat (pagi|siang|sore|malam), Budi/)).toBeVisible();
   await expect(guest.getByText("Tamu", { exact: true })).toBeVisible();
 
   // Tamu dikenali lagi lewat cookie: tautan undangan langsung membuka grup.

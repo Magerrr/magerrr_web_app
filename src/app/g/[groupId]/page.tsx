@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
+import { Icon, type IconName } from "@/components/icons";
 import { NoAccess } from "@/components/no-access";
-import { Badge, ButtonLink, Card, Page, TopBar, buttonClass, inputBase } from "@/components/ui";
+import { Badge, ButtonLink, Card, Page, buttonClass, inputBase } from "@/components/ui";
 import { guestCookieName } from "@/lib/db/authz";
 import { unreadCount } from "@/lib/db/chat";
 import { counterpartBalances } from "@/lib/core/balance";
 import { getGroup } from "@/lib/db/groups";
-import { listMembers } from "@/lib/db/members";
 import { unpaidGroupSettlements } from "@/lib/db/profile";
 import { listSessions, type SessionSummary } from "@/lib/db/sessions";
-import { formatRupiah, formatShortDateId, formatTimeRangeId } from "@/lib/format";
+import { formatRupiah, formatShortDateId, formatTimeRangeId, initials } from "@/lib/format";
+import { toJakartaParts } from "@/lib/time";
 import { pageAccess } from "./access";
 import { STATUS_LABEL, STATUS_TONE } from "./sesi/status";
 
@@ -24,9 +25,8 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
   const q = (await searchParams).q;
   const query = typeof q === "string" ? q.trim() : "";
   const { member, via } = access.membership;
-  const [group, members, sessions, unread, unpaid] = await Promise.all([
+  const [group, sessions, unread, unpaid] = await Promise.all([
     getGroup(groupId),
-    listMembers(groupId),
     listSessions(groupId, query),
     unreadCount(groupId, member.id),
     unpaidGroupSettlements(groupId),
@@ -37,23 +37,36 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
   const isAdmin = member.role === "admin" && via === "account";
   const guestToken = via === "guest" ? (await cookies()).get(guestCookieName(groupId))?.value : undefined;
   const hasActions = isAdmin || Boolean(guestToken);
+  const now = new Date();
+  const featured = featuredSession(sessions, now);
 
   return (
     <Page width="wide">
-      <TopBar back="/" />
-      <div className="flex items-center gap-4">
-        <span className="flex size-14 shrink-0 items-center justify-center rounded-full border border-ink-black bg-pure-white text-title" aria-hidden="true">
-          {group.emoji ?? group.name.slice(0, 1).toUpperCase()}
+      <header className="flex items-center gap-3">
+        <span
+          className="flex size-12 shrink-0 items-center justify-center rounded-full border border-ink-black bg-fresh-grass text-ui"
+          aria-hidden="true"
+        >
+          {initials(member.display_name)}
         </span>
-        <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-title break-words">{group.name}</h1>
-          <p className="flex flex-wrap items-center gap-2 text-small">
-            sebagai {member.display_name}
-            {isAdmin && <Badge tone="accent">Admin</Badge>}
-            {via === "guest" && <Badge tone="outline">Tamu</Badge>}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <p className="text-small">
+            {greeting(now)}, {member.display_name}
           </p>
+          <h1 className="text-sub break-words">{group.name}</h1>
         </div>
-      </div>
+        {isAdmin && <Badge tone="accent">Admin</Badge>}
+        {via === "guest" && <Badge tone="outline">Tamu</Badge>}
+        <Link
+          href="/"
+          aria-label="Semua grup"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full border border-ink-black bg-pure-white hover:bg-sandstone"
+        >
+          <Icon name="grid" />
+        </Link>
+      </header>
+
+      {featured && <FeaturedSession groupId={groupId} session={featured} now={now} />}
 
       {/* Lebar: sesi di kolom kiri, aksi di kolom kanan. Ponsel: urutan DOM (aksi, sesi, menu). */}
       <div
@@ -76,12 +89,34 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
             )}
 
             {isAdmin && (
-              <ButtonLink href={`/g/${groupId}/sesi/baru`} size="lg">
+              <ButtonLink href={`/g/${groupId}/sesi/baru`} size="lg" className="max-lg:hidden">
                 Buat sesi
               </ButtonLink>
             )}
           </div>
         )}
+
+        {/* Desktop memakai sidebar (layout.tsx); menu ini untuk ponsel & tablet. Anggota & Peringkat ada di navigasi utama. */}
+        <nav aria-label="Menu grup" className="flex flex-col gap-4 @panel:col-start-2 @panel:row-start-2 lg:hidden">
+          <ul className="grid grid-cols-4 gap-2">
+            <Tile href={`/g/${groupId}/leaderboard`} icon="chart" label="Leaderboard" dark />
+            <Tile href={`/g/${groupId}/musim`} icon="trophy" label="Musim" />
+            <Tile href={`/g/${groupId}/recap`} icon="recap" label="Recap" full="Recap bulan & musim" />
+            <Tile href={`/g/${groupId}/kiko`} icon="cat" label="Kiko" full="Kiko kamu" />
+            <Tile href={`/g/${groupId}/pembayaran`} icon="card" label="Pembayaran" full="Info pembayaran" />
+            {isAdmin && <Tile href={`/g/${groupId}/pengaturan`} icon="gear" label="Pengaturan" full="Pengaturan grup" />}
+          </ul>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <MenuLink
+              href={`/g/${groupId}/obrolan`}
+              icon="chat"
+              title="Obrolan"
+              detail={unread > 0 ? `${unread > 99 ? "99+" : unread} pesan baru` : "Ngobrol dengan anggota grup"}
+              badge={unread > 0 ? (unread > 99 ? "99+" : String(unread)) : undefined}
+            />
+            <MenuLink href={`/g/${groupId}/saldo`} icon="wallet" title="Saldo patungan" detail={balanceDetail} />
+          </div>
+        </nav>
 
         <section aria-labelledby="riwayat" className="flex min-w-0 flex-col gap-3 @panel:col-start-1 @panel:row-span-2 @panel:row-start-1">
           <h2 id="riwayat" className="text-sub">
@@ -124,22 +159,6 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
           )}
         </section>
 
-        {/* Desktop memakai sidebar (layout.tsx); menu ini untuk ponsel & tablet. */}
-        <nav aria-label="Menu grup" className="grid gap-3 sm:grid-cols-2 lg:hidden">
-          <MenuLink
-            href={`/g/${groupId}/obrolan`}
-            title="Obrolan"
-            detail={unread > 0 ? `${unread > 99 ? "99+" : unread} pesan baru` : "Ngobrol dengan anggota grup"}
-            badge={unread > 0 ? (unread > 99 ? "99+" : String(unread)) : undefined}
-          />
-          <MenuLink href={`/g/${groupId}/kiko`} title="Kiko kamu" detail="Maskot yang tumbuh tiap kamu main" />
-          <MenuLink href={`/g/${groupId}/leaderboard`} title="Leaderboard" detail="Klasemen ganda & pasangan terbaik" />
-          <MenuLink href={`/g/${groupId}/musim`} title="Musim" detail="Klasemen per musim & juara" />
-          <MenuLink href={`/g/${groupId}/recap`} title="Recap bulan & musim" detail="Juara, sorotan, perubahan peringkat" />
-          <MenuLink href={`/g/${groupId}/anggota`} title="Anggota" detail={`${members.length} orang`} />
-          <MenuLink href={`/g/${groupId}/saldo`} title="Saldo patungan" detail={balanceDetail} />
-          {isAdmin && <MenuLink href={`/g/${groupId}/pengaturan`} title="Pengaturan grup" detail="Aturan skor, poin klasemen, patungan" />}
-        </nav>
       </div>
     </Page>
   );
@@ -152,6 +171,9 @@ function SessionLink({ groupId, session: s }: { groupId: string; session: Sessio
       className="flex h-full min-h-16 items-center gap-4 rounded-2xl border border-ink-black bg-pure-white px-4 py-3 hover:bg-cream-paper"
       data-testid="session-item"
     >
+      <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-sky-pop" aria-hidden="true">
+        <Icon name="shuttle" size={30} />
+      </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="text-lead">{formatShortDateId(s.startsAt)}</span>
         <span className="truncate text-small">
@@ -167,11 +189,91 @@ function SessionLink({ groupId, session: s }: { groupId: string; session: Sessio
   );
 }
 
-function MenuLink({ href, title, detail, badge }: { href: string; title: string; detail: string; badge?: string }) {
+function greeting(now: Date): string {
+  const hour = Number(toJakartaParts(now).time.slice(0, 2));
+  return hour < 11 ? "Selamat pagi" : hour < 15 ? "Selamat siang" : hour < 18 ? "Selamat sore" : "Selamat malam";
+}
+
+/** Sesi yang sedang berlangsung, kalau tidak ada: sesi rencana terdekat yang belum lewat. */
+function featuredSession(sessions: SessionSummary[], now: Date): SessionSummary | undefined {
+  const running = sessions.find((s) => s.status === "running");
+  if (running) return running;
+  const upcoming = sessions.filter((s) => s.status === "planned" && s.startsAt.getTime() >= now.getTime() - 3 * 3_600_000);
+  return upcoming.sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())[0];
+}
+
+const DAY_MS = 86_400_000;
+function untilLabel(session: SessionSummary, now: Date): string {
+  if (session.status === "running") return "Berlangsung";
+  const day = (d: Date) => Date.parse(toJakartaParts(d).date);
+  const days = Math.round((day(session.startsAt) - day(now)) / DAY_MS);
+  return days <= 0 ? "Hari ini" : days === 1 ? "Besok" : `${days} hari lagi`;
+}
+
+/** Kartu sesi berikutnya (layar Beranda desain): isi ink-black, teks cream-paper, tombol aksen fresh-grass. */
+function FeaturedSession({ groupId, session: s, now }: { groupId: string; session: SessionSummary; now: Date }) {
   return (
-    <Link href={href} className="flex min-h-16 items-center gap-3 rounded-2xl border border-ink-black bg-pure-white px-5 py-3 hover:bg-cream-paper">
-      <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="text-lead">{title}</span>
+    <section aria-labelledby="sesi-berikutnya" className="flex flex-col gap-4 rounded-2xl bg-ink-black p-5 text-cream-paper" data-testid="featured-session">
+      <div className="flex items-center gap-2">
+        <span className="rounded-full bg-fresh-grass px-3 py-1 text-caption text-ink-black">{untilLabel(s, now)}</span>
+        <h2 id="sesi-berikutnya" className="text-small">
+          {s.status === "running" ? "Sesi sekarang" : "Sesi berikutnya"}
+        </h2>
+      </div>
+      <p className="text-title">{formatShortDateId(s.startsAt)}</p>
+      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-small">
+        <li className="flex items-center gap-2">
+          <Icon name="calendar" size={16} className="text-fresh-grass" />
+          {formatTimeRangeId(s.startsAt, s.durationMin)}
+        </li>
+        {s.venue && (
+          <li className="flex min-w-0 items-center gap-2">
+            <Icon name="pin" size={16} className="shrink-0 text-fresh-grass" />
+            <span className="truncate">{s.venue}</span>
+          </li>
+        )}
+      </ul>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-small">
+          {s.presentCount} hadir · {s.courtCount} lapangan
+        </p>
+        <Link
+          href={`/g/${groupId}/sesi/${s.id}`}
+          className="inline-flex min-h-11 items-center rounded-full bg-fresh-grass px-5 text-ui text-ink-black"
+        >
+          Detail
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function Tile({ href, icon, label, full, dark }: { href: string; icon: IconName; label: string; full?: string; dark?: boolean }) {
+  return (
+    <li>
+      <Link href={href} aria-label={full} className="flex min-h-11 flex-col items-center gap-1.5 text-caption">
+        <span
+          className={
+            "flex size-14 items-center justify-center rounded-2xl border border-ink-black " +
+            (dark ? "bg-ink-black text-fresh-grass" : "bg-pure-white text-ink-black")
+          }
+        >
+          <Icon name={icon} size={24} />
+        </span>
+        {label}
+      </Link>
+    </li>
+  );
+}
+
+function MenuLink({ href, icon, title, detail, badge }: { href: string; icon: IconName; title: string; detail: string; badge?: string }) {
+  return (
+    <Link href={href} className="flex min-h-16 items-center gap-3 rounded-2xl border border-ink-black bg-pure-white px-4 py-3 hover:bg-cream-paper">
+      <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-cream-paper" aria-hidden="true">
+        <Icon name={icon} />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-ui">{title}</span>
         <span className="text-small">{detail}</span>
       </span>
       {badge && (
@@ -179,9 +281,7 @@ function MenuLink({ href, title, detail, badge }: { href: string; title: string;
           {badge}
         </span>
       )}
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M9 5l7 7-7 7" />
-      </svg>
+      <Icon name="chevron" size={18} />
     </Link>
   );
 }

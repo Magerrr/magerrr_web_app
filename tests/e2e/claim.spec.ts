@@ -22,7 +22,7 @@ test("klaim profil tamu ke akun: tamu lewat undangan & tamu manual lewat tautan 
   await guest.goto(`/klaim/${budi!.claim_token}`);
   await guest.getByRole("button", { name: "Klaim profil Budi" }).click();
   await expect(guest).toHaveURL(new RegExp(`/g/${group.id}$`));
-  await expect(guest.getByText("sebagai Budi")).toBeVisible();
+  await expect(guest.getByText(/Selamat (pagi|siang|sore|malam), Budi/)).toBeVisible();
   await expect(guest.getByTestId("claim-card")).toHaveCount(0);
   const { data: users } = await admin().auth.admin.listUsers({ perPage: 1000 });
   const userId = users.users.find((u) => u.email === email)!.id;
@@ -46,7 +46,7 @@ test("klaim profil tamu ke akun: tamu lewat undangan & tamu manual lewat tautan 
   await signInFast(sintaPage, uniqueEmail("sinta"));
   await sintaPage.goto(`/klaim/${sintaRow!.claim_token}`);
   await sintaPage.getByRole("button", { name: "Klaim profil Sinta" }).click();
-  await expect(sintaPage.getByText("sebagai Sinta")).toBeVisible();
+  await expect(sintaPage.getByText(/Selamat (pagi|siang|sore|malam), Sinta/)).toBeVisible();
   // Admin tidak lagi melihat tautan klaim untuk profil berakun; tanpa login → 401.
   await page.reload();
   await expect(page.getByTestId("claim-link")).toHaveCount(0);

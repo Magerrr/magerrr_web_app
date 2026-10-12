@@ -3,11 +3,12 @@ import { getMembership, getUser } from "@/lib/db/authz";
 import { unreadCount } from "@/lib/db/chat";
 import { getGroup, listMyGroups } from "@/lib/db/groups";
 import { GroupNav } from "./group-nav";
+import { GroupTabs } from "./group-tabs";
 
 const avatar = (g: { name: string; emoji: string | null }) => g.emoji ?? g.name.slice(0, 1).toUpperCase();
 
 /**
- * Sidebar grup di desktop (lg ≥ 1024px); ponsel & tablet tetap memakai menu di halaman grup.
+ * Navigasi grup: sidebar di desktop (lg ≥ 1024px), rail di tablet, bar bawah di ponsel (GroupTabs).
  * Hanya tampilan: akses tetap dicek tiap halaman (pageAccess) karena layout tidak dirender ulang saat pindah halaman.
  * Pengunjung yang bukan anggota mendapat halaman saja (NoAccess) tanpa sidebar.
  */
@@ -19,10 +20,12 @@ export default async function GroupLayout({ children, params }: LayoutProps<"/g/
   const { member, via } = membership;
   const user = await getUser();
   const [group, unread, groups] = await Promise.all([getGroup(groupId), unreadCount(groupId, member.id), listMyGroups(user)]);
+  const tabs = { groupId, memberId: member.id, canCreate: member.role === "admin" && via === "account" };
   const others = groups.filter((g) => g.id !== groupId);
 
   return (
-    <div className="lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]">
+    <div className="sm:flex lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]">
+      <GroupTabs {...tabs} variant="rail" />
       <aside
         aria-label="Navigasi samping"
         className="sticky top-0 hidden h-dvh flex-col gap-6 self-start overflow-y-auto border-r border-ink-black bg-pure-white px-3 py-6 lg:flex"
@@ -81,7 +84,10 @@ export default async function GroupLayout({ children, params }: LayoutProps<"/g/
         </div>
       </aside>
 
-      <div className="min-w-0">{children}</div>
+      <div className="min-w-0 sm:flex-1">
+        {children}
+        <GroupTabs {...tabs} variant="bar" />
+      </div>
     </div>
   );
 }
