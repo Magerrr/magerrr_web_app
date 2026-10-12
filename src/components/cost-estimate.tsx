@@ -26,7 +26,7 @@ export function CostEstimate({
       : null;
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-ink-black bg-pure-white p-5" data-testid="cost-estimate">
+    <div className="flex flex-col gap-3 rounded-2xl bg-ink-black p-5 text-cream-paper" data-testid="cost-estimate">
       <h3 className="text-sub">Perkiraan patungan</h3>
       <dl className="flex flex-col gap-2 text-ui">
         {lines.map((l) => (
@@ -35,7 +35,7 @@ export function CostEstimate({
             <dd>{formatRupiah(l.amount)}</dd>
           </div>
         ))}
-        <div className="flex justify-between gap-3 border-t border-hairline-mist pt-2">
+        <div className="flex items-baseline justify-between gap-3 border-t border-cream-paper/30 pt-2">
           <dt>Patungan ÷ {participants.length} pemain</dt>
           <dd className="text-lead" data-testid="per-person">
             {range

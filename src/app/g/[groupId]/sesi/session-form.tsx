@@ -194,9 +194,12 @@ export function SessionForm({
       </Field>
 
       {error && <Notice tone="error">{error}</Notice>}
-      <Button type="submit" size="lg" disabled={pending}>
-        {pending ? "Menyimpan…" : sessionId ? "Simpan perubahan" : "Simpan sesi"}
-      </Button>
+      {/* CTA lengket di bawah layar (desain "Buat Mabar"); fresh-grass dengan teks ink-black. */}
+      <div className="sticky bottom-0 z-10 -mx-5 -mb-16 bg-cream-paper px-5 pt-3 pb-6 sm:-mx-8 sm:px-8 lg:-mb-20">
+        <Button type="submit" variant="accent" size="lg" disabled={pending}>
+          {pending ? "Menyimpan…" : sessionId ? "Simpan perubahan" : "Simpan sesi"}
+        </Button>
+      </div>
     </form>
   );
 }

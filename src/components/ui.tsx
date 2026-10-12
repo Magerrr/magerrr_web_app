@@ -106,7 +106,7 @@ export function Field({
   );
 }
 
-/** Pilihan tunggal berbentuk pill (radio group). Terpilih = isi ink-black, teks cream-paper. */
+/** Pilihan tunggal (radio group) dalam wadah putih berborder, seperti segmented control di desain. Terpilih = isi ink-black, teks cream-paper. */
 export function Segmented<T extends string | number>({
   legend,
   name,
@@ -123,14 +123,14 @@ export function Segmented<T extends string | number>({
   return (
     <fieldset className="flex min-w-0 flex-col gap-2">
       <legend className="mb-2 text-small font-medium">{legend}</legend>
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(5.5rem,1fr))] gap-1 rounded-2xl border border-ink-black bg-pure-white p-1">
         {options.map((option) => (
           <label
             key={String(option.value)}
             className={cx(
-              "inline-flex min-h-11 cursor-pointer items-center rounded-full border border-ink-black px-4 text-ui",
+              "inline-flex min-h-11 cursor-pointer items-center justify-center rounded-lg px-3 py-2 text-center text-ui",
               "has-checked:bg-ink-black has-checked:text-cream-paper has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ink-black",
-              "bg-pure-white text-ink-black",
+              "text-ink-black",
             )}
           >
             <input
@@ -204,7 +204,7 @@ export function BackLink({ href, label = "Kembali" }: { href: string; label?: st
     <Link
       href={href}
       aria-label={label}
-      className="flex size-11 shrink-0 items-center justify-center rounded-full border border-ink-black bg-pure-white"
+      className="flex size-11 shrink-0 items-center justify-center rounded-full border border-ink-black bg-pure-white text-ink-black"
     >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M15 5l-7 7 7 7" />
