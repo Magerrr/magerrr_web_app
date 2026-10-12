@@ -201,9 +201,9 @@ export function LiveCourt({
   }
 
   return (
-    <section aria-label={`Lapangan ${courtNo}`} data-testid={`court-${courtNo}`} className="flex flex-col gap-3 rounded-2xl border border-ink-black bg-pure-white p-4">
+    <section aria-label={`Lapangan ${courtNo}`} data-testid={`court-${courtNo}`} className="flex flex-col gap-3 rounded-2xl border border-ink-black bg-ink-black p-4 text-cream-paper [&_*:focus-visible]:outline-fresh-grass">
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-lead">Lapangan {courtNo}</h3>
+        <h3 className="text-ui">Lapangan {courtNo}</h3>
         <p className="text-small">
           {match.gamesMax > 1 ? `Game ${current.no} · best of ${match.gamesMax}` : `${match.rules.target} poin`}
         </p>
@@ -223,8 +223,8 @@ export function LiveCourt({
             type="button"
             disabled={winner !== null || live.completeQueued}
             onClick={() => score(addPoint(live.games, side, match.rules, format))}
-            className={`flex min-h-40 flex-col items-center justify-between gap-2 rounded-2xl border-2 border-ink-black p-3 disabled:cursor-default ${
-              leading === side ? "bg-fresh-grass" : "bg-pure-white"
+            className={`flex min-h-40 flex-col items-center justify-between gap-2 rounded-2xl border-2 bg-pure-ink p-3 disabled:cursor-default ${
+              leading === side ? "border-fresh-grass" : "border-pure-ink"
             }`}
           >
             {/* Nama aksesibel = "Tambah poin" + teks yang terlihat (WCAG 2.5.3). */}
@@ -232,7 +232,7 @@ export function LiveCourt({
               <span className="sr-only">Tambah poin </span>
               {label(side)}
             </span>
-            <span className="text-display tabular-nums" data-testid={`score-${side}`}>
+            <span className={`text-display tabular-nums ${leading === side ? "text-fresh-grass" : "text-cream-paper"}`} data-testid={`score-${side}`}>
               {side === "A" ? current.a : current.b}
             </span>
             <span className="flex flex-col items-center gap-1">
