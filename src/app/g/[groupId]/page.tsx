@@ -13,7 +13,7 @@ import { listSessions, type SessionSummary } from "@/lib/db/sessions";
 import { formatRupiah, formatShortDateId, formatTimeRangeId, initials } from "@/lib/format";
 import { toJakartaParts } from "@/lib/time";
 import { pageAccess } from "./access";
-import { STATUS_LABEL, STATUS_TONE } from "./sesi/status";
+import { SessionLink } from "./session-link";
 
 export const metadata: Metadata = { title: "Grup" };
 
@@ -161,31 +161,6 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
 
       </div>
     </Page>
-  );
-}
-
-function SessionLink({ groupId, session: s }: { groupId: string; session: SessionSummary }) {
-  return (
-    <Link
-      href={`/g/${groupId}/sesi/${s.id}`}
-      className="flex h-full min-h-16 items-center gap-4 rounded-2xl border border-ink-black bg-pure-white px-4 py-3 hover:bg-cream-paper"
-      data-testid="session-item"
-    >
-      <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-sky-pop" aria-hidden="true">
-        <Icon name="shuttle" size={30} />
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="text-lead">{formatShortDateId(s.startsAt)}</span>
-        <span className="truncate text-small">
-          {formatTimeRangeId(s.startsAt, s.durationMin)}
-          {s.venue ? ` · ${s.venue}` : ""}
-        </span>
-        <span className="text-small">
-          {s.presentCount} hadir · {s.courtCount} lapangan
-        </span>
-      </span>
-      <Badge tone={STATUS_TONE[s.status]}>{STATUS_LABEL[s.status]}</Badge>
-    </Link>
   );
 }
 
