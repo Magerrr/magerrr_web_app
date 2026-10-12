@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { LinkSelect } from "@/components/link-select";
 import { NoAccess } from "@/components/no-access";
-import { Card, Page, TopBar, textLinkClass } from "@/components/ui";
+import { Card, Page, TopBar, bleedX, textLinkClass } from "@/components/ui";
 import {
   buildLeaderboard,
   champions,
@@ -90,45 +90,50 @@ export default async function LeaderboardPage({ params, searchParams }: PageProp
 
   return (
     <Page width="wide">
-      <TopBar back={`/g/${groupId}`} title={group.name} />
-      <h1 className="text-title">Leaderboard</h1>
+      {/* Kepala gelap penuh lebar: judul, jenis, periode, podium. Lembar krem berujung bulat menumpuk di bawahnya. */}
+      <header className={`${bleedX} -mt-6 flex flex-col gap-4 bg-ink-black pt-6 pb-14 text-cream-paper sm:-mt-8 sm:pt-8 [&_*:focus-visible]:outline-fresh-grass`}>
+        <TopBar back={`/g/${groupId}`} title={group.name} />
+        <h1 className="text-title">Leaderboard</h1>
 
-      {/* Desktop: jenis & periode berdampingan. */}
-      <div className="flex flex-col gap-6 @panel:grid @panel:grid-cols-2 @panel:items-center @panel:gap-x-8">
+        {/* Desktop: jenis & periode berdampingan. */}
+        <div className="flex flex-col gap-4 @panel:grid @panel:grid-cols-2 @panel:items-center @panel:gap-x-8">
+          <nav aria-label="Jenis leaderboard" className="grid grid-cols-3 gap-1 rounded-2xl bg-pure-ink p-1">
+            {TABS.map(({ key: tab, label }) => (
+              <Link
+                key={tab}
+                href={hrefFor(groupId, { ...view, tab })}
+                aria-current={view.tab === tab ? "page" : undefined}
+                className={
+                  "flex min-h-11 items-center justify-center rounded-lg text-ui " +
+                  (view.tab === tab ? "bg-fresh-grass text-ink-black" : "text-cream-paper")
+                }
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
 
-        <nav aria-label="Jenis leaderboard" className="grid grid-cols-3 gap-1 rounded-2xl border border-ink-black bg-ink-black p-1">
-          {TABS.map(({ key: tab, label }) => (
-            <Link
-              key={tab}
-              href={hrefFor(groupId, { ...view, tab })}
-              aria-current={view.tab === tab ? "page" : undefined}
-              className={
-                "flex min-h-11 items-center justify-center rounded-lg text-ui " +
-                (view.tab === tab ? "bg-fresh-grass text-ink-black" : "text-cream-paper")
-              }
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
+          <nav aria-label="Periode" className="grid grid-cols-4 gap-2">
+            {PERIOD_KEYS.map((periode) => (
+              <Link
+                key={periode}
+                href={hrefFor(groupId, { ...view, periode, bulan: periode === "bulan" ? currentMonth : view.bulan })}
+                aria-current={view.periode === periode ? "page" : undefined}
+                className={
+                  "inline-flex min-h-11 items-center justify-center rounded-full border px-1 text-small " +
+                  (view.periode === periode ? "border-pure-white bg-pure-white text-ink-black" : "border-cream-paper text-cream-paper")
+                }
+              >
+                {PERIOD_LABEL[periode]}
+              </Link>
+            ))}
+          </nav>
+        </div>
 
-        <nav aria-label="Periode" className="grid grid-cols-4 gap-2">
-          {PERIOD_KEYS.map((periode) => (
-            <Link
-              key={periode}
-              href={hrefFor(groupId, { ...view, periode, bulan: periode === "bulan" ? currentMonth : view.bulan })}
-              aria-current={view.periode === periode ? "page" : undefined}
-              className={
-                "inline-flex min-h-11 items-center justify-center rounded-full border border-ink-black px-1 text-small " +
-                (view.periode === periode ? "bg-ink-black text-cream-paper" : "bg-pure-white text-ink-black")
-              }
-            >
-              {PERIOD_LABEL[periode]}
-            </Link>
-          ))}
-        </nav>
-      </div>
+        {board && board.matchCount > 0 && view.tab === "klasemen" && board.podium.length > 0 && <Podium board={board} names={names} me={member.id} />}
+      </header>
 
+      <div className={`${bleedX} relative -mt-13 flex flex-col gap-6 rounded-t-4xl bg-cream-paper pt-6`}>
       <PeriodDetail groupId={groupId} view={view} sources={sources} currentMonth={currentMonth} />
       {board && board.matchCount > 0 && (view.periode === "bulan" || view.periode === "musim") && (
         <Link
@@ -187,6 +192,7 @@ export default async function LeaderboardPage({ params, searchParams }: PageProp
           </Link>
         )}
       </Card>
+      </div>
     </Page>
   );
 }
@@ -266,14 +272,12 @@ function Avatar({ name, size }: { name: string; size: "sm" | "lg" }) {
 
 const PODIUM_HEIGHT: Record<number, string> = { 1: "h-28", 2: "h-20", 3: "h-14" };
 
-function Standings({ board, names, me, minMatches, groupId }: { board: Leaderboard; names: Names; me: string; minMatches: number; groupId: string }) {
-  // Tampilan podium: 2 – 1 – 3. Urutan DOM tetap peringkat agar pembaca layar membaca 1, 2, 3.
+/** Podium tiga teratas di kepala gelap halaman (desain "Leaderboard"). Urutan visual 2 – 1 – 3. */
+function Podium({ board, names, me }: { board: Leaderboard; names: Names; me: string }) {
+  // Urutan DOM tetap peringkat agar pembaca layar membaca 1, 2, 3.
   const visualOrder = ["order-2", "order-1", "order-3"];
   return (
-    // Desktop: podium menempel di kiri, tabel di kanan.
-    <div className={`flex flex-col gap-6 ${board.podium.length > 0 ? "@panel:grid @panel:grid-cols-[22rem_minmax(0,1fr)] @panel:items-start @panel:gap-8" : ""}`}>
-      {board.podium.length > 0 && (
-        <section aria-labelledby="podium" className="rounded-2xl border border-ink-black bg-ink-black px-4 pt-5 text-cream-paper @panel:sticky @panel:top-6">
+    <section aria-labelledby="podium" className="px-4 pt-2">
           <h2 id="podium" className="sr-only">
             Tiga teratas
           </h2>
@@ -304,8 +308,12 @@ function Standings({ board, names, me, minMatches, groupId }: { board: Leaderboa
             })}
           </ol>
         </section>
-      )}
+  );
+}
 
+function Standings({ board, names, me, minMatches, groupId }: { board: Leaderboard; names: Names; me: string; minMatches: number; groupId: string }) {
+  return (
+    <div className="flex flex-col gap-6">
       <div className="flex min-w-0 flex-col gap-6">
         {board.ranked.length > 0 && (
           <section aria-labelledby="klasemen" className="flex flex-col gap-3">
