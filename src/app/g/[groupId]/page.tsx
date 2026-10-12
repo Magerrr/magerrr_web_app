@@ -8,11 +8,14 @@ import { guestCookieName } from "@/lib/db/authz";
 import { unreadCount } from "@/lib/db/chat";
 import { counterpartBalances } from "@/lib/core/balance";
 import { getGroup } from "@/lib/db/groups";
+import { loadKiko } from "@/lib/db/kiko";
+import { loadGroupMatches } from "@/lib/db/matches";
 import { unpaidGroupSettlements } from "@/lib/db/profile";
 import { listSessions, type SessionSummary } from "@/lib/db/sessions";
 import { formatRupiah, formatShortDateId, formatTimeRangeId, initials } from "@/lib/format";
 import { toJakartaParts } from "@/lib/time";
 import { pageAccess } from "./access";
+import { KikoCard } from "./kiko-card";
 import { SessionLink } from "./session-link";
 
 export const metadata: Metadata = { title: "Grup" };
@@ -39,6 +42,7 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
   const hasActions = isAdmin || Boolean(guestToken);
   const now = new Date();
   const featured = featuredSession(sessions, now);
+  const kiko = await loadKiko(groupId, member.id, await loadGroupMatches(groupId), now);
 
   return (
     <Page width="wide">
@@ -66,59 +70,18 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
         </Link>
       </header>
 
-      {featured && <FeaturedSession groupId={groupId} session={featured} now={now} />}
-
-      {/* Lebar: sesi di kolom kiri, aksi di kolom kanan. Ponsel: urutan DOM (aksi, sesi, menu). */}
-      <div
-        className={
-          hasActions
-            ? "flex flex-col gap-6 @panel:grid @panel:grid-cols-[minmax(0,1fr)_22rem] @panel:grid-rows-[auto_1fr] @panel:items-start @panel:gap-x-8"
-            : "flex flex-col gap-6"
-        }
-      >
-        {hasActions && (
-          <div className="flex flex-col gap-6 @panel:col-start-2 @panel:row-start-1">
-            {via === "guest" && guestToken && (
-              <Card className="flex flex-col gap-3" data-testid="claim-card">
-                <h2 className="text-lead">Simpan riwayatmu ke akun</h2>
-                <p className="text-small">Kamu bergabung sebagai tamu di peramban ini. Masuk dengan akun agar statistik dan tagihanmu bisa dibuka dari perangkat lain.</p>
-                <ButtonLink href={`/klaim/${guestToken}`} variant="secondary">
-                  Klaim profil
-                </ButtonLink>
-              </Card>
-            )}
-
-            {isAdmin && (
-              <ButtonLink href={`/g/${groupId}/sesi/baru`} size="lg" className="max-lg:hidden">
-                Buat sesi
-              </ButtonLink>
-            )}
-          </div>
-        )}
-
-        {/* Desktop memakai sidebar (layout.tsx); menu ini untuk ponsel & tablet. Anggota & Peringkat ada di navigasi utama. */}
-        <nav aria-label="Menu grup" className="flex flex-col gap-4 @panel:col-start-2 @panel:row-start-2 lg:hidden">
-          <ul className="grid grid-cols-4 gap-2">
-            <Tile href={`/g/${groupId}/leaderboard`} icon="chart" label="Leaderboard" dark />
-            <Tile href={`/g/${groupId}/musim`} icon="trophy" label="Musim" />
-            <Tile href={`/g/${groupId}/recap`} icon="recap" label="Recap" full="Recap bulan & musim" />
-            <Tile href={`/g/${groupId}/kiko`} icon="cat" label="Kiko" full="Kiko kamu" />
-            <Tile href={`/g/${groupId}/pembayaran`} icon="card" label="Pembayaran" full="Info pembayaran" />
-            {isAdmin && <Tile href={`/g/${groupId}/pengaturan`} icon="gear" label="Pengaturan" full="Pengaturan grup" />}
-          </ul>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <MenuLink
-              href={`/g/${groupId}/obrolan`}
-              icon="chat"
-              title="Obrolan"
-              detail={unread > 0 ? `${unread > 99 ? "99+" : unread} pesan baru` : "Ngobrol dengan anggota grup"}
-              badge={unread > 0 ? (unread > 99 ? "99+" : String(unread)) : undefined}
-            />
-            <MenuLink href={`/g/${groupId}/saldo`} icon="wallet" title="Saldo patungan" detail={balanceDetail} />
-          </div>
-        </nav>
-
-        <section aria-labelledby="riwayat" className="flex min-w-0 flex-col gap-3 @panel:col-start-1 @panel:row-span-2 @panel:row-start-1">
+      {/*
+        Lebar (@3xl = 48rem): kolom kiri = sesi berikutnya + daftar sesi, kolom kanan 22rem = Kiko, aksi, menu.
+        Ponsel: satu kolom dengan urutan sesi berikutnya, aksi, menu, daftar sesi (`contents` + `order`).
+      */}
+      <div className="flex flex-col gap-6 @3xl:grid @3xl:grid-cols-[minmax(0,1fr)_22rem] @3xl:items-start @3xl:gap-x-8">
+        <div className="contents @3xl:flex @3xl:min-w-0 @3xl:flex-col @3xl:gap-6">
+          {featured && (
+            <div className="order-1">
+              <FeaturedSession groupId={groupId} session={featured} now={now} />
+            </div>
+          )}
+        <section aria-labelledby="riwayat" className="order-4 flex min-w-0 flex-col gap-3">
           <h2 id="riwayat" className="text-sub">
             Sesi
           </h2>
@@ -149,7 +112,7 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
               )}
             </Card>
           ) : (
-            <ul className="grid gap-3 sm:grid-cols-2" data-testid="session-list">
+            <ul className="grid gap-3 @xl:grid-cols-2 @3xl:grid-cols-1 @5xl:grid-cols-2" data-testid="session-list">
               {sessions.map((s) => (
                 <li key={s.id} className="min-w-0">
                   <SessionLink groupId={groupId} session={s} />
@@ -158,7 +121,52 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
             </ul>
           )}
         </section>
+        </div>
 
+        <div className="contents @3xl:flex @3xl:min-w-0 @3xl:flex-col @3xl:gap-6">
+          <KikoCard groupId={groupId} kiko={kiko} className="order-0 hidden @3xl:flex" />
+        {hasActions && (
+          <div className="order-2 flex flex-col gap-6">
+            {via === "guest" && guestToken && (
+              <Card className="flex flex-col gap-3" data-testid="claim-card">
+                <h2 className="text-lead">Simpan riwayatmu ke akun</h2>
+                <p className="text-small">Kamu bergabung sebagai tamu di peramban ini. Masuk dengan akun agar statistik dan tagihanmu bisa dibuka dari perangkat lain.</p>
+                <ButtonLink href={`/klaim/${guestToken}`} variant="secondary">
+                  Klaim profil
+                </ButtonLink>
+              </Card>
+            )}
+
+            {isAdmin && (
+              <ButtonLink href={`/g/${groupId}/sesi/baru`} size="lg" className="max-lg:hidden">
+                Buat sesi
+              </ButtonLink>
+            )}
+          </div>
+        )}
+
+        {/* Desktop memakai sidebar (layout.tsx); menu ini untuk ponsel & tablet. Anggota & Peringkat ada di navigasi utama. */}
+        <nav aria-label="Menu grup" className="order-3 flex flex-col gap-4 lg:hidden">
+          <ul className="grid grid-cols-4 gap-2">
+            <Tile href={`/g/${groupId}/leaderboard`} icon="chart" label="Leaderboard" dark />
+            <Tile href={`/g/${groupId}/musim`} icon="trophy" label="Musim" />
+            <Tile href={`/g/${groupId}/recap`} icon="recap" label="Recap" full="Recap bulan & musim" />
+            <Tile href={`/g/${groupId}/kiko`} icon="cat" label="Kiko" full="Kiko kamu" />
+            <Tile href={`/g/${groupId}/pembayaran`} icon="card" label="Pembayaran" full="Info pembayaran" />
+            {isAdmin && <Tile href={`/g/${groupId}/pengaturan`} icon="gear" label="Pengaturan" full="Pengaturan grup" />}
+          </ul>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <MenuLink
+              href={`/g/${groupId}/obrolan`}
+              icon="chat"
+              title="Obrolan"
+              detail={unread > 0 ? `${unread > 99 ? "99+" : unread} pesan baru` : "Ngobrol dengan anggota grup"}
+              badge={unread > 0 ? (unread > 99 ? "99+" : String(unread)) : undefined}
+            />
+            <MenuLink href={`/g/${groupId}/saldo`} icon="wallet" title="Saldo patungan" detail={balanceDetail} />
+          </div>
+        </nav>
+        </div>
       </div>
     </Page>
   );
