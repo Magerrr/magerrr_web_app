@@ -68,6 +68,17 @@ export async function loadPlay(group: GroupSettings, session: SessionDetail): Pr
 }
 
 const isRotation = (ctx: PlayContext) => ctx.session.playMode === "rotasi";
+
+/**
+ * Urutan pemain dalam satu tim tidak disimpan (kunci match_players = match + anggota), jadi urutan hasil query
+ * tidak bisa dipakai. Pemain yang kalah masuk antrian menurut urutan peserta (nama), sama dengan susunan awal
+ * rotasi (ALGORITHMS §4.1 langkah 2: urutan pemain kalah dipertahankan), supaya antrian deterministik.
+ */
+function inPresentOrder(ctx: PlayContext, teams: Teams): Teams {
+  const rank = new Map(ctx.present.map((id, i) => [id, i]));
+  const order = (ids: MemberId[]) => [...ids].sort((a, b) => (rank.get(a) ?? Infinity) - (rank.get(b) ?? Infinity));
+  return { A: order(teams.A), B: order(teams.B) };
+}
 const isFixed = (ctx: PlayContext) => ctx.session.playMode === "fix_pasangan";
 
 /** Rating tiap pemain (grade atau win rate ganda all-time), sama dengan kocok. */
@@ -260,7 +271,7 @@ export async function completeMatch(ctx: PlayContext, actorId: string, matchId: 
   if (isRotation(ctx) && match.courtNo !== null && match.tournament === null) {
     const busy = [...ctx.onCourt];
     const state = afterGame(
-      { courts: [match.players], queue: reconcileQueue(ctx.session.rotationQueue ?? [], ctx.present, busy) },
+      { courts: [inPresentOrder(ctx, match.players)], queue: reconcileQueue(ctx.session.rotationQueue ?? [], ctx.present, busy) },
       0,
       winner,
     );
@@ -318,7 +329,8 @@ export async function voidMatch(ctx: PlayContext, actorId: string, matchId: stri
   if (!match) throw new HttpError(404, "Match tidak ditemukan.");
   let queue: MemberId[] | null = null;
   if (isRotation(ctx) && match.status === "running" && ctx.session.rotationQueue !== null) {
-    queue = [...reconcileQueue(ctx.session.rotationQueue, ctx.present, [...ctx.onCourt]), ...match.players.A, ...match.players.B];
+    const { A, B } = inPresentOrder(ctx, match.players);
+    queue = [...reconcileQueue(ctx.session.rotationQueue, ctx.present, [...ctx.onCourt]), ...A, ...B];
   }
   const { error } = await serviceClient(actorId).rpc("void_match", {
     p_session: ctx.session.id,
