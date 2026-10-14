@@ -40,11 +40,11 @@ export function StatusActions({
   return (
     <div className="flex flex-col gap-3">
       {status === "planned" ? (
-        <Button size="lg" onClick={() => change("running")} disabled={pending}>
+        <Button size="lg" onClick={() => change("running")} loading={pending}>
           Mulai sesi
         </Button>
       ) : (
-        <Button size="lg" variant="secondary" onClick={() => change("finished")} disabled={pending}>
+        <Button size="lg" variant="secondary" onClick={() => change("finished")} loading={pending}>
           Tutup sesi
         </Button>
       )}

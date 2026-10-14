@@ -53,7 +53,7 @@ export function StartSlot({
             </option>
           ))}
         </select>
-        <Button variant="accent" onClick={start} disabled={pending}>
+        <Button variant="accent" onClick={start} loading={pending}>
           Mulai match
         </Button>
       </div>
@@ -71,7 +71,7 @@ export function DeleteTournament({ url }: { url: string }) {
       <Button
         variant="secondary"
         className="self-start"
-        disabled={pending}
+        loading={pending}
         onClick={async () => {
           if (!window.confirm("Hapus turnamen ini? Jadwal dan pesertanya dihapus.")) return;
           setPending(true);

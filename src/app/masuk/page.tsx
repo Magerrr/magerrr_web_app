@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Button, Card, Notice, Page, TopBar } from "@/components/ui";
+import { Card, Notice, Page, SubmitButton, TopBar } from "@/components/ui";
 import { getUser } from "@/lib/db/authz";
 import { safeNextPath } from "@/lib/validation";
 import { signInWithGoogle } from "./actions";
@@ -41,13 +41,13 @@ export default async function MasukPage({ searchParams }: PageProps<"/masuk">) {
 
       <form action={signInWithGoogle}>
         <input type="hidden" name="next" value={next} />
-        <Button type="submit" variant="secondary" size="lg">
+        <SubmitButton variant="secondary" size="lg">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
             <path d="M20 12a8 8 0 1 1-2.3-5.7" />
             <path d="M12 12h8" />
           </svg>
           Lanjut dengan Google
-        </Button>
+        </SubmitButton>
       </form>
 
       <Card className="border-dashed">

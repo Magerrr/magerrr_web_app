@@ -65,7 +65,7 @@ export function PairsEditor({ url, pairs, present, names, editable }: { url: str
                 Tambah pasangan
               </Button>
             )}
-            <Button onClick={() => save({ pairs: draft })} disabled={pending}>
+            <Button onClick={() => save({ pairs: draft })} loading={pending}>
               Simpan pasangan
             </Button>
             <Button variant="secondary" onClick={() => setDraft(null)} disabled={pending}>
@@ -90,7 +90,7 @@ export function PairsEditor({ url, pairs, present, names, editable }: { url: str
           {unpaired.length > 0 && <p className="text-small">Tanpa pasangan: {unpaired.map(name).join(", ")}</p>}
           {editable && (
             <div className="flex flex-wrap gap-2">
-              <Button onClick={() => save({ auto: true })} disabled={pending}>
+              <Button onClick={() => save({ auto: true })} loading={pending}>
                 Pasangkan otomatis
               </Button>
               <Button variant="secondary" onClick={() => setDraft(pairs.length > 0 ? pairs : [])} disabled={pending}>

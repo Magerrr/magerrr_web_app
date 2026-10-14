@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PointBadge } from "@/components/point-badge";
-import { Button, Notice } from "@/components/ui";
+import { useBusy } from "@/components/busy";
+import { Button, Notice, Spinner, textButtonClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import { acknowledge, enqueue, flushQueue, pendingFor, type KeyValueStore } from "@/lib/offline-queue";
 import { gameWinner, matchWinner } from "@/lib/core/rules";
@@ -168,6 +169,7 @@ export function LiveCourt({
   const live = useLiveScore(match.id, base, match.games, refresh);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  useBusy(pending);
   /** Ganti sisi (SC5) akibat perubahan skor terakhir; hilang di perubahan berikutnya. */
   const [turn, setTurn] = useState<"game" | "interval" | null>(null);
   const format = { games: match.gamesMax };
@@ -297,7 +299,8 @@ export function LiveCourt({
             Muat ulang
           </Button>
         )}
-        <button type="button" onClick={voidMatch} disabled={pending} className="min-h-11 px-1 text-small underline underline-offset-4">
+        <button type="button" onClick={voidMatch} disabled={pending} aria-busy={pending || undefined} className={textButtonClass}>
+          {pending && <Spinner />}
           Batalkan match
         </button>
       </div>

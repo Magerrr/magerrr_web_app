@@ -134,7 +134,7 @@ export function ChatRoom({
     <>
       <section aria-label="Pesan" className="flex flex-col gap-2">
         {hasMore && (
-          <Button variant="secondary" className="self-center" onClick={loadOlder} disabled={loadingOlder}>
+          <Button variant="secondary" className="self-center" onClick={loadOlder} loading={loadingOlder}>
             Muat pesan sebelumnya
           </Button>
         )}
@@ -198,7 +198,7 @@ export function ChatRoom({
             placeholder="Tulis pesan…"
             className="max-h-40 min-h-11 min-w-0 flex-1 resize-none rounded-2xl field-sizing-content border-2 border-ink-black bg-pure-white px-4 py-2.5 text-ui text-ink-black placeholder:text-ink-black"
           />
-          <Button type="submit" variant="accent" disabled={sending || draft.trim() === ""}>
+          <Button type="submit" variant="accent" loading={sending} disabled={draft.trim() === ""}>
             Kirim
           </Button>
         </div>

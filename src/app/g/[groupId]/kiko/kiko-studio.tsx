@@ -39,7 +39,7 @@ export function KikoStudio({
   const [draft, setDraft] = useState(outfit);
   const [pets, setPets] = useState(0);
   const [jumping, setJumping] = useState(false);
-  const [pending, setPending] = useState(false);
+  const [pending, setPending] = useState<"save" | "auto" | null>(null);
   const [message, setMessage] = useState<{ tone: "info" | "error"; text: string } | null>(null);
   const timer = useRef<number | null>(null);
   useEffect(() => () => void (timer.current && window.clearTimeout(timer.current)), []);
@@ -55,10 +55,10 @@ export function KikoStudio({
   }
 
   async function save(next: KikoOutfit | null) {
-    setPending(true);
+    setPending(next ? "save" : "auto");
     setMessage(null);
     const result = await sendJson(`/api/groups/${groupId}/kiko`, "PUT", { outfit: next });
-    setPending(false);
+    setPending(null);
     if (!result.ok) return setMessage({ tone: "error", text: result.error });
     if (next === null) setDraft(defaultOutfit(level));
     setMessage({ tone: "info", text: next ? "Kostum Kiko disimpan." : "Kostum kembali otomatis sesuai level." });
@@ -117,16 +117,16 @@ export function KikoStudio({
           </fieldset>
         ))}
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => save(draft)} disabled={pending || (!changed && custom)}>
+          <Button onClick={() => save(draft)} loading={pending === "save"} disabled={pending !== null || (!changed && custom)}>
             Simpan kostum
           </Button>
           {custom && (
-            <Button variant="secondary" onClick={() => save(null)} disabled={pending}>
+            <Button variant="secondary" onClick={() => save(null)} loading={pending === "auto"} disabled={pending !== null}>
               Kostum otomatis
             </Button>
           )}
           {changed && (
-            <Button variant="secondary" onClick={() => setDraft(outfit)} disabled={pending}>
+            <Button variant="secondary" onClick={() => setDraft(outfit)} disabled={pending !== null}>
               Batal
             </Button>
           )}

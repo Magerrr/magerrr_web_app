@@ -1,44 +1,27 @@
 // Primitif UI Meadow. Warna hanya dari token (globals.css); target sentuh >= 44px.
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
+import { LinkPending } from "./button";
+import { buttonClass, cx, type Size, type Variant } from "./button-class";
+import { Spinner } from "./spinner";
 
-const cx = (...classes: (string | false | null | undefined)[]) => classes.filter(Boolean).join(" ");
-
-type Variant = "primary" | "accent" | "secondary";
-type Size = "md" | "lg";
-
-const BUTTON_BASE =
-  "inline-flex items-center justify-center gap-2 rounded-full border px-5 text-ui font-medium " +
-  "disabled:cursor-not-allowed disabled:border-sandstone disabled:bg-sandstone disabled:text-ink-black";
-const BUTTON_VARIANT: Record<Variant, string> = {
-  // Teks cream-paper di atas isi ink-black (12.1:1) — jangan ditiru cacat desain teks gelap di atas gelap.
-  primary: "border-ink-black bg-ink-black text-cream-paper hover:bg-pure-ink",
-  accent: "border-ink-black bg-fresh-grass text-ink-black",
-  secondary: "border-ink-black bg-pure-white text-ink-black hover:bg-sandstone",
-};
-const BUTTON_SIZE: Record<Size, string> = { md: "min-h-11", lg: "min-h-13 w-full" };
-
-export function buttonClass(variant: Variant = "primary", size: Size = "md", className?: string) {
-  return cx(BUTTON_BASE, BUTTON_VARIANT[variant], BUTTON_SIZE[size], className);
-}
-
-export function Button({
-  variant,
-  size,
-  className,
-  type = "button",
-  ...props
-}: ComponentProps<"button"> & { variant?: Variant; size?: Size }) {
-  return <button type={type} className={buttonClass(variant, size, className)} {...props} />;
-}
+export { Button, SubmitButton } from "./button";
+export { buttonClass, textButtonClass } from "./button-class";
+export { Spinner };
 
 export function ButtonLink({
   variant,
   size,
   className,
+  children,
   ...props
 }: ComponentProps<typeof Link> & { variant?: Variant; size?: Size }) {
-  return <Link className={buttonClass(variant, size, className)} {...props} />;
+  return (
+    <Link className={buttonClass(variant, size, className)} {...props}>
+      <LinkPending />
+      {children}
+    </Link>
+  );
 }
 
 /** Tautan teks (bukan tombol): tetap punya area sentuh >= 44px. */
@@ -167,6 +150,18 @@ export type PageWidth = keyof typeof PAGE_WIDTH;
 /** Kelas untuk elemen yang melebar sampai tepi layar (mis. bagan geser, kolom kirim obrolan); ikut padding `Page`. */
 export const bleedX = "-mx-5 px-5 sm:-mx-8 sm:px-8";
 
+/** Penanda halaman sedang dimuat (dipakai `loading.tsx`). */
+export function PageLoading() {
+  return (
+    <Page>
+      <div role="status" className="flex flex-1 flex-col items-center justify-center gap-3 py-24 text-ui">
+        <Spinner className="size-8" />
+        Memuat…
+      </div>
+    </Page>
+  );
+}
+
 export function Page({ children, width = "regular" }: { children: ReactNode; width?: PageWidth }) {
   return (
     <main
@@ -204,7 +199,7 @@ export function BackLink({ href, label = "Kembali" }: { href: string; label?: st
     <Link
       href={href}
       aria-label={label}
-      className="flex size-11 shrink-0 items-center justify-center rounded-full border border-ink-black bg-pure-white text-ink-black"
+      className="flex size-11 shrink-0 items-center justify-center rounded-full border border-ink-black bg-pure-white text-ink-black transition-colors hover:bg-fresh-grass"
     >
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M15 5l-7 7 7 7" />

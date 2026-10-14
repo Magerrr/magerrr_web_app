@@ -20,7 +20,7 @@ export function DeletePaymentInfo({ groupId, id, label }: { groupId: string; id:
   }
   return (
     <div className="flex flex-col gap-2">
-      <Button variant="secondary" onClick={remove} disabled={pending} className="self-start">
+      <Button variant="secondary" onClick={remove} loading={pending} className="self-start">
         Hapus {label}
       </Button>
       {error && <Notice tone="error">{error}</Notice>}
@@ -118,7 +118,7 @@ export function AddPaymentInfo({ groupId }: { groupId: string }) {
         </>
       )}
       {status && <Notice tone={status.tone}>{status.text}</Notice>}
-      <Button type="submit" size="lg" disabled={pending}>
+      <Button type="submit" size="lg" loading={pending}>
         {pending ? "Menyimpan…" : "Simpan"}
       </Button>
     </form>

@@ -107,7 +107,7 @@ export function SettingsForm({ group }: { group: GroupSettings }) {
       </Card>
 
       {status && <Notice tone={status.tone}>{status.text}</Notice>}
-      <Button type="submit" size="lg" disabled={pending}>
+      <Button type="submit" size="lg" loading={pending}>
         {pending ? "Menyimpan…" : "Simpan pengaturan"}
       </Button>
     </form>

@@ -19,7 +19,7 @@ export function EmailForm({ next }: { next: string }) {
         </Notice>
       )}
       {state.status === "error" && <Notice tone="error">{state.message}</Notice>}
-      <Button type="submit" size="lg" disabled={pending}>
+      <Button type="submit" size="lg" loading={pending}>
         {pending ? "Mengirim…" : state.status === "sent" ? "Kirim ulang tautan" : "Kirim tautan masuk"}
       </Button>
     </form>

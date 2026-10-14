@@ -196,7 +196,7 @@ export function SessionForm({
       {error && <Notice tone="error">{error}</Notice>}
       {/* CTA lengket di bawah layar (desain "Buat Mabar"); fresh-grass dengan teks ink-black. */}
       <div className="sticky bottom-0 z-10 -mx-5 -mb-16 bg-cream-paper px-5 pt-3 pb-6 sm:-mx-8 sm:px-8 lg:-mb-20">
-        <Button type="submit" variant="accent" size="lg" disabled={pending}>
+        <Button type="submit" variant="accent" size="lg" loading={pending}>
           {pending ? "Menyimpan…" : sessionId ? "Simpan perubahan" : "Simpan sesi"}
         </Button>
       </div>

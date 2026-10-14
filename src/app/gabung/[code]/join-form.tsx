@@ -43,7 +43,7 @@ export function JoinForm({ code, defaultName, withAccount }: { code: string; def
         />
       </Field>
       {error && <Notice tone="error">{error}</Notice>}
-      <Button type="submit" size="lg" disabled={pending}>
+      <Button type="submit" size="lg" loading={pending}>
         {pending ? "Bergabung…" : "Gabung grup"}
       </Button>
     </form>

@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button, Notice } from "@/components/ui";
+import { useBusy } from "@/components/busy";
+import { Button, Notice, Spinner } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 
 type Rsvp = "going" | "maybe" | "not_going";
@@ -18,13 +19,14 @@ export function RsvpPicker({ url, value }: { url: string; value: Rsvp | null }) 
   const router = useRouter();
   const [current, setCurrent] = useState(value);
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const [pending, setPending] = useState<Rsvp | null>(null);
+  useBusy(pending !== null);
 
   async function pick(rsvp: Rsvp) {
-    setPending(true);
+    setPending(rsvp);
     setError(null);
     const result = await sendJson(url, "PUT", { rsvp });
-    setPending(false);
+    setPending(null);
     if (!result.ok) return setError(result.error);
     setCurrent(rsvp);
     router.refresh();
@@ -38,10 +40,14 @@ export function RsvpPicker({ url, value }: { url: string; value: Rsvp | null }) 
             key={o.value}
             type="button"
             aria-pressed={current === o.value}
-            disabled={pending}
+            disabled={pending !== null}
+            aria-busy={pending === o.value || undefined}
             onClick={() => pick(o.value)}
-            className={`min-h-11 rounded-full border border-ink-black px-2 text-ui ${current === o.value ? "bg-ink-black text-cream-paper" : "bg-pure-white text-ink-black"}`}
+            className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full border border-ink-black px-2 text-ui transition-colors disabled:cursor-wait ${
+              current === o.value ? "bg-ink-black text-cream-paper hover:bg-pure-ink" : "bg-fresh-grass/25 text-ink-black hover:bg-fresh-grass"
+            }`}
           >
+            {pending === o.value && <Spinner />}
             {o.label}
           </button>
         ))}
@@ -66,7 +72,7 @@ export function ApplyRsvp({ url, goingIds }: { url: string; goingIds: string[] }
   }
   return (
     <div className="flex flex-col gap-2">
-      <Button variant="secondary" onClick={apply} disabled={pending || goingIds.length === 0}>
+      <Button variant="secondary" onClick={apply} loading={pending} disabled={goingIds.length === 0}>
         Jadikan yang ikut sebagai peserta
       </Button>
       {error && <Notice tone="error">{error}</Notice>}

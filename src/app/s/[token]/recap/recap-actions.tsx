@@ -38,7 +38,7 @@ export function ShareRecap({ cardBase, url, title, token }: { cardBase: string; 
 
   return (
     <div className="flex flex-col gap-3">
-      <Button size="lg" variant="accent" onClick={share} disabled={pending}>
+      <Button size="lg" variant="accent" onClick={share} loading={pending}>
         Bagikan recap
       </Button>
       <div className="flex gap-2">
@@ -75,7 +75,7 @@ export function RecapVisibility({ url, value }: { url: string; value: boolean })
       <p className="text-small" data-testid="recap-visibility">
         {value ? "Recap publik: siapa pun yang punya tautan bisa melihat." : "Recap privat: hanya anggota grup yang bisa melihat."}
       </p>
-      <Button variant="secondary" onClick={toggle} disabled={pending}>
+      <Button variant="secondary" onClick={toggle} loading={pending}>
         {value ? "Jadikan privat" : "Jadikan publik"}
       </Button>
       {error && <Notice tone="error">{error}</Notice>}

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { BusyOverlay } from "@/components/busy";
 import { OfflineBanner, ServiceWorker } from "@/components/pwa";
 import { BRAND } from "@/lib/brand";
 import "./globals.css";
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <OfflineBanner />
         {children}
         <ServiceWorker />
+        <BusyOverlay />
       </body>
     </html>
   );

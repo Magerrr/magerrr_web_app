@@ -11,12 +11,13 @@ import { whatsappUrl } from "@/lib/bill-text";
 function useAction() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-  async function run(url: string, method: "POST" | "PATCH", body: unknown = {}) {
-    setPending(true);
+  /** aksi yang sedang berjalan (untuk spinner di tombol yang diklik) */
+  const [pending, setPending] = useState<string | null>(null);
+  async function run(url: string, method: "POST" | "PATCH", body: { action?: string } = {}) {
+    setPending(body.action ?? method);
     setError(null);
     const result = await sendJson(url, method, body);
-    setPending(false);
+    setPending(null);
     if (!result.ok) return setError(result.error);
     router.refresh();
   }
@@ -30,16 +31,16 @@ export function PaymentActions({ url, settlement }: { url: string; settlement: S
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap gap-2">
         {settlement.status === "paid" ? (
-          <Button variant="secondary" disabled={pending} onClick={() => run(url, "PATCH", { action: "unpaid" })}>
+          <Button variant="secondary" loading={pending === "unpaid"} disabled={pending !== null} onClick={() => run(url, "PATCH", { action: "unpaid" })}>
             Batal lunas
           </Button>
         ) : (
-          <Button disabled={pending} onClick={() => run(url, "PATCH", { action: "paid" })}>
+          <Button loading={pending === "paid"} disabled={pending !== null} onClick={() => run(url, "PATCH", { action: "paid" })}>
             {settlement.selfReported ? "Konfirmasi lunas" : "Tandai lunas"}
           </Button>
         )}
         {settlement.status !== "paid" && settlement.selfReported && (
-          <Button variant="secondary" disabled={pending} onClick={() => run(url, "PATCH", { action: "reject" })}>
+          <Button variant="secondary" loading={pending === "reject"} disabled={pending !== null} onClick={() => run(url, "PATCH", { action: "reject" })}>
             Belum masuk
           </Button>
         )}
@@ -54,7 +55,7 @@ export function SelfReportButton({ url }: { url: string }) {
   const { error, pending, run } = useAction();
   return (
     <div className="flex flex-col gap-2">
-      <Button variant="accent" disabled={pending} onClick={() => run(url, "POST")}>
+      <Button variant="accent" loading={pending !== null} onClick={() => run(url, "POST")}>
         Saya sudah bayar
       </Button>
       {error && <Notice tone="error">{error}</Notice>}
@@ -66,8 +67,8 @@ export function RecomputeButton({ url }: { url: string }) {
   const { error, pending, run } = useAction();
   return (
     <div className="flex flex-col gap-2">
-      <Button variant="secondary" disabled={pending} onClick={() => run(url, "POST")}>
-        {pending ? "Menghitung…" : "Hitung ulang tagihan"}
+      <Button variant="secondary" loading={pending !== null} onClick={() => run(url, "POST")}>
+        {pending !== null ? "Menghitung…" : "Hitung ulang tagihan"}
       </Button>
       {error && <Notice tone="error">{error}</Notice>}
     </div>

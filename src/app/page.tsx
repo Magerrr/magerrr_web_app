@@ -13,7 +13,7 @@ export default async function Home() {
         <p className="text-lead">Magerrr</p>
         {user ? (
           <form action="/auth/keluar" method="post">
-            <button type="submit" className="min-h-11 px-2 text-ui underline underline-offset-4">
+            <button type="submit" className="min-h-11 cursor-pointer rounded-lg px-2 text-ui underline underline-offset-4 transition-colors hover:bg-fresh-grass/25">
               Keluar
             </button>
           </form>

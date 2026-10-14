@@ -34,7 +34,7 @@ export function CreateGroupForm() {
         <input id="emoji" name="emoji" maxLength={16} autoComplete="off" className={`${inputBase} w-24`} />
       </Field>
       {error && <Notice tone="error">{error}</Notice>}
-      <Button type="submit" size="lg" disabled={pending}>
+      <Button type="submit" size="lg" loading={pending}>
         {pending ? "Membuat…" : "Buat grup"}
       </Button>
     </form>

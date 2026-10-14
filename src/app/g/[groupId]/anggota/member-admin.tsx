@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useBusy } from "@/components/busy";
 import { Badge, Button, Card, Field, Notice, buttonClass, inputBase, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import type { Member } from "@/lib/db/authz";
@@ -54,7 +55,7 @@ export function InviteCard({ groupId, groupName, inviteUrl }: { groupId: string;
         <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noopener noreferrer" className={buttonClass("accent")}>
           Bagikan ke WhatsApp
         </a>
-        <Button variant="secondary" onClick={rotate} disabled={pending}>
+        <Button variant="secondary" onClick={rotate} loading={pending}>
           Buat tautan baru
         </Button>
       </div>
@@ -92,7 +93,7 @@ export function AddGuestForm({ groupId }: { groupId: string }) {
             autoComplete="off"
             className={`${inputBase} min-w-0 flex-1`}
           />
-          <Button type="submit" disabled={pending} className="min-h-13">
+          <Button type="submit" loading={pending} className="min-h-13">
             Tambah
           </Button>
         </div>
@@ -118,6 +119,7 @@ export function MemberList({
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  useBusy(busy !== null);
 
   async function update(memberId: string, patch: Partial<Pick<Member, "grade" | "role">>) {
     setBusy(memberId);

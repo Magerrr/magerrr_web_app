@@ -72,7 +72,7 @@ export default async function GroupLayout({ children, params }: LayoutProps<"/g/
         <div className="mt-auto flex flex-col gap-1 border-t border-hairline-mist pt-4">
           {user ? (
             <form action="/auth/keluar" method="post">
-              <button type="submit" className="flex min-h-11 w-full items-center rounded-full px-4 text-ui hover:bg-sandstone">
+              <button type="submit" className="flex min-h-11 w-full cursor-pointer items-center rounded-full px-4 text-ui hover:bg-fresh-grass/25">
                 Keluar
               </button>
             </form>

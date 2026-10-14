@@ -172,7 +172,7 @@ export function MatchForm({
       </Card>
 
       {error && <Notice tone="error">{error}</Notice>}
-      <Button type="submit" size="lg" disabled={pending}>
+      <Button type="submit" size="lg" loading={pending}>
         {pending ? "Menyimpan…" : initial ? "Simpan perubahan" : "Simpan match"}
       </Button>
     </form>

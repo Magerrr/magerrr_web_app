@@ -40,7 +40,7 @@ export function NewSeasonForm({ groupId, defaultName, today }: { groupId: string
         <input id={`${id}-end`} type="date" value={endsOn} onChange={(e) => setEndsOn(e.target.value)} className={inputClass} />
       </Field>
       {error && <Notice tone="error">{error}</Notice>}
-      <Button type="submit" size="lg" disabled={pending}>
+      <Button type="submit" size="lg" loading={pending}>
         {pending ? "Menyimpan…" : "Mulai musim"}
       </Button>
     </form>
@@ -61,7 +61,7 @@ export function CloseSeasonButton({ groupId, seasonId, name }: { groupId: string
   }
   return (
     <div className="flex flex-col gap-2">
-      <Button variant="secondary" onClick={close} disabled={pending}>
+      <Button variant="secondary" onClick={close} loading={pending}>
         Tutup musim
       </Button>
       {error && <Notice tone="error">{error}</Notice>}

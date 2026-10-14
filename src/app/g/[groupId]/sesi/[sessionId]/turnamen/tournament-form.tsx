@@ -211,7 +211,7 @@ export function TournamentForm({ url, players, defaultName }: { url: string; pla
         Peserta tidak bisa diubah setelah turnamen dibuat.
       </p>
       {error && <Notice tone="error">{error}</Notice>}
-      <Button size="lg" variant="accent" onClick={submit} disabled={pending || problem !== null || name.trim() === ""}>
+      <Button size="lg" variant="accent" onClick={submit} loading={pending} disabled={problem !== null || name.trim() === ""}>
         Buat turnamen
       </Button>
     </Card>

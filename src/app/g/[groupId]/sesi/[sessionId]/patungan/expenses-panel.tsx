@@ -380,7 +380,7 @@ function ExpenseForm({
 
       {error && <Notice tone="error">{error}</Notice>}
       <div className="flex gap-2">
-        <Button type="submit" size="lg" disabled={pending}>
+        <Button type="submit" size="lg" loading={pending}>
           {pending ? "Menyimpan…" : "Simpan biaya"}
         </Button>
         <Button variant="secondary" onClick={onCancel} disabled={pending} className="min-h-13">

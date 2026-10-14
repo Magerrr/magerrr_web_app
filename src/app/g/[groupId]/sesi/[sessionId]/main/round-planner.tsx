@@ -56,29 +56,29 @@ export function RoundPlanner({
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [selected, setSelected] = useState<Slot | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const [pending, setPending] = useState<"plan" | "start" | null>(null);
   const base = `/api/groups/${groupId}/sessions/${sessionId}`;
 
   async function plan(nextKind: MatchKind = kind) {
-    setPending(true);
+    setPending("plan");
     setError(null);
     setSelected(null);
     const result = await sendJson<Proposal>(`${base}/plan`, "POST", { kind: nextKind, seed: randomSeed() });
-    setPending(false);
+    setPending(null);
     if (!result.ok) return setError(result.error);
     setProposal(result.data);
   }
 
   async function start() {
     if (!proposal) return;
-    setPending(true);
+    setPending("start");
     setError(null);
     const result = await sendJson(`${base}/matches/start`, "POST", {
       matches: proposal.courts.map(({ courtNo, kind: k, A, B }) => ({ courtNo, kind: k, A, B })),
       seed: proposal.seed,
       queue: rotation ? proposal.waiting : null,
     });
-    setPending(false);
+    setPending(null);
     if (!result.ok) return setError(result.error);
     setProposal(null);
     router.refresh();
@@ -111,8 +111,8 @@ export function RoundPlanner({
         type="button"
         onClick={() => tap(slot)}
         aria-pressed={on}
-        className={`inline-flex min-h-11 items-center gap-2 rounded-full border border-ink-black px-4 text-ui ${
-          on ? "bg-ink-black text-cream-paper" : "bg-pure-white text-ink-black"
+        className={`inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-ink-black px-4 text-ui transition-colors ${
+          on ? "bg-ink-black text-cream-paper" : "bg-pure-white text-ink-black hover:bg-fresh-grass/40"
         }`}
       >
         {label && <span className="text-caption">{label}</span>}
@@ -154,7 +154,7 @@ export function RoundPlanner({
       )}
 
       {!proposal ? (
-        <Button size="lg" onClick={() => plan()} disabled={pending}>
+        <Button size="lg" onClick={() => plan()} loading={pending === "plan"}>
           {startLabel}
         </Button>
       ) : (
@@ -181,15 +181,15 @@ export function RoundPlanner({
             </div>
           )}
           <div className="flex flex-wrap gap-2">
-            <Button onClick={start} disabled={pending || proposal.courts.length === 0}>
+            <Button onClick={start} loading={pending === "start"} disabled={pending !== null || proposal.courts.length === 0}>
               Mulai main
             </Button>
             {!rotation && (
-              <Button variant="secondary" onClick={() => plan()} disabled={pending}>
+              <Button variant="secondary" onClick={() => plan()} loading={pending === "plan"} disabled={pending !== null}>
                 Acak ulang
               </Button>
             )}
-            <Button variant="secondary" onClick={() => setProposal(null)} disabled={pending}>
+            <Button variant="secondary" onClick={() => setProposal(null)} disabled={pending !== null}>
               Batal
             </Button>
           </div>

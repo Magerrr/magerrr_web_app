@@ -20,7 +20,7 @@ export function ClaimButton({ token, name }: { token: string; name: string }) {
   }
   return (
     <div className="flex flex-col gap-3">
-      <Button size="lg" onClick={claim} disabled={pending}>
+      <Button size="lg" onClick={claim} loading={pending}>
         {pending ? "Menghubungkan…" : `Klaim profil ${name}`}
       </Button>
       {error && <Notice tone="error">{error}</Notice>}

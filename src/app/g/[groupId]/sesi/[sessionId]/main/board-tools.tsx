@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useBusy } from "@/components/busy";
+import { Spinner, textButtonClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 
 /** Layar tetap menyala selama papan skor terbuka (Wake Lock API bila tersedia). */
@@ -39,11 +41,13 @@ export function VoidButton({ url }: { url: string }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useBusy(pending);
   return (
     <>
       <button
         type="button"
         disabled={pending}
+        aria-busy={pending || undefined}
         onClick={async () => {
           if (!window.confirm("Batalkan match ini? Match tidak dihitung di klasemen.")) return;
           setPending(true);
@@ -52,8 +56,9 @@ export function VoidButton({ url }: { url: string }) {
           if (!result.ok) return setError(result.error);
           router.refresh();
         }}
-        className="min-h-11 px-1 text-small underline underline-offset-4"
+        className={textButtonClass}
       >
+        {pending && <Spinner />}
         Batalkan
       </button>
       {error && <span role="alert" className="text-small">{error}</span>}
