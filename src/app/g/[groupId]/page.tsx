@@ -198,7 +198,12 @@ function FeaturedSession({ groupId, session: s, now }: { groupId: string; sessio
   return (
     <section aria-labelledby="sesi-berikutnya" className="flex flex-col gap-4 rounded-2xl bg-ink-black p-5 text-cream-paper" data-testid="featured-session">
       <div className="flex items-center gap-2">
-        <span className="rounded-full bg-fresh-grass px-3 py-1 text-caption text-ink-black">{untilLabel(s, now)}</span>
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-caption text-ink-black ${s.status === "running" ? "bg-fresh-grass" : "bg-sunshine-pop"}`}
+        >
+          {s.status === "running" && <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-ink-black motion-safe:animate-pulse" />}
+          {untilLabel(s, now)}
+        </span>
         <h2 id="sesi-berikutnya" className="text-small">
           {s.status === "running" ? "Sesi sekarang" : "Sesi berikutnya"}
         </h2>

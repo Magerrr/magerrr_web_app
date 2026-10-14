@@ -31,9 +31,13 @@ export function Card({ className, ...props }: ComponentProps<"section">) {
   return <section className={cx("rounded-2xl border border-ink-black bg-pure-white p-5", className)} {...props} />;
 }
 
-type BadgeTone = "accent" | "outline" | "neutral" | "muted";
+type BadgeTone = "accent" | "live" | "sunshine" | "outline" | "neutral" | "muted";
 const BADGE_TONE: Record<BadgeTone, string> = {
   accent: "border-ink-black bg-fresh-grass",
+  /** sedang berlangsung: hijau + titik berdenyut */
+  live: "border-ink-black bg-fresh-grass",
+  /** terjadwal/rencana: kuning, teks ink-black (kontras ~11:1) */
+  sunshine: "border-ink-black bg-sunshine-pop",
   // Outline coral selalu dengan teks ink-black (README Meadow).
   outline: "border-coral-pop bg-pure-white",
   neutral: "border-ink-black bg-cream-paper",
@@ -42,7 +46,8 @@ const BADGE_TONE: Record<BadgeTone, string> = {
 
 export function Badge({ tone = "neutral", children }: { tone?: BadgeTone; children: ReactNode }) {
   return (
-    <span className={cx("inline-flex h-6 items-center rounded-full border px-2.5 text-caption text-ink-black", BADGE_TONE[tone])}>
+    <span className={cx("inline-flex h-6 items-center gap-1.5 rounded-full border px-2.5 text-caption text-ink-black", BADGE_TONE[tone])}>
+      {tone === "live" && <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-ink-black motion-safe:animate-pulse" />}
       {children}
     </span>
   );

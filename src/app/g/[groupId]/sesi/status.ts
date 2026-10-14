@@ -7,7 +7,8 @@ export const STATUS_LABEL: Record<SessionStatus, string> = {
   finished: "Selesai",
 };
 
-export const STATUS_TONE = { planned: "neutral", running: "accent", finished: "muted" } as const;
+/** Warna label status: rencana kuning, berlangsung hijau (titik live), selesai abu. */
+export const STATUS_TONE = { planned: "sunshine", running: "live", finished: "muted" } as const;
 
 export const PLAY_MODE_LABEL = {
   kocok: "Kocok pasangan",

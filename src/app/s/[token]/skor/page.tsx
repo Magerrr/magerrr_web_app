@@ -15,6 +15,7 @@ import { formatDateId, formatTimeRangeId } from "@/lib/format";
 export const metadata: Metadata = { title: "Skor langsung", robots: { index: false, follow: false } };
 
 const STATUS = { planned: "Belum dimulai", running: "Berlangsung", finished: "Selesai" } as const;
+const STATUS_TONE = { planned: "sunshine", running: "live", finished: "muted" } as const;
 
 /** Live scoreboard publik (PRD SC8): penonton tanpa login, auto-refresh selama sesi berlangsung. */
 export default async function LiveScorePage({ params }: PageProps<"/s/[token]/skor">) {
@@ -65,7 +66,7 @@ export default async function LiveScorePage({ params }: PageProps<"/s/[token]/sk
           {session.venue ? ` · ${session.venue}` : ""}
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge tone={running ? "accent" : "neutral"}>{STATUS[session.status]}</Badge>
+          <Badge tone={STATUS_TONE[session.status]}>{STATUS[session.status]}</Badge>
         </div>
         {running && <AutoRefresh />}
       </div>
