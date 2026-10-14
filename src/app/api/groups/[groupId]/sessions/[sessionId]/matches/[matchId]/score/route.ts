@@ -8,8 +8,8 @@ export const PUT = route<RouteContext<"/api/groups/[groupId]/sessions/[sessionId
   async (request, { params }) => {
     const { groupId, sessionId, matchId } = await params;
     const { ctx } = await scorerPlay(groupId, sessionId, matchId);
-    const { games } = await readJson(request, liveScoreSchema);
-    await saveLiveScore(ctx, matchId, games);
-    return Response.json({ games });
+    const { games, serving = null } = await readJson(request, liveScoreSchema);
+    await saveLiveScore(ctx, matchId, games, serving);
+    return Response.json({ games, serving });
   },
 );

@@ -140,7 +140,7 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
                       groupId={groupId}
                       sessionId={sessionId}
                       courtNo={courtNo}
-                      match={{ id: match.id, kind: match.kind, players: match.players, games: match.games, rules: match.rules, gamesMax: match.gamesMax }}
+                      match={{ id: match.id, kind: match.kind, players: match.players, games: match.games, rules: match.rules, gamesMax: match.gamesMax, serving: match.serving }}
                       names={names}
                       rotation={rotation && match.tournament === null}
                       tag={tagOf(match)}

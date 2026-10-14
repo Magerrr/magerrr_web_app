@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { CourtView } from "@/components/court-view";
+import { SERVICE_COURT_LABEL, ShuttleIcon } from "@/components/shuttle-icon";
 import { PointBadge } from "@/components/point-badge";
 import { WaitingList } from "@/components/waiting-list";
 import { Badge, Card, Page, Split, buttonClass, textLinkClass } from "@/components/ui";
@@ -10,7 +11,7 @@ import { getGroup } from "@/lib/db/groups";
 import { loadPlay, waitingView } from "@/lib/db/play";
 import { findSessionByShareToken } from "@/lib/db/sessions";
 import { getTournament } from "@/lib/db/tournaments";
-import { courtEnds, pointStatus } from "@/lib/core/scoring";
+import { courtEnds, pointStatus, servePosition } from "@/lib/core/scoring";
 import { formatDateId, formatTimeRangeId } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Skor langsung", robots: { index: false, follow: false } };
@@ -100,6 +101,14 @@ export default async function LiveScorePage({ params }: PageProps<"/s/[token]/sk
                 const points = match ? pointStatus(match.games, match.rules, { games: match.gamesMax }) : null;
                 const left = match ? courtEnds(match.games, match.rules, { games: match.gamesMax }) : "A";
                 const right = left === "A" ? "B" : "A";
+                const serve = match ? servePosition(match.games, match.serving, match.rules, { games: match.gamesMax }) : null;
+                const serveBadge = (side: "A" | "B") =>
+                  serve?.side === side && (
+                    <span className="inline-flex items-center gap-1 text-small" data-testid="live-serve">
+                      <ShuttleIcon className="size-5" />
+                      Servis {SERVICE_COURT_LABEL[serve.court]}
+                    </span>
+                  );
                 return (
                   <Card key={courtNo} className="flex flex-col gap-3" data-testid={`live-court-${courtNo}`}>
                     <div className="flex items-baseline justify-between gap-2">
@@ -111,13 +120,13 @@ export default async function LiveScorePage({ params }: PageProps<"/s/[token]/sk
                         <CourtView left={nameList(match.players[left])} right={nameList(match.players[right])} />
                         <div className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2">
                           <span className="flex flex-wrap items-center gap-2 text-ui">
-                            {team(match.players.A)} <PointBadge kind={points?.A ?? null} />
+                            {team(match.players.A)} {serveBadge("A")} <PointBadge kind={points?.A ?? null} />
                           </span>
                           <span className="text-title tabular-nums" data-testid="live-score-A">
                             {game.a}
                           </span>
                           <span className="flex flex-wrap items-center gap-2 text-ui">
-                            {team(match.players.B)} <PointBadge kind={points?.B ?? null} />
+                            {team(match.players.B)} {serveBadge("B")} <PointBadge kind={points?.B ?? null} />
                           </span>
                           <span className="text-title tabular-nums" data-testid="live-score-B">
                             {game.b}

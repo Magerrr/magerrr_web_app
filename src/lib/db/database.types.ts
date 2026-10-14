@@ -253,14 +253,14 @@ isOneToOne: false
                   ]
                 },"matches": {
                   Row: {
-                    "bracket_round": number | null,"bracket_slot": number | null,"completed_at": string | null,"court_no": number | null,"created_at": string,"entry_a": number | null,"entry_b": number | null,"games_max": number | null,"id": string,"kind": Database["public"]['Enums']["match_kind"],"report_job_id": string | null,"rules": Json | null,"seq": number,"session_id": string,"status": Database["public"]['Enums']["match_status"],"tournament_id": string | null,"video_url": string | null,"winner": string | null
+                    "bracket_round": number | null,"bracket_slot": number | null,"completed_at": string | null,"court_no": number | null,"created_at": string,"entry_a": number | null,"entry_b": number | null,"games_max": number | null,"id": string,"kind": Database["public"]['Enums']["match_kind"],"report_job_id": string | null,"rules": Json | null,"seq": number,"serving": string | null,"session_id": string,"status": Database["public"]['Enums']["match_status"],"tournament_id": string | null,"video_url": string | null,"winner": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "bracket_round"?: number | null,"bracket_slot"?: number | null,"completed_at"?: string | null,"court_no"?: number | null,"created_at"?: string,"entry_a"?: number | null,"entry_b"?: number | null,"games_max"?: number | null,"id"?: string,"kind": Database["public"]['Enums']["match_kind"],"report_job_id"?: string | null,"rules"?: Json | null,"seq": number,"session_id": string,"status"?: Database["public"]['Enums']["match_status"],"tournament_id"?: string | null,"video_url"?: string | null,"winner"?: string | null
+                    "bracket_round"?: number | null,"bracket_slot"?: number | null,"completed_at"?: string | null,"court_no"?: number | null,"created_at"?: string,"entry_a"?: number | null,"entry_b"?: number | null,"games_max"?: number | null,"id"?: string,"kind": Database["public"]['Enums']["match_kind"],"report_job_id"?: string | null,"rules"?: Json | null,"seq": number,"serving"?: string | null,"session_id": string,"status"?: Database["public"]['Enums']["match_status"],"tournament_id"?: string | null,"video_url"?: string | null,"winner"?: string | null
                   }
                   Update: {
-                    "bracket_round"?: number | null,"bracket_slot"?: number | null,"completed_at"?: string | null,"court_no"?: number | null,"created_at"?: string,"entry_a"?: number | null,"entry_b"?: number | null,"games_max"?: number | null,"id"?: string,"kind"?: Database["public"]['Enums']["match_kind"],"report_job_id"?: string | null,"rules"?: Json | null,"seq"?: number,"session_id"?: string,"status"?: Database["public"]['Enums']["match_status"],"tournament_id"?: string | null,"video_url"?: string | null,"winner"?: string | null
+                    "bracket_round"?: number | null,"bracket_slot"?: number | null,"completed_at"?: string | null,"court_no"?: number | null,"created_at"?: string,"entry_a"?: number | null,"entry_b"?: number | null,"games_max"?: number | null,"id"?: string,"kind"?: Database["public"]['Enums']["match_kind"],"report_job_id"?: string | null,"rules"?: Json | null,"seq"?: number,"serving"?: string | null,"session_id"?: string,"status"?: Database["public"]['Enums']["match_status"],"tournament_id"?: string | null,"video_url"?: string | null,"winner"?: string | null
                   }
                   Relationships: [
                     {
@@ -528,7 +528,7 @@ isOneToOne: true
 { Args: { "p_expense": Json,"p_op": string,"p_present": (string)[],"p_session": string,"p_settlements": Json,"p_shares": Json,"p_version": number }; Returns: number
                            },
 "set_live_score":
-{ Args: { "p_games": Json,"p_match": string }; Returns: undefined
+{ Args: { "p_games": Json,"p_match": string,"p_serving": string }; Returns: undefined
                            },
 "set_payment_status":
 { Args: { "p_action": string,"p_paid_at": string,"p_session": string,"p_settlement": string }; Returns: boolean

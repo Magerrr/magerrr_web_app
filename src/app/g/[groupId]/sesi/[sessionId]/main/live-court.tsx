@@ -3,12 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { PointBadge } from "@/components/point-badge";
+import { SERVICE_COURT_LABEL, ShuttleIcon } from "@/components/shuttle-icon";
 import { useBusy } from "@/components/busy";
 import { Button, Notice, Spinner, textButtonClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import { acknowledge, enqueue, flushQueue, pendingFor, type KeyValueStore } from "@/lib/offline-queue";
 import { gameWinner, matchWinner } from "@/lib/core/rules";
-import { addPoint, currentGame, pointStatus, removePoint, sideChange } from "@/lib/core/scoring";
+import { addPoint, currentGame, pointStatus, removePoint, servePosition, sideChange } from "@/lib/core/scoring";
 import type { GameScore, Side } from "@/lib/core/types";
 import { teamLabel, type LiveMatchView, type Names } from "./types";
 
@@ -32,17 +33,24 @@ function browserStore(): KeyValueStore {
  * Setiap perubahan & "Simpan hasil" masuk antrian di perangkat (src/lib/offline-queue.ts) sampai server
  * menerimanya; gagal jaringan → coba lagi tiap 3 detik dan saat kembali online, juga setelah halaman dibuka ulang.
  */
-function useLiveScore(matchId: string, base: string, initial: GameScore[], onCompleted: () => void) {
-  const [games, setGames] = useState(initial);
-  const [history, setHistory] = useState<GameScore[][]>([]);
+/** Skor + pihak yang servis (ALGORITHMS §1e); keduanya dikirim bersama sebagai nilai absolut. */
+interface LiveState {
+  games: GameScore[];
+  serving: Side | null;
+}
+
+function useLiveScore(matchId: string, base: string, initial: LiveState, onCompleted: () => void) {
+  const [state, setState] = useState(initial);
+  const { games, serving } = state;
+  const [history, setHistory] = useState<LiveState[]>([]);
   const [sync, setSync] = useState<SyncState>({ state: "saved" });
   const [completeQueued, setCompleteQueued] = useState(false);
   const store = useRef<KeyValueStore | null>(null);
-  const state = useRef<{ inflight: boolean; again: boolean; timer: number | null }>({ inflight: false, again: false, timer: null });
+  const queue = useRef<{ inflight: boolean; again: boolean; timer: number | null }>({ inflight: false, again: false, timer: null });
 
   const flush = useCallback(
     async function run(): Promise<void> {
-      const q = state.current;
+      const q = queue.current;
       const kv = store.current;
       if (!kv) return;
       if (q.inflight) {
@@ -89,7 +97,8 @@ function useLiveScore(matchId: string, base: string, initial: GameScore[], onCom
     const done = pendingFor(kv, matchId, "complete");
     const score = done ?? pendingFor(kv, matchId, "score");
     if (score) {
-      setGames((score.body as { games: GameScore[] }).games);
+      const body = score.body as { games: GameScore[]; serving?: Side | null };
+      setState({ games: body.games, serving: body.serving ?? null });
       if (done) setCompleteQueued(true);
       void flush();
     }
@@ -97,7 +106,7 @@ function useLiveScore(matchId: string, base: string, initial: GameScore[], onCom
 
   useEffect(() => {
     const online = () => void flush();
-    const q = state.current;
+    const q = queue.current;
     window.addEventListener("online", online);
     return () => {
       window.removeEventListener("online", online);
@@ -105,15 +114,15 @@ function useLiveScore(matchId: string, base: string, initial: GameScore[], onCom
     };
   }, [flush]);
 
-  function push(next: GameScore[]) {
-    setGames(next);
-    if (store.current) enqueue(store.current, { kind: "score", matchId, url: `${base}/score`, method: "PUT", body: { games: next } });
+  function push(next: LiveState) {
+    setState(next);
+    if (store.current) enqueue(store.current, { kind: "score", matchId, url: `${base}/score`, method: "PUT", body: next });
     void flush();
   }
 
-  function change(next: GameScore[]) {
-    if (next === games || completeQueued) return;
-    setHistory((h) => [...h, games]);
+  function change(next: LiveState) {
+    if ((next.games === games && next.serving === serving) || completeQueued) return;
+    setHistory((h) => [...h, state]);
     push(next);
   }
 
@@ -133,7 +142,7 @@ function useLiveScore(matchId: string, base: string, initial: GameScore[], onCom
 
   /** Batalkan match: tulisan tertunda untuk match ini tidak relevan lagi. */
   async function discard() {
-    for (let i = 0; i < 50 && state.current.inflight; i++) await new Promise((r) => setTimeout(r, 100));
+    for (let i = 0; i < 50 && queue.current.inflight; i++) await new Promise((r) => setTimeout(r, 100));
     const kv = store.current;
     if (!kv) return;
     for (const kind of ["score", "complete"] as const) {
@@ -142,7 +151,7 @@ function useLiveScore(matchId: string, base: string, initial: GameScore[], onCom
     }
   }
 
-  return { games, change, undo, canUndo: history.length > 0 && !completeQueued, sync, retry: () => void flush(), complete, completeQueued, discard };
+  return { games, serving, change, undo, canUndo: history.length > 0 && !completeQueued, sync, retry: () => void flush(), complete, completeQueued, discard };
 }
 
 export function LiveCourt({
@@ -169,7 +178,7 @@ export function LiveCourt({
   const router = useRouter();
   const base = `/api/groups/${groupId}/sessions/${sessionId}/matches/${match.id}`;
   const refresh = useCallback(() => router.refresh(), [router]);
-  const live = useLiveScore(match.id, base, match.games, refresh);
+  const live = useLiveScore(match.id, base, { games: match.games, serving: match.serving }, refresh);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   useBusy(pending);
@@ -182,11 +191,19 @@ export function LiveCourt({
   const wins = (side: Side) => live.games.filter((g) => gameWinner(g.a, g.b, match.rules) === side).length;
   const leading = current.a === current.b ? null : current.a > current.b ? "A" : "B";
   const points = pointStatus(live.games, match.rules, format);
+  const serve = servePosition(live.games, live.serving, match.rules, format);
 
-  function score(next: GameScore[]) {
+  /** `rally` = sisi yang mencetak poin: ia yang servis berikutnya (ALGORITHMS §1e); −1 tidak mengubah servis. */
+  function score(next: GameScore[], rally?: Side) {
     if (next === live.games || live.completeQueued) return;
     setTurn(sideChange(live.games, next, match.rules, format));
-    live.change(next);
+    live.change({ games: next, serving: rally ?? live.serving });
+  }
+
+  /** Servis awal / koreksi (ALGORITHMS §1e). */
+  function setServe(side: Side) {
+    setTurn(null);
+    live.change({ games: live.games, serving: side });
   }
 
   function undo() {
@@ -227,7 +244,7 @@ export function LiveCourt({
             key={side}
             type="button"
             disabled={winner !== null || live.completeQueued}
-            onClick={() => score(addPoint(live.games, side, match.rules, format))}
+            onClick={() => score(addPoint(live.games, side, match.rules, format), side)}
             className={`flex min-h-40 flex-col items-center justify-between gap-2 rounded-2xl border-2 bg-pure-ink p-3 disabled:cursor-default ${
               leading === side ? "border-fresh-grass" : "border-pure-ink"
             }`}
@@ -241,6 +258,12 @@ export function LiveCourt({
               {side === "A" ? current.a : current.b}
             </span>
             <span className="flex flex-col items-center gap-1">
+              {serve?.side === side && (
+                <span className="flex items-center gap-1 text-caption" data-testid={`serve-${side}`}>
+                  <ShuttleIcon className="size-5 text-sunshine-pop" />
+                  Servis {SERVICE_COURT_LABEL[serve.court]}
+                </span>
+              )}
               <PointBadge kind={points[side]} />
               <span className="text-caption">{match.gamesMax > 1 ? `${wins(side)} game` : winner ? "" : "Tap +1"}</span>
             </span>
@@ -269,6 +292,26 @@ export function LiveCourt({
           −1<span className="sr-only"> kurangi poin {label("B")}</span>
         </Button>
       </div>
+
+      {!winner &&
+        (live.serving === null ? (
+          <div className="flex flex-col gap-2">
+            <p className="text-small">Siapa servis duluan?</p>
+            <div className="grid grid-cols-2 gap-2">
+              {(["A", "B"] as const).map((side) => (
+                <Button key={side} variant="accent" onClick={() => setServe(side)} disabled={live.completeQueued}>
+                  <ShuttleIcon className="size-5" />
+                  <span className="truncate">{label(side)}</span>
+                </Button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <Button variant="accent" onClick={() => setServe(live.serving === "A" ? "B" : "A")} disabled={live.completeQueued}>
+            <ShuttleIcon className="size-5" />
+            Pindah servis
+          </Button>
+        ))}
 
       {winner && (
         <>

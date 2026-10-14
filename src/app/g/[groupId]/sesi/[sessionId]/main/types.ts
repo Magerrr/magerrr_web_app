@@ -8,6 +8,8 @@ export interface LiveMatchView {
   games: GameScore[];
   rules: GameRules;
   gamesMax: 1 | 3 | 5;
+  /** pihak yang servis (ALGORITHMS §1e) */
+  serving: Side | null;
 }
 
 export interface CourtView {

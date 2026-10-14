@@ -89,6 +89,16 @@ Satu lapangan di satu sesi punya paling banyak **satu** pencatat (anggota). `can
 
 Test vector (h admin, b & c pemain, hadir h/b/c): admin `null→b`, `b→c`, `b→null` → null · `null→x` → `not_present` · b `null→b` → null · b `c→b` → `taken` · b `null→c` → `not_allowed` · b `c→null` → `not_allowed` · b `b→null` → null.
 
+### 1e. Posisi kok saat servis
+
+Pihak yang servis = sisi yang memenangkan reli terakhir (tap +1 terakhir); dicatat pencatat bersama skor live (`matches.serving`), bisa diubah manual (servis awal / koreksi). Undo mengembalikan pihak servis sebelumnya; −1 tidak mengubahnya.
+
+`servePosition(games, server, rules, format): {side, court: 'right'|'left'} | null`
+- `null` bila `server` belum diketahui atau match sudah punya pemenang.
+- Game acuan = game berjalan (§1b; game selesai → game baru 0–0). `court = 'right'` bila skor `server` di game acuan genap, `'left'` bila ganjil.
+
+Test vector (bwf21): `[{0,0}]` A → `{A, right}` · `[{1,0}]` A → `{A, left}` · `[{1,4}]` B → `{B, right}` · `[{20,19}]` B → `{B, left}` · `[{21,15},{0,0}]` A games=3 → `{A, right}` · `[{21,15}]` A games=3 → `{A, right}` · `[{21,15}]` A games=1 → `null` · server null → `null`.
+
 ## 2. Klasemen (leaderboard)
 
 Input: daftar match `completed` (status `void`/`running` diabaikan), tiap match punya `players: {A: MemberId[], B: MemberId[]}`, `games`, `winner`, dan `sessionDate`.

@@ -105,3 +105,17 @@ export function courtEnds(games: GameScore[], rules: GameRules, format: MatchFor
   const swaps = game.no - 1 + (decider && Math.max(game.a, game.b) >= Math.ceil(rules.target / 2) ? 1 : 0);
   return swaps % 2 === 0 ? "A" : "B";
 }
+
+export type ServiceCourt = "right" | "left";
+
+/**
+ * Posisi kok saat servis (ALGORITHMS §1e): `server` = sisi yang memenangkan reli terakhir (yang servis).
+ * Servis dari petak kanan bila skor pihak yang servis di game berjalan genap, kiri bila ganjil.
+ * null bila pihak yang servis belum diketahui atau match sudah selesai.
+ */
+export function servePosition(games: GameScore[], server: Side | null, rules: GameRules, format: MatchFormat): { side: Side; court: ServiceCourt } | null {
+  if (server === null || matchWinner(games, rules, format)) return null;
+  const open = openGame(games, rules);
+  const score = server === "A" ? open.a : open.b;
+  return { side: server, court: score % 2 === 0 ? "right" : "left" };
+}

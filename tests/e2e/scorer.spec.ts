@@ -44,6 +44,12 @@ test("pencatat skor: pemain mengajukan diri, hanya satu yang memegang, admin bis
   await expect(board.getByTestId("scorer-1")).toContainText("Pencatat skor: Kamu");
   await board.getByRole("button", { name: /Tambah poin Admin|Tambah poin .* \/ Budi/ }).click();
   await expect(board.getByTestId("score-A")).toHaveText("2");
+  // Yang mencetak poin servis berikutnya; skor genap → petak kanan.
+  await expect(board.getByTestId("serve-A")).toHaveText("Servis kanan");
+  await board.getByRole("button", { name: "Pindah servis" }).click();
+  await expect(board.getByTestId("serve-B")).toHaveText("Servis kanan");
+  await board.getByRole("button", { name: "Undo" }).click();
+  await expect(board.getByTestId("serve-A")).toHaveText("Servis kanan");
   await expect(board.getByTestId("sync-status")).toHaveText("Tersimpan");
   // Pemain pencatat tidak bisa membatalkan match.
   await expect(board.getByRole("button", { name: "Batalkan match" })).toHaveCount(0);
@@ -103,24 +109,22 @@ test("papan skor layar penuh & visual lapangan di skor langsung", async ({ page,
   await tv.goto(`${layar}?lapangan=1`);
   const court = tv.getByTestId("display-court-1");
   await expect(court.getByRole("heading", { name: "Lapangan 1" })).toBeVisible();
-  await expect(court.getByTestId("display-side-left")).toContainText("Budi");
-  await expect(court.getByTestId("display-side-right")).toContainText("Cici");
-  await expect(court.getByTestId("display-side-right")).toContainText("Dodi");
-  await expect(court.getByRole("img")).toHaveCount(0);
+  await expect(court.getByTestId("display-team-A")).toContainText("Budi");
+  await expect(court.getByTestId("display-team-B")).toContainText("Cici");
+  await expect(court.getByTestId("display-team-B")).toContainText("Dodi");
+  await expect(court.getByTestId("display-serve")).toHaveCount(0);
   await expect(tv.getByTestId("display-court-2")).toHaveCount(0);
 
-  // Game 2: pemain pindah sisi → B di kiri; skor ikut ke sisinya tanpa memuat ulang.
-  expect((await page.request.put(`${api}/matches/${matchId}/score`, { data: { games: [{ a: 21, b: 15 }, { a: 3, b: 7 }] } })).status()).toBe(200);
-  await expect(court.getByTestId("display-side-left")).toContainText("Cici", { timeout: 10_000 });
-  await expect(court.getByTestId("display-side-left").getByTestId("display-score-B")).toHaveText("7");
-  await expect(court.getByTestId("display-side-right").getByTestId("display-score-A")).toHaveText("3");
+  // Skor & posisi kok (B servis dengan skor ganjil → petak kiri) ikut berubah tanpa memuat ulang.
+  expect((await page.request.put(`${api}/matches/${matchId}/score`, { data: { games: [{ a: 21, b: 15 }, { a: 3, b: 7 }], serving: "B" } })).status()).toBe(200);
+  await expect(court.getByTestId("display-team-B").getByTestId("display-score-B")).toHaveText("7", { timeout: 10_000 });
+  await expect(court.getByTestId("display-team-A").getByTestId("display-score-A")).toHaveText("3");
+  await expect(court.getByTestId("display-team-B").getByTestId("display-serve")).toHaveText("Servis kiri");
 
-  await tv.getByRole("link", { name: "Tukar kiri–kanan" }).click();
-  await expect(court.getByTestId("display-side-left")).toContainText("Budi");
-
-  // Skor langsung biasa juga menampilkan lapangan.
+  // Skor langsung biasa: lapangan (game 2 → B di kiri) dan posisi kok.
   await tv.goto(`/s/${token!.share_token}/skor`);
-  await expect(tv.getByTestId("live-court-1").getByRole("img", { name: /kiri Cici dan Dodi/ })).toBeVisible();
+  await expect(tv.getByTestId("live-court-1").getByRole("img", { name: /kiri (Cici dan Dodi|Dodi dan Cici)/ })).toBeVisible();
+  await expect(tv.getByTestId("live-serve")).toHaveText("Servis kiri");
   await expect(tv.getByRole("link", { name: /Papan skor layar penuh/ })).toHaveAttribute("href", layar);
   await tv.context().close();
 });

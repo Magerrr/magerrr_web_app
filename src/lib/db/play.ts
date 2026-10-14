@@ -5,7 +5,7 @@ import { matchMinutes, restingPriority, rotationTurns, turnEta } from "@/lib/cor
 import { afterGame, fillCourt, isWaiting, reconcileQueue, startRotation } from "@/lib/core/rotation";
 import { checkGames, type GameRules } from "@/lib/core/rules";
 import { canScore, scorerRefusal, type ScorerActor } from "@/lib/core/scorer";
-import type { GameScore, MatchKind, MemberId, Teams } from "@/lib/core/types";
+import type { GameScore, MatchKind, MemberId, Side, Teams } from "@/lib/core/types";
 import { HttpError } from "@/lib/http-error";
 import type { MatchResultInput, StartRoundInput } from "@/lib/validation";
 import type { Member } from "./authz";
@@ -313,10 +313,10 @@ function runningMatch(ctx: PlayContext, matchId: string): SessionMatch {
   return match;
 }
 
-export async function saveLiveScore(ctx: PlayContext, matchId: string, games: GameScore[]): Promise<void> {
+export async function saveLiveScore(ctx: PlayContext, matchId: string, games: GameScore[], serving: Side | null): Promise<void> {
   const match = runningMatch(ctx, matchId);
   checkGames(games, match.rules, { games: match.gamesMax }, { complete: false });
-  const { error } = await serviceClient().rpc("set_live_score", { p_match: match.id, p_games: asJson(games) });
+  const { error } = await serviceClient().rpc("set_live_score", { p_match: match.id, p_games: asJson(games), p_serving: serving as string });
   if (error) dbError(error);
 }
 

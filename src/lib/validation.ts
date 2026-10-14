@@ -178,7 +178,10 @@ export const startRoundSchema = z
   .strict();
 export type StartRoundInput = z.infer<typeof startRoundSchema>;
 
-export const liveScoreSchema = z.object({ games: z.array(gameSchema).min(1).max(5) }).strict();
+/** Skor live; `serving` = pihak yang servis (ALGORITHMS §1e), tidak dipakai saat menyelesaikan match. */
+export const liveScoreSchema = z
+  .object({ games: z.array(gameSchema).min(1).max(5), serving: z.enum(["A", "B"]).nullable().optional() })
+  .strict();
 
 /** Pencatat skor lapangan: anggota, atau null = kembali ke admin. */
 export const courtScorerSchema = z.object({ memberId: uuidSchema.nullable() }).strict();

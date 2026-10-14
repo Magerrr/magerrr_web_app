@@ -12,6 +12,8 @@ export interface SessionMatch extends MatchRecord {
   /** waktu match dibuat = mulai main (input skor manual: ≈ selesai) */
   startedAt: Date;
   completedAt: Date | null;
+  /** pihak yang servis pada match berjalan (ALGORITHMS §1e); null = belum diketahui */
+  serving: Side | null;
   /** tautan ke turnamen (slot bagan / pasangan seed); null = match biasa */
   tournament: (TournamentLink & { id: string }) | null;
 }
@@ -40,7 +42,7 @@ export async function loadSessionMatches(
   const { data, error } = await serviceClient()
     .from("matches")
     .select(
-      "id, seq, kind, court_no, status, winner, rules, games_max, created_at, completed_at, tournament_id, bracket_round, bracket_slot, entry_a, entry_b, match_players(side, member_id), games(game_no, score_a, score_b)",
+      "id, seq, kind, court_no, status, winner, serving, rules, games_max, created_at, completed_at, tournament_id, bracket_round, bracket_slot, entry_a, entry_b, match_players(side, member_id), games(game_no, score_a, score_b)",
     )
     .eq("session_id", session.id)
     .order("seq");
@@ -56,6 +58,7 @@ export async function loadSessionMatches(
     games: games(m.games),
     winner: m.winner as Side | null,
     courtNo: m.court_no,
+    serving: m.serving as Side | null,
     rules: (m.rules as unknown as GameRules | null) ?? session.rules ?? fallback.rules,
     gamesMax: (m.games_max ?? session.matchGames ?? fallback.matchGames) as 1 | 3 | 5,
     startedAt: new Date(m.created_at),
