@@ -165,13 +165,15 @@ test("aksesibilitas, target sentuh, dan lebar 320–1280px di semua halaman utam
     `${g}/sesi/${f.cup}/turnamen?tab=bagan`,
     `${g}/sesi/${f.cup}/turnamen?tab=jadwal`,
     `/s/${f.cupToken}/turnamen`,
+    `/s/${f.liveToken}/skor`,
+    `/s/${f.liveToken}/layar`,
   ]) {
     await audit(page, path, problems);
   }
 
   // Pengunjung tanpa akun.
   const visitor = await (await browser.newContext({ baseURL })).newPage();
-  for (const path of ["/", "/masuk", `/gabung/${f.inviteCode}`, "/offline", `/s/${f.token}/tagihan`, `/s/${f.token}/recap`, `/s/${f.token}/skor`, `/s/${f.liveToken}/turnamen`, `/klaim/${"0".repeat(32)}`, `${g}`, `${g}/obrolan`]) {
+  for (const path of ["/", "/masuk", `/gabung/${f.inviteCode}`, "/offline", `/s/${f.token}/tagihan`, `/s/${f.token}/recap`, `/s/${f.token}/skor`, `/s/${f.liveToken}/turnamen`, `/s/${f.liveToken}/layar`, `/klaim/${"0".repeat(32)}`, `${g}`, `${g}/obrolan`]) {
     await audit(visitor, path, problems);
   }
   await visitor.context().close();

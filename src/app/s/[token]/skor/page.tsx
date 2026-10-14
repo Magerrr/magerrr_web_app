@@ -2,14 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { CourtView } from "@/components/court-view";
 import { PointBadge } from "@/components/point-badge";
 import { WaitingList } from "@/components/waiting-list";
-import { Badge, Card, Page, Split, textLinkClass } from "@/components/ui";
+import { Badge, Card, Page, Split, buttonClass, textLinkClass } from "@/components/ui";
 import { getGroup } from "@/lib/db/groups";
 import { loadPlay, waitingView } from "@/lib/db/play";
 import { findSessionByShareToken } from "@/lib/db/sessions";
 import { getTournament } from "@/lib/db/tournaments";
-import { pointStatus } from "@/lib/core/scoring";
+import { courtEnds, pointStatus } from "@/lib/core/scoring";
 import { formatDateId, formatTimeRangeId } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Skor langsung", robots: { index: false, follow: false } };
@@ -26,6 +27,7 @@ export default async function LiveScorePage({ params }: PageProps<"/s/[token]/sk
   const [ctx, tournament] = await Promise.all([loadPlay(group, session), getTournament(session.id)]);
   const names = Object.fromEntries(ctx.members.map((m) => [m.id, m.display_name]));
   const team = (ids: string[]) => ids.map((id) => names[id] ?? "?").join(" / ");
+  const nameList = (ids: string[]) => ids.map((id) => names[id] ?? "?");
   const running = session.status === "running";
   const waiting = running ? waitingView(ctx, new Date()) : [];
   const recent = ctx.matches.filter((m) => m.status === "completed").reverse().slice(0, 5);
@@ -69,6 +71,11 @@ export default async function LiveScorePage({ params }: PageProps<"/s/[token]/sk
           <Badge tone={STATUS_TONE[session.status]}>{STATUS[session.status]}</Badge>
         </div>
         {running && <AutoRefresh />}
+        {session.status !== "finished" && (
+          <a href={`/s/${token}/layar`} target="_blank" rel="noopener" className={buttonClass("secondary", "md", "self-start")}>
+            Papan skor layar penuh<span className="sr-only"> (tab baru)</span>
+          </a>
+        )}
       </div>
 
       {session.status === "finished" && (
@@ -91,6 +98,8 @@ export default async function LiveScorePage({ params }: PageProps<"/s/[token]/sk
                 const match = ctx.running.find((m) => m.courtNo === courtNo);
                 const game = match?.games.at(-1);
                 const points = match ? pointStatus(match.games, match.rules, { games: match.gamesMax }) : null;
+                const left = match ? courtEnds(match.games, match.rules, { games: match.gamesMax }) : "A";
+                const right = left === "A" ? "B" : "A";
                 return (
                   <Card key={courtNo} className="flex flex-col gap-3" data-testid={`live-court-${courtNo}`}>
                     <div className="flex items-baseline justify-between gap-2">
@@ -98,20 +107,23 @@ export default async function LiveScorePage({ params }: PageProps<"/s/[token]/sk
                       {match && match.gamesMax > 1 && <p className="text-small">Game {match.games.length} · best of {match.gamesMax}</p>}
                     </div>
                     {match && game ? (
-                      <div className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2">
-                        <span className="flex flex-wrap items-center gap-2 text-ui">
-                          {team(match.players.A)} <PointBadge kind={points?.A ?? null} />
-                        </span>
-                        <span className="text-title tabular-nums" data-testid="live-score-A">
-                          {game.a}
-                        </span>
-                        <span className="flex flex-wrap items-center gap-2 text-ui">
-                          {team(match.players.B)} <PointBadge kind={points?.B ?? null} />
-                        </span>
-                        <span className="text-title tabular-nums" data-testid="live-score-B">
-                          {game.b}
-                        </span>
-                      </div>
+                      <>
+                        <CourtView left={nameList(match.players[left])} right={nameList(match.players[right])} />
+                        <div className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2">
+                          <span className="flex flex-wrap items-center gap-2 text-ui">
+                            {team(match.players.A)} <PointBadge kind={points?.A ?? null} />
+                          </span>
+                          <span className="text-title tabular-nums" data-testid="live-score-A">
+                            {game.a}
+                          </span>
+                          <span className="flex flex-wrap items-center gap-2 text-ui">
+                            {team(match.players.B)} <PointBadge kind={points?.B ?? null} />
+                          </span>
+                          <span className="text-title tabular-nums" data-testid="live-score-B">
+                            {game.b}
+                          </span>
+                        </div>
+                      </>
                     ) : (
                       <p className="text-small">Kosong</p>
                     )}

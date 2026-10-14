@@ -180,6 +180,9 @@ export type StartRoundInput = z.infer<typeof startRoundSchema>;
 
 export const liveScoreSchema = z.object({ games: z.array(gameSchema).min(1).max(5) }).strict();
 
+/** Pencatat skor lapangan: anggota, atau null = kembali ke admin. */
+export const courtScorerSchema = z.object({ memberId: uuidSchema.nullable() }).strict();
+
 export const matchResultSchema = z
   .object({ kind: kindSchema, courtNo: courtNoSchema.nullable(), A: teamSchema, B: teamSchema, games: z.array(gameSchema).min(1).max(5) })
   .strict();

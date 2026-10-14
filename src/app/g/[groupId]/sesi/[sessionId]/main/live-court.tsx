@@ -153,6 +153,7 @@ export function LiveCourt({
   names,
   rotation,
   tag = null,
+  canVoid = true,
 }: {
   groupId: string;
   sessionId: string;
@@ -162,6 +163,8 @@ export function LiveCourt({
   rotation: boolean;
   /** label tambahan, mis. "Turnamen · Semifinal 1" */
   tag?: string | null;
+  /** tombol "Batalkan match" (admin saja; pencatat skor pemain tidak) */
+  canVoid?: boolean;
 }) {
   const router = useRouter();
   const base = `/api/groups/${groupId}/sessions/${sessionId}/matches/${match.id}`;
@@ -254,14 +257,15 @@ export function LiveCourt({
         </p>
       )}
 
+      {/* accent (hijau penuh): secondary transparan di atas kartu ink-black membuat teks ink tidak terbaca. */}
       <div className="grid grid-cols-3 gap-2">
-        <Button variant="secondary" onClick={() => score(removePoint(live.games, "A", match.rules))}>
+        <Button variant="accent" onClick={() => score(removePoint(live.games, "A", match.rules))}>
           −1<span className="sr-only"> kurangi poin {label("A")}</span>
         </Button>
-        <Button variant="secondary" onClick={undo} disabled={!live.canUndo}>
+        <Button variant="accent" onClick={undo} disabled={!live.canUndo}>
           Undo
         </Button>
-        <Button variant="secondary" onClick={() => score(removePoint(live.games, "B", match.rules))}>
+        <Button variant="accent" onClick={() => score(removePoint(live.games, "B", match.rules))}>
           −1<span className="sr-only"> kurangi poin {label("B")}</span>
         </Button>
       </div>
@@ -290,19 +294,21 @@ export function LiveCourt({
           {live.sync.state === "rejected" && live.sync.message}
         </p>
         {live.sync.state === "offline" && (
-          <Button variant="secondary" onClick={live.retry}>
+          <Button variant="accent" onClick={live.retry}>
             Coba lagi
           </Button>
         )}
         {live.sync.state === "rejected" && (
-          <Button variant="secondary" onClick={() => router.refresh()}>
+          <Button variant="accent" onClick={() => router.refresh()}>
             Muat ulang
           </Button>
         )}
-        <button type="button" onClick={voidMatch} disabled={pending} aria-busy={pending || undefined} className={textButtonClass}>
-          {pending && <Spinner />}
-          Batalkan match
-        </button>
+        {canVoid && (
+          <button type="button" onClick={voidMatch} disabled={pending} aria-busy={pending || undefined} className={textButtonClass}>
+            {pending && <Spinner />}
+            Batalkan match
+          </button>
+        )}
       </div>
       {error && <Notice tone="error">{error}</Notice>}
     </section>

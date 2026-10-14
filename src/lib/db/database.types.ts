@@ -107,6 +107,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"court_scorers": {
+                  Row: {
+                    "assigned_at": string,"court_no": number,"member_id": string,"session_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "assigned_at"?: string,"court_no": number,"member_id": string,"session_id": string
+                  }
+                  Update: {
+                    "assigned_at"?: string,"court_no"?: number,"member_id"?: string,"session_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "court_scorers_member_id_fkey"
+      columns: ["member_id"]
+isOneToOne: false
+      referencedRelation: "members"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "court_scorers_session_id_fkey"
+      columns: ["session_id"]
+isOneToOne: false
+      referencedRelation: "sessions"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"expense_shares": {
                   Row: {
                     "amount": number,"expense_id": string,"member_id": string,"weight": number | null

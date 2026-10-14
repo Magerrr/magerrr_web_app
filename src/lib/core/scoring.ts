@@ -91,3 +91,17 @@ export function sideChange(
   const mid = Math.ceil(rules.target / 2);
   return Math.max(from.a, from.b) < mid && Math.max(to.a, to.b) >= mid ? "interval" : null;
 }
+
+/**
+ * Sisi yang berada di ujung kiri lapangan (ALGORITHMS §1c), dengan asumsi A memulai game 1 di kiri.
+ * Pemain pindah sisi tiap game baru dan sekali di game penentu saat skor tertinggi mencapai `ceil(target / 2)`.
+ */
+export function courtEnds(games: GameScore[], rules: GameRules, format: MatchFormat): Side {
+  const last = games[games.length - 1];
+  const game = matchWinner(games, rules, format) ? { no: games.length, a: last.a, b: last.b, done: games.slice(0, -1) } : openGame(games, rules);
+  const need = Math.ceil(format.games / 2);
+  const won = gamesWon(game.done, rules);
+  const decider = won.A === need - 1 && won.B === need - 1;
+  const swaps = game.no - 1 + (decider && Math.max(game.a, game.b) >= Math.ceil(rules.target / 2) ? 1 : 0);
+  return swaps % 2 === 0 ? "A" : "B";
+}

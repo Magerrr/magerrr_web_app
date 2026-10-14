@@ -4,6 +4,7 @@ import { kocokContext, planRound, type Grade, type PlanHint } from "@/lib/core/k
 import { matchMinutes, restingPriority, rotationTurns, turnEta } from "@/lib/core/queue";
 import { afterGame, fillCourt, isWaiting, reconcileQueue, startRotation } from "@/lib/core/rotation";
 import { checkGames, type GameRules } from "@/lib/core/rules";
+import { canScore, scorerRefusal, type ScorerActor } from "@/lib/core/scorer";
 import type { GameScore, MatchKind, MemberId, Teams } from "@/lib/core/types";
 import { HttpError } from "@/lib/http-error";
 import type { MatchResultInput, StartRoundInput } from "@/lib/validation";
@@ -42,10 +43,18 @@ export interface PlayContext {
   present: MemberId[];
   rules: GameRules;
   gamesMax: 1 | 3 | 5;
+  /** pencatat skor per nomor lapangan (ALGORITHMS §1d); lapangan tanpa entri = admin */
+  scorers: Record<number, MemberId>;
+}
+
+async function loadScorers(sessionId: string): Promise<Record<number, MemberId>> {
+  const { data, error } = await serviceClient().from("court_scorers").select("court_no, member_id").eq("session_id", sessionId);
+  if (error) throw error;
+  return Object.fromEntries(data.map((r) => [r.court_no, r.member_id]));
 }
 
 export async function loadPlay(group: GroupSettings, session: SessionDetail): Promise<PlayContext> {
-  const [members, matches] = await Promise.all([listMembers(group.id), loadSessionMatches(session, group)]);
+  const [members, matches, scorers] = await Promise.all([listMembers(group.id), loadSessionMatches(session, group), loadScorers(session.id)]);
   const running = matches.filter((m) => m.status === "running");
   const onCourt = new Set(running.flatMap((m) => [...m.players.A, ...m.players.B]));
   const busyCourts = new Set(running.map((m) => m.courtNo));
@@ -64,7 +73,57 @@ export async function loadPlay(group: GroupSettings, session: SessionDetail): Pr
       .map((m) => m.id),
     rules: session.rules ?? group.rules,
     gamesMax: session.matchGames ?? group.matchGames,
+    scorers,
   };
+}
+
+/** Pencatat skor lapangan `courtNo`, atau null (admin). */
+export const scorerOf = (ctx: PlayContext, courtNo: number | null): MemberId | null => (courtNo === null ? null : (ctx.scorers[courtNo] ?? null));
+
+/** Tolak (403) bila `actor` tidak memegang skor lapangan match ini (ALGORITHMS §1d). */
+export function assertCanScore(ctx: PlayContext, actor: ScorerActor, matchId: string): void {
+  const match = ctx.running.find((m) => m.id === matchId);
+  // Match yang sudah selesai/dibatalkan ditolak dengan 409 oleh pemanggil (runningMatch).
+  if (!match) return;
+  const scorer = scorerOf(ctx, match.courtNo);
+  if (canScore(scorer, actor)) return;
+  const name = ctx.members.find((m) => m.id === scorer)?.display_name;
+  throw new HttpError(403, scorer ? `Skor lapangan ini sedang dipegang ${name ?? "pemain lain"}. Muat ulang halaman.` : "Hanya admin grup yang boleh mencatat skor lapangan ini.");
+}
+
+const SCORER_REFUSAL = {
+  not_present: "Pencatat skor harus peserta yang hadir di sesi ini.",
+  taken: "Lapangan ini sudah punya pencatat skor. Minta admin bila ingin ganti.",
+  not_allowed: "Hanya admin yang bisa menunjuk atau mengganti pencatat skor.",
+} as const;
+
+/** Tunjuk / ajukan diri / lepas pencatat skor lapangan (ALGORITHMS §1d). */
+export async function setCourtScorer(ctx: PlayContext, actor: ScorerActor, courtNo: number, next: MemberId | null): Promise<MemberId | null> {
+  assertRunning(ctx);
+  if (courtNo > ctx.session.courtCount) throw new HttpError(422, "Nomor lapangan tidak valid.");
+  const current = scorerOf(ctx, courtNo);
+  const refusal = scorerRefusal(current, next, actor, ctx.present);
+  if (refusal) throw new HttpError(refusal === "not_present" ? 422 : refusal === "taken" ? 409 : 403, SCORER_REFUSAL[refusal]);
+  if (next === current) return next;
+  const table = serviceClient().from("court_scorers");
+  const key = { session_id: ctx.session.id, court_no: courtNo };
+  if (next === null) {
+    // Pemain hanya melepas baris miliknya sendiri (bisa saja sudah diganti admin sesaat sebelumnya).
+    const query = table.delete().match(key);
+    const { error } = actor.isAdmin ? await query : await query.eq("member_id", actor.id);
+    if (error) throw error;
+    return null;
+  }
+  if (actor.isAdmin) {
+    const { error } = await table.upsert({ ...key, member_id: next, assigned_at: new Date().toISOString() });
+    if (error) throw error;
+    return next;
+  }
+  // Mengajukan diri: insert biasa, sehingga dua pemain yang menekan bersamaan tidak saling menimpa.
+  const { error } = await table.insert({ ...key, member_id: next });
+  if (error?.code === "23505") throw new HttpError(409, SCORER_REFUSAL.taken);
+  if (error) throw error;
+  return next;
 }
 
 const isRotation = (ctx: PlayContext) => ctx.session.playMode === "rotasi";

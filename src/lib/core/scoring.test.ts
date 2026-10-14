@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PRESETS } from "./rules";
-import { addPoint, currentGame, pointStatus, removePoint, sideChange } from "./scoring";
+import { addPoint, courtEnds, currentGame, pointStatus, removePoint, sideChange } from "./scoring";
 import type { GameScore } from "./types";
 
 const bwf21 = PRESETS.bwf21;
@@ -109,5 +109,29 @@ describe("sideChange — ganti sisi (SC5, ALGORITHMS §1b)", () => {
   it("mengikuti addPoint: tap yang menutup game memberi 'game'", () => {
     const before = g([20, 3]);
     expect(sideChange(before, addPoint(before, "A", bwf21, bo3), bwf21, bo3)).toBe("game");
+  });
+});
+
+describe("courtEnds — sisi kiri lapangan (ALGORITHMS §1c)", () => {
+  const vectors: [GameScore[], number, "A" | "B"][] = [
+    [[{ a: 0, b: 0 }], 1, "A"],
+    [[{ a: 10, b: 5 }], 1, "A"],
+    [[{ a: 11, b: 5 }], 1, "B"],
+    [[{ a: 11, b: 5 }], 3, "A"],
+    [[{ a: 21, b: 15 }, { a: 0, b: 0 }], 3, "B"],
+    [[{ a: 21, b: 15 }], 3, "B"],
+    [[{ a: 21, b: 15 }, { a: 15, b: 21 }, { a: 10, b: 8 }], 3, "A"],
+    [[{ a: 21, b: 15 }, { a: 15, b: 21 }, { a: 8, b: 11 }], 3, "B"],
+    [[{ a: 21, b: 15 }, { a: 21, b: 15 }], 3, "B"],
+    [[{ a: 21, b: 15 }, { a: 15, b: 21 }, { a: 21, b: 19 }], 3, "B"],
+    [[{ a: 21, b: 15 }], 1, "B"],
+  ];
+  it.each(vectors)("%j best of %i → kiri %s", (games, n, left) => {
+    expect(courtEnds(games, bwf21, { games: n })).toBe(left);
+  });
+
+  it("poin15: game penentu pindah sisi di 8", () => {
+    expect(courtEnds([{ a: 7, b: 7 }], PRESETS.poin15, one)).toBe("A");
+    expect(courtEnds([{ a: 8, b: 7 }], PRESETS.poin15, one)).toBe("B");
   });
 });

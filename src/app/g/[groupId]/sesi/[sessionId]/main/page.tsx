@@ -5,7 +5,8 @@ import { CopyLink } from "@/components/copy-link";
 import { NoAccess } from "@/components/no-access";
 import { PointBadge } from "@/components/point-badge";
 import { MyTurn, WaitingList } from "@/components/waiting-list";
-import { Badge, ButtonLink, Card, Notice, Page, TopBar } from "@/components/ui";
+import { Badge, ButtonLink, Card, Notice, Page, TopBar, buttonClass } from "@/components/ui";
+import { canScore } from "@/lib/core/scorer";
 import { pointStatus } from "@/lib/core/scoring";
 import { getGroup } from "@/lib/db/groups";
 import type { SessionMatch } from "@/lib/db/matches";
@@ -17,10 +18,12 @@ import { formatShortDateId } from "@/lib/format";
 import { isUuid } from "@/lib/validation";
 import { pageAccess } from "../../../access";
 import { STATUS_LABEL, STATUS_TONE } from "../../status";
-import { VoidButton, WakeLock } from "./board-tools";
+import { WakeLock } from "@/components/wake-lock";
+import { VoidButton } from "./board-tools";
 import { LiveCourt } from "./live-court";
 import { PairsEditor } from "./pairs-editor";
 import { RoundPlanner } from "./round-planner";
+import { ScorerControl } from "./scorer-control";
 import { ShuttleCounter } from "./shuttle-counter";
 import { teamLabel, type Names } from "./types";
 
@@ -57,12 +60,15 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
   const names: Names = Object.fromEntries(ctx.members.map((m) => [m.id, m.display_name]));
   const running = session.status === "running";
   const rotation = session.playMode === "rotasi";
-  const canScore = isAdmin && running;
+  const isHost = isAdmin && running;
+  /** Lapangan yang skornya dipegang pengunjung ini (ALGORITHMS §1d). */
+  const scoresCourt = (courtNo: number) => running && canScore(ctx.scorers[courtNo] ?? null, { id: member.id, isAdmin });
+  const scoresAny = Array.from({ length: session.courtCount }, (_, i) => i + 1).some(scoresCourt);
   const waiting = waitingView(ctx, new Date());
   const myCourt = ctx.running.find((m) => m.players.A.includes(member.id) || m.players.B.includes(member.id))?.courtNo ?? null;
   const history = ctx.matches.filter((m) => m.status !== "running").reverse();
   const matchUrl = (id: string) => `/api/groups/${groupId}/sessions/${sessionId}/matches/${id}`;
-  const hasAside = canScore || (running && (session.shuttle.used > 0 || waiting.length > 0));
+  const hasAside = isHost || (running && (session.shuttle.used > 0 || waiting.length > 0));
 
   return (
     <Page width="wide">
@@ -76,10 +82,16 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
           </Badge>
         </div>
         <h1 className="text-title">Papan skor</h1>
-        {canScore && <WakeLock />}
-        {running && !canScore && <AutoRefresh />}
+        {scoresAny && <WakeLock />}
+        {/* Pencatat bisa berganti dan lapangan lain dicatat orang lain: semua perangkat ikut diperbarui. */}
+        {running && <AutoRefresh />}
         {session.status !== "finished" && (
-          <CopyLink url={`${publicEnv().siteUrl}/s/${session.shareToken}/skor`} label="Salin tautan skor langsung" done="Tautan skor langsung disalin. Bagikan ke grup; bisa dibuka tanpa login." />
+          <div className="flex flex-wrap items-start gap-2">
+            <CopyLink url={`${publicEnv().siteUrl}/s/${session.shareToken}/skor`} label="Salin tautan skor langsung" done="Tautan skor langsung disalin. Bagikan ke grup; bisa dibuka tanpa login." />
+            <a href={`/s/${session.shareToken}/layar`} target="_blank" rel="noopener" className={buttonClass("secondary")}>
+              Papan skor layar penuh<span className="sr-only"> (tab baru)</span>
+            </a>
+          </div>
         )}
       </div>
 
@@ -110,36 +122,53 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
           <section aria-label="Lapangan" className={`grid gap-4 ${session.courtCount > 1 ? "md:grid-cols-2" : ""}`}>
             {Array.from({ length: session.courtCount }, (_, i) => i + 1).map((courtNo) => {
               const match = ctx.running.find((m) => m.courtNo === courtNo);
-              if (match && canScore) {
+              const scorer = running ? (
+                <ScorerControl
+                  url={`/api/groups/${groupId}/sessions/${sessionId}/courts/${courtNo}/scorer`}
+                  courtNo={courtNo}
+                  scorer={ctx.scorers[courtNo] ?? null}
+                  viewerId={member.id}
+                  isAdmin={isAdmin}
+                  present={ctx.present}
+                  names={names}
+                />
+              ) : null;
+              if (match && scoresCourt(courtNo)) {
                 return (
-                  <LiveCourt
-                    key={match.id}
-                    groupId={groupId}
-                    sessionId={sessionId}
-                    courtNo={courtNo}
-                    match={{ id: match.id, kind: match.kind, players: match.players, games: match.games, rules: match.rules, gamesMax: match.gamesMax }}
-                    names={names}
-                    rotation={rotation && match.tournament === null}
-                    tag={tagOf(match)}
-                  />
+                  <div key={match.id} className="flex flex-col gap-2">
+                    <LiveCourt
+                      groupId={groupId}
+                      sessionId={sessionId}
+                      courtNo={courtNo}
+                      match={{ id: match.id, kind: match.kind, players: match.players, games: match.games, rules: match.rules, gamesMax: match.gamesMax }}
+                      names={names}
+                      rotation={rotation && match.tournament === null}
+                      tag={tagOf(match)}
+                      canVoid={isAdmin}
+                    />
+                    {scorer}
+                  </div>
                 );
               }
               return (
-                <Card key={courtNo} className="flex flex-col gap-2" data-testid={`court-${courtNo}`}>
-                  <h3 className="text-lead">Lapangan {courtNo}</h3>
-                  {match && tagOf(match) && <p className="text-small">{tagOf(match)}</p>}
-                  {match ? (
-                    <>
-                      <p className="text-ui">
-                        {teamLabel(match.players.A, names)} <strong className="font-medium">{match.games.at(-1)?.a}–{match.games.at(-1)?.b}</strong>{" "}
-                        {teamLabel(match.players.B, names)}
-                      </p>
-                      <PointBadges match={match} names={names} />
-                    </>
-                  ) : (
-                    <p className="text-small">Kosong</p>
-                  )}
-                </Card>
+                <div key={courtNo} className="flex flex-col gap-2">
+                  <Card className="flex flex-col gap-2" data-testid={`court-${courtNo}`}>
+                    <h3 className="text-lead">Lapangan {courtNo}</h3>
+                    {match && tagOf(match) && <p className="text-small">{tagOf(match)}</p>}
+                    {match ? (
+                      <>
+                        <p className="text-ui">
+                          {teamLabel(match.players.A, names)} <strong className="font-medium">{match.games.at(-1)?.a}–{match.games.at(-1)?.b}</strong>{" "}
+                          {teamLabel(match.players.B, names)}
+                        </p>
+                        <PointBadges match={match} names={names} />
+                      </>
+                    ) : (
+                      <p className="text-small">Kosong</p>
+                    )}
+                  </Card>
+                  {scorer}
+                </div>
               );
             })}
           </section>
@@ -150,7 +179,7 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
             </ButtonLink>
           )}
 
-          {canScore && ctx.emptyCourts.length > 0 && (
+          {isHost && ctx.emptyCourts.length > 0 && (
             <RoundPlanner
               groupId={groupId}
               sessionId={sessionId}
@@ -166,7 +195,7 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
 
         {hasAside && (
           <div className="flex min-w-0 flex-col gap-6 @panel:col-start-2 @panel:row-span-2 @panel:row-start-1">
-            {canScore ? (
+            {isHost ? (
               <ShuttleCounter
                 url={`/api/groups/${groupId}/sessions/${sessionId}/shuttle`}
                 initial={session.shuttle}

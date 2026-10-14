@@ -69,6 +69,26 @@ Test vector `pointStatus` (bwf21): `[{20,15}]` games=1 → `{A:'match',B:null}` 
 
 Test vector `sideChange` (bwf21): `[{10,5}] → [{11,5}]` games=1 → `'interval'` · games=3 → `null` · `[{21,15},{15,21},{10,8}] → [{21,15},{15,21},{11,8}]` games=3 → `'interval'` · `[{11,5}] → [{11,6}]` games=1 → `null` · `[{11,5}] → [{10,5}]` games=1 → `null` · `[{20,15}] → [{21,15},{0,0}]` games=3 → `'game'` · `[{21,15},{20,15}] → [{21,15},{21,15}]` games=3 → `null` (match selesai) · poin15 `[{7,7}] → [{8,7}]` games=1 → `'interval'`.
 
+### 1c. Sisi lapangan untuk visual (SC8, papan layar penuh)
+
+`courtEnds(games, rules, format): 'A'|'B'` — sisi yang berada di ujung **kiri** gambar lapangan. Asumsi: A memulai game 1 di kiri (penonton bisa menukar tampilan).
+- Game acuan = game berjalan (seperti §1b); bila match sudah punya pemenang, game terakhir.
+- `swaps = (nomor game acuan − 1)`, ditambah 1 bila game acuan adalah game penentu (definisi §1b) dan skor tertingginya `≥ ceil(target / 2)`.
+- `swaps` genap → `'A'`, ganjil → `'B'`.
+
+Test vector (bwf21): `[{0,0}]` games=1 → `A` · `[{10,5}]` games=1 → `A` · `[{11,5}]` games=1 → `B` · `[{11,5}]` games=3 → `A` · `[{21,15},{0,0}]` games=3 → `B` · `[{21,15}]` games=3 → `B` · `[{21,15},{15,21},{10,8}]` games=3 → `A` · `[{21,15},{15,21},{8,11}]` games=3 → `B` · `[{21,15},{21,15}]` games=3 → `B` (match selesai, game 2) · `[{21,15}]` games=1 → `B`. poin15 `[{7,7}]` → `A`, `[{8,7}]` → `B`.
+
+### 1d. Pencatat skor per lapangan
+
+Satu lapangan di satu sesi punya paling banyak **satu** pencatat (anggota). `canScore(scorer, actor)`: tanpa pencatat → hanya admin; dengan pencatat → hanya pencatat itu (admin pun harus mengambil alih dulu).
+
+`scorerRefusal(current, next, actor, present)` → `null` (boleh) atau alasan:
+- `next` bukan peserta hadir → `not_present`.
+- Admin: selalu boleh (tunjuk, ganti, kosongkan).
+- Pemain: `next = null` boleh bila `current` dirinya atau kosong, selain itu `not_allowed`; `next` orang lain → `not_allowed`; `next = dirinya` boleh bila `current` kosong atau dirinya, selain itu `taken`.
+
+Test vector (h admin, b & c pemain, hadir h/b/c): admin `null→b`, `b→c`, `b→null` → null · `null→x` → `not_present` · b `null→b` → null · b `c→b` → `taken` · b `null→c` → `not_allowed` · b `c→null` → `not_allowed` · b `b→null` → null.
+
 ## 2. Klasemen (leaderboard)
 
 Input: daftar match `completed` (status `void`/`running` diabaikan), tiap match punya `players: {A: MemberId[], B: MemberId[]}`, `games`, `winner`, dan `sessionDate`.
