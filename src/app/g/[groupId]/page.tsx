@@ -13,6 +13,7 @@ import { counterpartBalances } from "@/lib/core/balance";
 import { findPublicGroup, getGroup } from "@/lib/db/groups";
 import { loadKiko } from "@/lib/db/kiko";
 import { loadGroupMatches } from "@/lib/db/matches";
+import { listMoments } from "@/lib/db/moments";
 import { unpaidGroupSettlements } from "@/lib/db/profile";
 import { listSessions, type SessionSummary } from "@/lib/db/sessions";
 import { formatRupiah, formatShortDateId, formatTimeRangeId } from "@/lib/format";
@@ -36,11 +37,12 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
   const q = (await searchParams).q;
   const query = typeof q === "string" ? q.trim() : "";
   const { member, via } = access.membership;
-  const [group, sessions, unread, unpaid] = await Promise.all([
+  const [group, sessions, unread, unpaid, moments] = await Promise.all([
     getGroup(groupId),
     listSessions(groupId, query),
     unreadCount(groupId, member.id),
     unpaidGroupSettlements(groupId),
+    listMoments(groupId, 6),
   ]);
   const myNet = counterpartBalances(unpaid, member.id).reduce((sum, c) => sum + c.net, 0);
   const balanceDetail =
@@ -135,6 +137,25 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
             </ul>
           )}
         </section>
+        {moments.length > 0 && (
+          <section aria-labelledby="momen-terbaru" className="order-3 flex min-w-0 flex-col gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="momen-terbaru" className="text-sub">
+                Momen
+              </h2>
+              <Link href={`/g/${groupId}/momen`} className="flex min-h-11 items-center px-1 text-small underline underline-offset-4">
+                Lihat semua
+              </Link>
+            </div>
+            <ul className="grid grid-cols-3 gap-2 @xl:grid-cols-6 @3xl:grid-cols-3 @5xl:grid-cols-6" data-testid="recent-moments">
+              {moments.map((m) => (
+                <li key={m.id} className="relative aspect-square overflow-hidden rounded-xl border border-ink-black bg-sandstone">
+                  <Image src={m.url} alt={m.caption ?? `Foto dari ${m.memberName}`} fill unoptimized sizes="160px" className="object-cover" />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         </div>
 
         <div className="contents @3xl:flex @3xl:min-w-0 @3xl:flex-col @3xl:gap-6">
@@ -167,6 +188,7 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
             <Tile href={`/g/${groupId}/musim`} icon="trophy" label="Musim" />
             <Tile href={`/g/${groupId}/recap`} icon="recap" label="Recap" full="Recap bulan & musim" />
             <Tile href={`/g/${groupId}/kiko`} icon="cat" label="Kiko" full="Kiko kamu" />
+            <Tile href={`/g/${groupId}/momen`} icon="camera" label="Momen" full="Momen grup" />
             <Tile href={`/g/${groupId}/pembayaran`} icon="card" label="Pembayaran" full="Info pembayaran" />
             <Tile href={`/g/${groupId}/anggota/${member.id}`} icon="user" label="Profil" full="Profil kamu" className="sm:hidden" />
             {isAdmin && <Tile href={`/g/${groupId}/pengaturan`} icon="gear" label="Pengaturan" full="Pengaturan grup" />}

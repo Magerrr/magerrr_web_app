@@ -46,7 +46,7 @@ export default async function ExplorePage({ searchParams }: PageProps<"/jelajah"
                 className="flex h-full flex-col overflow-hidden rounded-2xl border border-ink-black bg-pure-white hover:bg-cream-paper"
               >
                 <span className={`relative block aspect-[3/1] w-full border-b border-ink-black ${THEME_BG[g.theme]}`} aria-hidden="true">
-                  {g.coverUrl && <Image src={g.coverUrl} alt="" fill unoptimized sizes="(min-width: 640px) 384px, 100vw" className="object-cover" />}
+                  {g.thumbnailUrl && <Image src={g.thumbnailUrl} alt="" fill unoptimized sizes="(min-width: 640px) 384px, 100vw" className="object-cover" />}
                 </span>
                 <span className="flex min-h-16 items-center gap-4 p-4">
                   <GroupAvatar name={g.name} emoji={g.emoji} logoUrl={g.logoUrl} theme={g.theme} />

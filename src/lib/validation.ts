@@ -365,3 +365,18 @@ export function safeNextPath(next: unknown, fallback = "/"): string {
   }
   return next;
 }
+
+/** Field teks unggahan momen grup (multipart): caption opsional ≤ 200 karakter, sesi opsional. */
+export const momentFieldsSchema = z
+  .object({
+    caption: z
+      .string()
+      .trim()
+      .max(200, "Keterangan maksimal 200 karakter.")
+      .transform((v) => v || null),
+    sessionId: z
+      .string()
+      .transform((v) => v || null)
+      .pipe(uuidSchema.nullable()),
+  })
+  .strict();

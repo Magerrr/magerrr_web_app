@@ -6,6 +6,7 @@ import type { GroupTheme } from "@/lib/group-theme";
 import { isToken, isUuid, type GroupSettingsPatch } from "@/lib/validation";
 import { guestCookies, type AuthUser } from "./authz";
 import { MEDIA_BUCKET, groupImageUrl, groupMediaPaths } from "./group-media";
+import { momentUrl } from "./moments";
 import { QRIS_BUCKET } from "./payments";
 import type { Database } from "./database.types";
 import { serviceClient } from "./supabase";
@@ -189,7 +190,22 @@ export async function rotateInviteCode(groupId: string, actorMemberId: string): 
 
 export interface PublicGroup extends GroupLook {
   memberCount: number;
+  /** gambar kartu Jelajahi: sampul, atau foto momen terbaru bila belum ada sampul (MAGERRR-9) */
+  thumbnailUrl: string | null;
 }
+
+type PublicRow = Pick<GroupRow, "id" | "name" | "emoji" | "theme" | "logo_path" | "cover_path"> & {
+  members: { count: number }[];
+  group_moments: { id: string }[];
+};
+
+function toPublic(row: PublicRow): PublicGroup {
+  const look = toLook(row);
+  const moment = row.group_moments[0];
+  return { ...look, memberCount: row.members[0]?.count ?? 0, thumbnailUrl: look.coverUrl ?? (moment ? momentUrl(row.id, moment.id) : null) };
+}
+
+const PUBLIC_COLUMNS = `${LOOK_COLUMNS}, members(count), group_moments(id)` as const;
 
 const PUBLIC_LIMIT = 50;
 
@@ -197,16 +213,18 @@ const PUBLIC_LIMIT = 50;
 export async function listPublicGroups(query = ""): Promise<PublicGroup[]> {
   let request = serviceClient()
     .from("groups")
-    .select(`${LOOK_COLUMNS}, members(count)`)
+    .select(PUBLIC_COLUMNS)
     .eq("is_public", true)
     .eq("members.is_active", true)
     .order("created_at", { ascending: false })
+    .order("created_at", { referencedTable: "group_moments", ascending: false })
+    .limit(1, { referencedTable: "group_moments" })
     .limit(PUBLIC_LIMIT);
   const term = query.trim().slice(0, 60).replace(/[%_\\,()]/g, "");
   if (term) request = request.ilike("name", `%${term}%`);
   const { data, error } = await request;
   if (error) throw error;
-  return data.map((g) => ({ ...toLook(g), memberCount: g.members[0]?.count ?? 0 }));
+  return data.map(toPublic);
 }
 
 /** Grup publik untuk halaman pratinjau & gabung terbuka, atau null bila tidak ada / privat. */
@@ -214,13 +232,15 @@ export async function findPublicGroup(groupId: string): Promise<PublicGroup | nu
   if (!isUuid(groupId)) return null;
   const { data, error } = await serviceClient()
     .from("groups")
-    .select(`${LOOK_COLUMNS}, members(count)`)
+    .select(PUBLIC_COLUMNS)
     .eq("id", groupId)
     .eq("is_public", true)
     .eq("members.is_active", true)
+    .order("created_at", { referencedTable: "group_moments", ascending: false })
+    .limit(1, { referencedTable: "group_moments" })
     .maybeSingle();
   if (error) throw error;
-  return data && { ...toLook(data), memberCount: data.members[0]?.count ?? 0 };
+  return data && toPublic(data);
 }
 
 export async function findGroupByInvite(code: string): Promise<{ id: string; name: string; emoji: string | null } | null> {

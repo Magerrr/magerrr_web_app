@@ -205,6 +205,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"group_moments": {
+                  Row: {
+                    "caption": string | null,"created_at": string,"group_id": string,"id": string,"image_path": string,"member_id": string,"session_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "caption"?: string | null,"created_at"?: string,"group_id": string,"id"?: string,"image_path": string,"member_id": string,"session_id"?: string | null
+                  }
+                  Update: {
+                    "caption"?: string | null,"created_at"?: string,"group_id"?: string,"id"?: string,"image_path"?: string,"member_id"?: string,"session_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "group_moments_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "group_moments_member_id_fkey"
+      columns: ["member_id"]
+isOneToOne: false
+      referencedRelation: "members"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "group_moments_session_id_fkey"
+      columns: ["session_id"]
+isOneToOne: false
+      referencedRelation: "sessions"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"groups": {
                   Row: {
                     "cover_path": string | null,"created_at": string,"default_play_mode": Database["public"]['Enums']["play_mode"],"emoji": string | null,"id": string,"invite_code": string,"is_public": boolean,"logo_path": string | null,"match_games": number,"name": string,"owner_id": string,"round_to": number,"rules": NonNullable<Json>,"scoring": NonNullable<Json>,"theme": string

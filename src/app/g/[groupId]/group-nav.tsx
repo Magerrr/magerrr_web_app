@@ -28,6 +28,7 @@ export function GroupNav({ groupId, isAdmin, unread }: { groupId: string; isAdmi
   const items: Item[] = [
     { href: base, label: "Sesi", nested: [`${base}/sesi`] },
     { href: `${base}/obrolan`, label: "Obrolan", badge },
+    { href: `${base}/momen`, label: "Momen" },
     { href: `${base}/kiko`, label: "Kiko kamu" },
     { href: `${base}/leaderboard`, label: "Leaderboard" },
     { href: `${base}/musim`, label: "Musim" },

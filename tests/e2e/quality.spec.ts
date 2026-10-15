@@ -109,6 +109,9 @@ async function fixture(page: Page) {
   expect(cupMatch.status()).toBe(201);
   expect((await page.request.post(`${cupApi}/matches/${(await cupMatch.json()).id}/complete`, { data: { games: [{ a: 21, b: 17 }] } })).status()).toBe(200);
   expect((await page.request.post(`/api/groups/${group.id}/chat`, { data: { body: "Halo semua, Sabtu main ya" } })).status()).toBe(201);
+  // Satu foto momen agar galeri & strip beranda ikut diaudit (MAGERRR-9).
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
+  expect((await page.request.post(`/api/groups/${group.id}/moments`, { multipart: { file: { name: "m.png", mimeType: "image/png", buffer: png }, caption: "Momen audit", sessionId: "" } })).status()).toBe(201);
   // Grup publik agar daftar Jelajahi & pratinjau gabung ikut diaudit (MAGERRR-6).
   expect((await page.request.patch(`/api/groups/${group.id}`, { data: { isPublic: true } })).status()).toBe(200);
   const { data } = await admin().from("sessions").select("share_token").eq("id", done).single();
@@ -158,6 +161,8 @@ test("aksesibilitas, target sentuh, dan lebar 320–1280px di semua halaman utam
     `/s/${f.token}/skor`,
     `${g}/kiko`,
     `${g}/obrolan`,
+    `${g}/momen`,
+    "/jelajah",
     `${g}/sesi/${f.planned}/turnamen`,
     `${g}/sesi/${f.live}/turnamen`,
     `${g}/sesi/${f.live}/turnamen?tab=jadwal`,
