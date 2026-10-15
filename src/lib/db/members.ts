@@ -78,6 +78,12 @@ export async function updateMember(
   return data;
 }
 
+/** Nama profil akun, sebagai saran nama panggilan saat bergabung ke grup. */
+export async function profileName(userId: string): Promise<string> {
+  const { data } = await serviceClient().from("profiles").select("display_name").eq("id", userId).maybeSingle();
+  return data?.display_name ?? "";
+}
+
 /**
  * Bergabung lewat tautan undangan. Dengan akun → anggota terhubung ke akun;
  * tanpa akun → tamu, dan claimToken dikembalikan untuk disimpan di cookie httpOnly.

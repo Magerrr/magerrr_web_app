@@ -2,7 +2,7 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import type { GameRules } from "@/lib/core/rules";
 import type { ScoringConfig } from "@/lib/core/standings";
-import { isToken, type GroupSettingsPatch } from "@/lib/validation";
+import { isToken, isUuid, type GroupSettingsPatch } from "@/lib/validation";
 import { guestCookies, type AuthUser } from "./authz";
 import { QRIS_BUCKET } from "./payments";
 import type { Database } from "./database.types";
@@ -21,9 +21,11 @@ export interface GroupSettings {
   scoring: ScoringConfig;
   roundTo: 1 | 500 | 1000;
   defaultPlayMode: PlayMode;
+  /** tampil di /jelajah dan bisa digabung tanpa tautan undangan (MAGERRR-6) */
+  isPublic: boolean;
 }
 
-const GROUP_COLUMNS = "id, name, emoji, owner_id, rules, match_games, scoring, round_to, default_play_mode" as const;
+const GROUP_COLUMNS = "id, name, emoji, owner_id, rules, match_games, scoring, round_to, default_play_mode, is_public" as const;
 
 function toSettings(row: Omit<GroupRow, "invite_code" | "created_at">): GroupSettings {
   return {
@@ -36,6 +38,7 @@ function toSettings(row: Omit<GroupRow, "invite_code" | "created_at">): GroupSet
     scoring: row.scoring as unknown as ScoringConfig,
     roundTo: row.round_to as GroupSettings["roundTo"],
     defaultPlayMode: row.default_play_mode,
+    isPublic: row.is_public,
   };
 }
 
@@ -123,6 +126,7 @@ export async function updateGroup(groupId: string, actorMemberId: string, patch:
   if (patch.scoring) update.scoring = { ...patch.scoring };
   if (patch.roundTo) update.round_to = patch.roundTo;
   if (patch.defaultPlayMode) update.default_play_mode = patch.defaultPlayMode;
+  if (patch.isPublic !== undefined) update.is_public = patch.isPublic;
 
   // Trigger audit_group_rules mencatat perubahan aturan beserta pelakunya.
   const { error } = await serviceClient(actorMemberId).from("groups").update(update).eq("id", groupId);
@@ -160,6 +164,45 @@ export async function rotateInviteCode(groupId: string, actorMemberId: string): 
   const { error } = await serviceClient(actorMemberId).from("groups").update({ invite_code: code }).eq("id", groupId);
   if (error) throw error;
   return code;
+}
+
+export interface PublicGroup {
+  id: string;
+  name: string;
+  emoji: string | null;
+  memberCount: number;
+}
+
+const PUBLIC_LIMIT = 50;
+
+/** Grup publik untuk /jelajah, terbaru dulu; `query` mencari nama. Tanpa data anggota selain jumlahnya. */
+export async function listPublicGroups(query = ""): Promise<PublicGroup[]> {
+  let request = serviceClient()
+    .from("groups")
+    .select("id, name, emoji, members(count)")
+    .eq("is_public", true)
+    .eq("members.is_active", true)
+    .order("created_at", { ascending: false })
+    .limit(PUBLIC_LIMIT);
+  const term = query.trim().slice(0, 60).replace(/[%_\\,()]/g, "");
+  if (term) request = request.ilike("name", `%${term}%`);
+  const { data, error } = await request;
+  if (error) throw error;
+  return data.map((g) => ({ id: g.id, name: g.name, emoji: g.emoji, memberCount: g.members[0]?.count ?? 0 }));
+}
+
+/** Grup publik untuk halaman pratinjau & gabung terbuka, atau null bila tidak ada / privat. */
+export async function findPublicGroup(groupId: string): Promise<PublicGroup | null> {
+  if (!isUuid(groupId)) return null;
+  const { data, error } = await serviceClient()
+    .from("groups")
+    .select("id, name, emoji, members(count)")
+    .eq("id", groupId)
+    .eq("is_public", true)
+    .eq("members.is_active", true)
+    .maybeSingle();
+  if (error) throw error;
+  return data && { id: data.id, name: data.name, emoji: data.emoji, memberCount: data.members[0]?.count ?? 0 };
 }
 
 export async function findGroupByInvite(code: string): Promise<{ id: string; name: string; emoji: string | null } | null> {

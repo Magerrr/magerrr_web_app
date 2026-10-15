@@ -15,7 +15,7 @@ const ROLES: { value: Member["role"]; label: string }[] = [
   { value: "admin", label: "Admin" },
 ];
 
-export function InviteCard({ groupId, groupName, inviteUrl }: { groupId: string; groupName: string; inviteUrl: string }) {
+export function InviteCard({ groupId, groupName, inviteUrl, isPublic }: { groupId: string; groupName: string; inviteUrl: string; isPublic: boolean }) {
   const router = useRouter();
   const [message, setMessage] = useState<{ tone: "info" | "error"; text: string } | null>(null);
   const [pending, setPending] = useState(false);
@@ -43,7 +43,10 @@ export function InviteCard({ groupId, groupName, inviteUrl }: { groupId: string;
     <Card className="flex flex-col gap-4">
       <div>
         <h2 className="text-sub">Tautan undangan</h2>
-        <p className="mt-1 text-small">Siapa pun yang punya tautan ini bisa gabung tanpa akun.</p>
+        <p className="mt-1 text-small">
+          Siapa pun yang punya tautan ini bisa gabung tanpa akun.
+          {isPublic ? " Grup ini publik, jadi juga bisa digabung dari Jelajahi grup." : ""}
+        </p>
       </div>
       <input
         aria-label="Tautan undangan"

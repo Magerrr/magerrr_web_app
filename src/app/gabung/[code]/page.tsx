@@ -3,8 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card, Page, TopBar } from "@/components/ui";
 import { getMembership, getUser } from "@/lib/db/authz";
-import { serviceClient } from "@/lib/db/supabase";
 import { findGroupByInvite } from "@/lib/db/groups";
+import { profileName } from "@/lib/db/members";
 import { JoinForm } from "./join-form";
 
 export const metadata: Metadata = { title: "Gabung grup" };
@@ -38,7 +38,7 @@ export default async function JoinPage({ params }: PageProps<"/gabung/[code]">) 
           {group.name}
         </h1>
       </div>
-      <JoinForm code={code} defaultName={suggestedName} withAccount={user !== null} />
+      <JoinForm url={`/api/join/${code}`} defaultName={suggestedName} withAccount={user !== null} />
       {!user && (
         <p className="text-small">
           Punya akun?{" "}
@@ -50,9 +50,4 @@ export default async function JoinPage({ params }: PageProps<"/gabung/[code]">) 
       )}
     </Page>
   );
-}
-
-async function profileName(userId: string): Promise<string> {
-  const { data } = await serviceClient().from("profiles").select("display_name").eq("id", userId).maybeSingle();
-  return data?.display_name ?? "";
 }

@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Icon, type IconName } from "@/components/icons";
 import { NoAccess } from "@/components/no-access";
 import { Badge, ButtonLink, Card, Page, buttonClass, inputBase } from "@/components/ui";
 import { guestCookieName } from "@/lib/db/authz";
 import { unreadCount } from "@/lib/db/chat";
 import { counterpartBalances } from "@/lib/core/balance";
-import { getGroup } from "@/lib/db/groups";
+import { findPublicGroup, getGroup } from "@/lib/db/groups";
 import { loadKiko } from "@/lib/db/kiko";
 import { loadGroupMatches } from "@/lib/db/matches";
 import { unpaidGroupSettlements } from "@/lib/db/profile";
@@ -23,7 +24,11 @@ export const metadata: Metadata = { title: "Grup" };
 export default async function GroupPage({ params, searchParams }: PageProps<"/g/[groupId]">) {
   const { groupId } = await params;
   const access = await pageAccess(groupId, "member");
-  if (access.denied) return <NoAccess reason={access.denied} next={`/g/${groupId}`} />;
+  if (access.denied) {
+    // Grup publik: pengunjung yang belum anggota diarahkan ke pratinjau + gabung terbuka (MAGERRR-6).
+    if (await findPublicGroup(groupId)) redirect(`/jelajah/${groupId}`);
+    return <NoAccess reason={access.denied} next={`/g/${groupId}`} />;
+  }
 
   const q = (await searchParams).q;
   const query = typeof q === "string" ? q.trim() : "";

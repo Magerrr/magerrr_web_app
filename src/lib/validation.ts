@@ -82,6 +82,7 @@ export const groupSettingsSchema = z
     scoring: scoringSchema,
     roundTo: z.union(ROUND_TO.map((n) => z.literal(n))),
     defaultPlayMode: z.enum(PLAY_MODES),
+    isPublic: z.boolean(),
   })
   .partial()
   .strict()

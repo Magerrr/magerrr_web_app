@@ -27,7 +27,7 @@ export default async function MembersPage({ params }: PageProps<"/g/[groupId]/an
       <TopBar back={`/g/${groupId}`} title={group.name} />
       <h1 className="text-title">Anggota</h1>
       {inviteCode && (
-        <InviteCard groupId={groupId} groupName={group.name} inviteUrl={`${publicEnv().siteUrl}/gabung/${inviteCode}`} />
+        <InviteCard groupId={groupId} groupName={group.name} inviteUrl={`${publicEnv().siteUrl}/gabung/${inviteCode}`} isPublic={group.isPublic} />
       )}
       {isAdmin && <AddGuestForm groupId={groupId} />}
       <MemberList

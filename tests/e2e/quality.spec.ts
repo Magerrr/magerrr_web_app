@@ -109,6 +109,8 @@ async function fixture(page: Page) {
   expect(cupMatch.status()).toBe(201);
   expect((await page.request.post(`${cupApi}/matches/${(await cupMatch.json()).id}/complete`, { data: { games: [{ a: 21, b: 17 }] } })).status()).toBe(200);
   expect((await page.request.post(`/api/groups/${group.id}/chat`, { data: { body: "Halo semua, Sabtu main ya" } })).status()).toBe(201);
+  // Grup publik agar daftar Jelajahi & pratinjau gabung ikut diaudit (MAGERRR-6).
+  expect((await page.request.patch(`/api/groups/${group.id}`, { data: { isPublic: true } })).status()).toBe(200);
   const { data } = await admin().from("sessions").select("share_token").eq("id", done).single();
   const { data: liveRow } = await admin().from("sessions").select("share_token").eq("id", live).single();
   const { data: cupRow } = await admin().from("sessions").select("share_token").eq("id", cup).single();
@@ -173,7 +175,7 @@ test("aksesibilitas, target sentuh, dan lebar 320–1280px di semua halaman utam
 
   // Pengunjung tanpa akun.
   const visitor = await (await browser.newContext({ baseURL })).newPage();
-  for (const path of ["/", "/masuk", `/gabung/${f.inviteCode}`, "/offline", `/s/${f.token}/tagihan`, `/s/${f.token}/recap`, `/s/${f.token}/skor`, `/s/${f.liveToken}/turnamen`, `/s/${f.liveToken}/layar`, `/klaim/${"0".repeat(32)}`, `${g}`, `${g}/obrolan`]) {
+  for (const path of ["/", "/masuk", `/gabung/${f.inviteCode}`, "/offline", `/s/${f.token}/tagihan`, `/s/${f.token}/recap`, `/s/${f.token}/skor`, `/s/${f.liveToken}/turnamen`, `/s/${f.liveToken}/layar`, `/klaim/${"0".repeat(32)}`, `${g}`, `${g}/obrolan`, "/jelajah", `/jelajah/${f.groupId}`]) {
     await audit(visitor, path, problems);
   }
   await visitor.context().close();

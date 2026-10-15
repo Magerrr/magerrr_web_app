@@ -5,7 +5,8 @@ import { useState } from "react";
 import { Button, Field, Notice, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 
-export function JoinForm({ code, defaultName, withAccount }: { code: string; defaultName: string; withAccount: boolean }) {
+/** `url`: `/api/join/<kode undangan>` atau `/api/groups/<id>/join` (grup publik). */
+export function JoinForm({ url, defaultName, withAccount }: { url: string; defaultName: string; withAccount: boolean }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -13,7 +14,7 @@ export function JoinForm({ code, defaultName, withAccount }: { code: string; def
   async function submit(form: FormData) {
     setPending(true);
     setError(null);
-    const result = await sendJson<{ groupId: string }>(`/api/join/${code}`, "POST", {
+    const result = await sendJson<{ groupId: string }>(url, "POST", {
       displayName: String(form.get("displayName") ?? ""),
     });
     if (result.ok) {

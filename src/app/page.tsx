@@ -57,6 +57,10 @@ export default async function Home() {
         </ul>
       )}
 
+      <Link href="/jelajah" className="flex min-h-11 items-center self-start text-ui underline underline-offset-4">
+        Jelajahi grup publik
+      </Link>
+
       {user ? (
         <ButtonLink href="/grup/baru" variant={groups.length ? "secondary" : "primary"} size="lg" className="sm:w-auto sm:self-start sm:px-8">
           Buat grup

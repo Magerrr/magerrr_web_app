@@ -22,6 +22,7 @@ export function SettingsForm({ group }: { group: GroupSettings }) {
   const [minMatches, setMinMatches] = useState(String(group.scoring.minMatches));
   const [roundTo, setRoundTo] = useState(group.roundTo);
   const [playMode, setPlayMode] = useState(toOfferedMode(group.defaultPlayMode));
+  const [visibility, setVisibility] = useState<"private" | "public">(group.isPublic ? "public" : "private");
   const [status, setStatus] = useState<{ tone: "info" | "error"; text: string } | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -41,6 +42,7 @@ export function SettingsForm({ group }: { group: GroupSettings }) {
       },
       roundTo,
       defaultPlayMode: playMode,
+      isPublic: visibility === "public",
     });
     setPending(false);
     setStatus(result.ok ? { tone: "info", text: "Pengaturan disimpan." } : { tone: "error", text: result.error });
@@ -57,6 +59,21 @@ export function SettingsForm({ group }: { group: GroupSettings }) {
         <Field label="Ikon (opsional)" htmlFor="emoji" hint="Satu emoji sebagai ikon grup.">
           <input id="emoji" value={emoji} onChange={(e) => setEmoji(e.target.value)} maxLength={16} className={`${inputBase} w-24`} />
         </Field>
+        <Segmented
+          legend="Siapa yang bisa gabung"
+          name="visibility"
+          value={visibility}
+          options={[
+            { value: "private", label: "Privat" },
+            { value: "public", label: "Publik" },
+          ]}
+          onChange={setVisibility}
+        />
+        <p className="text-small">
+          {visibility === "public"
+            ? "Grup tampil di Jelajahi grup; siapa pun bisa melihat nama grup & jumlah anggota lalu gabung tanpa tautan."
+            : "Hanya orang yang punya tautan undangan yang bisa gabung."}
+        </p>
       </Card>
 
       <Card className="flex flex-col gap-5">
