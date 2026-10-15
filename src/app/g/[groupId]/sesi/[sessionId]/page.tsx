@@ -4,6 +4,7 @@ import { CopyLink } from "@/components/copy-link";
 import { CostEstimate } from "@/components/cost-estimate";
 import { NoAccess } from "@/components/no-access";
 import { Badge, ButtonLink, Card, Page, Split, TopBar, buttonClass } from "@/components/ui";
+import { canPlay, playersOf } from "@/lib/core/roles";
 import { getGroup } from "@/lib/db/groups";
 import { listMembers } from "@/lib/db/members";
 import { getSession } from "@/lib/db/sessions";
@@ -108,7 +109,7 @@ export default async function SessionPage({ params }: PageProps<"/g/[groupId]/se
               {isAdmin && <StatusActions groupId={groupId} sessionId={session.id} status={session.status} recapHref={`/s/${session.shareToken}/recap`} />}
             </div>
 
-            {session.status !== "finished" && (
+            {session.status !== "finished" && canPlay(member.role) && (
               <section aria-labelledby="rsvp" className="flex flex-col gap-3" data-testid="rsvp">
                 <h2 id="rsvp" className="text-sub">
                   Kamu ikut?
@@ -177,7 +178,7 @@ export default async function SessionPage({ params }: PageProps<"/g/[groupId]/se
               Peserta hadir
             </h2>
             {editable ? (
-              <AttendanceEditor groupId={groupId} sessionId={session.id} members={members} presentIds={session.presentIds} costs={costs} />
+              <AttendanceEditor groupId={groupId} sessionId={session.id} members={playersOf(members)} presentIds={session.presentIds} costs={costs} />
             ) : (
               <>
                 <p className="text-ui">{present.length} hadir</p>

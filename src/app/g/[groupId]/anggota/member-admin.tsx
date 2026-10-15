@@ -205,8 +205,9 @@ export function MemberList({
         <div className="flex flex-col gap-1 text-caption">
           <p>Grade A paling kuat, D pemula. Dipakai untuk kocok pasangan yang seimbang.</p>
           <p>
-            Wasit mengurus permainan: kocok & mulai ronde, catat dan ubah skor, batalkan match, mulai match turnamen. Pengaturan grup,
-            anggota, sesi, dan patungan tetap khusus admin. Peran hanya untuk anggota yang masuk dengan akun.
+            Wasit mengurus permainan: kocok & mulai ronde, catat dan ubah skor, batalkan match, mulai match turnamen. Wasit tidak ikut
+            main, tidak jadi peserta sesi, dan tidak ikut patungan. Pengaturan grup, anggota, sesi, dan patungan tetap khusus admin.
+            Peran hanya untuk anggota yang masuk dengan akun.
           </p>
         </div>
       )}

@@ -18,22 +18,46 @@ test("wasit mengurus permainan (kocok, skor, batal, catat manual) tapi bukan pen
   const { data: refRow } = await admin().from("members").select("id").eq("group_id", group.id).eq("display_name", "Wawan").single();
   const extra = (await (await page.request.post(`${api}/members`, { data: { displayName: "Dodi" } })).json()).id as string;
 
+  const extra2 = (await (await page.request.post(`${api}/members`, { data: { displayName: "Eka" } })).json()).id as string;
+
+  // Sesi yang belum dimulai memuat Wawan sebagai peserta; jadi wasit mengeluarkannya (tidak ikut main).
+  const before = await page.request.post(`${api}/sessions`, {
+    data: { date: "2026-10-16", time: "19:00", durationMin: 120, venue: "GOR Awal", courtCount: 1, playMode: "kocok", rules: null, matchGames: null, note: null, attendeeIds: [hostRow!.id, refRow!.id], costs: { courtPerHour: 40000, shuttle: null } },
+  });
+  const beforeId = (await before.json()).id as string;
+  const presentIn = async (sid: string, mid: string) =>
+    (await admin().from("attendees").select("present").eq("session_id", sid).eq("member_id", mid).maybeSingle()).data?.present ?? false;
+  expect(await presentIn(beforeId, refRow!.id)).toBe(true);
+
   // Admin menjadikan Wawan wasit lewat UI; tamu tidak bisa jadi wasit.
   await page.goto(`/g/${group.id}/anggota`);
   const wawan = page.getByTestId("member-row").filter({ hasText: "Wawan" });
   await wawan.getByLabel("Peran").selectOption("referee");
   await expect.poll(async () => (await admin().from("members").select("role").eq("id", refRow!.id).single()).data?.role).toBe("referee");
   await expect(wawan.getByLabel("Peran")).toHaveValue("referee");
+  await expect.poll(() => presentIn(beforeId, refRow!.id)).toBe(false);
+  expect(await presentIn(beforeId, hostRow!.id)).toBe(true);
   expect((await page.request.patch(`${api}/members/${guestId}`, { data: { role: "referee" } })).status()).toBe(422);
   // Wasit tidak bisa mengubah peran.
   expect((await ref.request.patch(`${api}/members/${extra}`, { data: { role: "referee" } })).status()).toBe(403);
 
-  const ids = [hostRow!.id, refRow!.id, guestId, extra];
+  const ids = [hostRow!.id, guestId, extra, extra2];
   const created = await page.request.post(`${api}/sessions`, {
     data: { date: "2026-10-09", time: "19:00", durationMin: 120, venue: "GOR Wasit", courtCount: 1, playMode: "kocok", rules: null, matchGames: null, note: null, attendeeIds: ids, costs: { courtPerHour: 40000, shuttle: null } },
   });
   const sessionId = (await created.json()).id as string;
   const s = `${api}/sessions/${sessionId}`;
+
+  // Wasit tidak ikut bermain: tidak bisa jadi peserta, tidak ada RSVP, dan tidak muncul di pilihan peserta.
+  const asPlayer = await page.request.post(`${api}/sessions`, {
+    data: { date: "2026-10-17", time: "19:00", durationMin: 120, venue: "GOR Wasit", courtCount: 1, playMode: "kocok", rules: null, matchGames: null, note: null, attendeeIds: [refRow!.id], costs: { courtPerHour: null, shuttle: null } },
+  });
+  expect(asPlayer.status()).toBe(422);
+  expect((await page.request.put(`${s}/attendees`, { data: { memberIds: [...ids, refRow!.id] } })).status()).toBe(422);
+  expect((await ref.request.put(`${s}/rsvp`, { data: { rsvp: "going" } })).status()).toBe(422);
+  await page.goto(`/g/${group.id}/sesi/baru`);
+  await expect(page.getByText("Wawan")).toHaveCount(0);
+  await expect(page.getByText("Dodi")).toBeVisible();
 
   // Bukan urusan wasit → 403.
   expect((await ref.request.patch(api, { data: { name: "Ganti" } })).status()).toBe(403);

@@ -142,10 +142,11 @@ export async function findSessionByShareToken(token: string): Promise<SessionDet
 export async function lastPresentMemberIds(groupId: string): Promise<string[]> {
   const { data, error } = await serviceClient()
     .from("sessions")
-    .select("attendees!inner(member_id, present, members!inner(is_active))")
+    .select("attendees!inner(member_id, present, members!inner(is_active, role))")
     .eq("group_id", groupId)
     .eq("attendees.present", true)
     .eq("attendees.members.is_active", true)
+    .neq("attendees.members.role", "referee")
     .order("starts_at", { ascending: false })
     .limit(1);
   if (error) throw error;
@@ -187,9 +188,23 @@ export async function assertMembersOf(
   if (count !== unique.length) throw new HttpError(422, message);
 }
 
+/** Wasit tidak ikut bermain (MAGERRR-11): tolak (422) bila ada wasit di daftar peserta. */
+export async function assertPlayersOf(groupId: string, memberIds: string[]): Promise<void> {
+  if (memberIds.length === 0) return;
+  const { count, error } = await serviceClient()
+    .from("members")
+    .select("id", { count: "exact", head: true })
+    .eq("group_id", groupId)
+    .eq("role", "referee")
+    .in("id", [...new Set(memberIds)]);
+  if (error) throw error;
+  if (count) throw new HttpError(422, "Wasit mengurus permainan dan tidak jadi peserta. Ubah perannya dulu bila ingin ikut main.");
+}
+
 /** Buat sesi + peserta + biaya awal. Panggil hanya setelah requireAdmin. */
 export async function createSession(group: GroupSettings, actorMemberId: string, input: SessionCreateInput): Promise<string> {
   await assertMembersOf(group.id, input.attendeeIds);
+  await assertPlayersOf(group.id, input.attendeeIds);
   const row = sessionRow(input, group);
   const expenses: { name: string; amount: number; preset: string; meta: Json }[] = [];
   if (input.costs.courtPerHour) {
@@ -242,7 +257,27 @@ export async function setAttendees(
 ): Promise<{ reset: SettlementState[] }> {
   assertEditable(session);
   await assertMembersOf(session.groupId, memberIds);
+  await assertPlayersOf(session.groupId, memberIds);
   return recomputeBill(group, session, actorId, memberIds);
+}
+
+/**
+ * Anggota jadi wasit: keluarkan dari peserta sesi yang belum dimulai (tagihan ikut dihitung ulang).
+ * Sesi berlangsung dan selesai dibiarkan agar match dan patungan yang sudah ada tidak berubah.
+ */
+export async function removeFromPlannedSessions(group: GroupSettings, memberId: string, actorId: string): Promise<void> {
+  const { data, error } = await serviceClient()
+    .from("sessions")
+    .select("id, attendees!inner(member_id, present)")
+    .eq("group_id", group.id)
+    .eq("status", "planned")
+    .eq("attendees.member_id", memberId)
+    .eq("attendees.present", true);
+  if (error) throw error;
+  for (const row of data) {
+    const session = await getSession(group.id, row.id);
+    if (session) await setAttendees(group, session, actorId, session.presentIds.filter((id) => id !== memberId));
+  }
 }
 
 /** RSVP diri sendiri (S3): hanya mencatat jawaban; kehadiran tetap ditentukan admin. */

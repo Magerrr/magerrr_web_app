@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { NoAccess } from "@/components/no-access";
 import { Page, TopBar } from "@/components/ui";
+import { playersOf } from "@/lib/core/roles";
 import { getGroup } from "@/lib/db/groups";
 import { listMembers } from "@/lib/db/members";
 import { SHUTTLE_COUNTER } from "@/lib/db/bill";
@@ -29,12 +30,14 @@ export default async function NewSessionPage({ params, searchParams }: PageProps
   if (access.denied) return <NoAccess reason={access.denied} next={`/g/${groupId}/sesi/baru`} />;
   const { member } = access.membership;
 
-  const [group, members, lastPresent, source] = await Promise.all([
+  const [group, allMembers, lastPresent, source] = await Promise.all([
     getGroup(groupId),
     listMembers(groupId),
     lastPresentMemberIds(groupId),
     typeof dari === "string" && isUuid(dari) ? getSession(groupId, dari) : null,
   ]);
+  // Wasit mengurus permainan dan tidak jadi peserta (MAGERRR-11).
+  const members = playersOf(allMembers);
   const today = todayInJakarta();
   const from = source ? toJakartaParts(source.startsAt) : null;
   const activeIds = new Set(members.map((m) => m.id));
