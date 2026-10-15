@@ -16,7 +16,8 @@ export interface PaymentInfo {
   hasQr: boolean;
 }
 
-const BUCKET = "qris";
+export const QRIS_BUCKET = "qris";
+const BUCKET = QRIS_BUCKET;
 const MAX_INFOS = 5;
 export const MAX_QRIS_BYTES = 2 * 1024 * 1024;
 const COLUMNS = "id, member_id, kind, label, account_no, account_name, qr_image_path" as const;

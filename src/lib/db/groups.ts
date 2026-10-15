@@ -4,6 +4,7 @@ import type { GameRules } from "@/lib/core/rules";
 import type { ScoringConfig } from "@/lib/core/standings";
 import { isToken, type GroupSettingsPatch } from "@/lib/validation";
 import { guestCookies, type AuthUser } from "./authz";
+import { QRIS_BUCKET } from "./payments";
 import type { Database } from "./database.types";
 import { serviceClient } from "./supabase";
 
@@ -126,6 +127,31 @@ export async function updateGroup(groupId: string, actorMemberId: string, patch:
   // Trigger audit_group_rules mencatat perubahan aturan beserta pelakunya.
   const { error } = await serviceClient(actorMemberId).from("groups").update(update).eq("id", groupId);
   if (error) throw error;
+}
+
+/**
+ * Hapus grup beserta semua datanya (anggota, sesi, match, patungan, obrolan, audit) lewat RPC `delete_group`
+ * (urutan hapus eksplisit, lihat migrasi 0015). Gambar QRIS anggota dihapus dari
+ * Storage setelah baris database hilang (best effort: gagal hapus berkas tidak membatalkan penghapusan grup).
+ * Panggil hanya setelah requireAdmin.
+ */
+export async function deleteGroup(groupId: string): Promise<void> {
+  const db = serviceClient();
+  const { data: infos, error: infoError } = await db
+    .from("payment_infos")
+    .select("qr_image_path, members!inner(group_id)")
+    .eq("members.group_id", groupId)
+    .not("qr_image_path", "is", null);
+  if (infoError) throw infoError;
+
+  const { error } = await db.rpc("delete_group", { p_group: groupId });
+  if (error) throw error;
+
+  const paths = infos.map((i) => i.qr_image_path).filter((p): p is string => p !== null);
+  if (paths.length > 0) {
+    const removed = await db.storage.from(QRIS_BUCKET).remove(paths);
+    if (removed.error) console.error(removed.error);
+  }
 }
 
 /** Ganti invite_code; tautan lama langsung tidak berlaku. */

@@ -503,6 +503,9 @@ isOneToOne: true
 "create_tournament":
 { Args: { "p_advance_count": number,"p_created_by": string,"p_entries": Json,"p_format": string,"p_group_count": number,"p_kind": Database["public"]['Enums']["match_kind"],"p_name": string,"p_seeding": string,"p_session": string }; Returns: string
                            },
+"delete_group":
+{ Args: { "p_group": string }; Returns: undefined
+                           },
 "delete_tournament":
 { Args: { "p_tournament": string }; Returns: undefined
                            },

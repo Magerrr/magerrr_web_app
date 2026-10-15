@@ -3,6 +3,7 @@ import { NoAccess } from "@/components/no-access";
 import { Page, TopBar } from "@/components/ui";
 import { getGroup } from "@/lib/db/groups";
 import { pageAccess } from "../access";
+import { DeleteGroup } from "./delete-group";
 import { SettingsForm } from "./settings-form";
 
 export const metadata: Metadata = { title: "Pengaturan grup" };
@@ -21,6 +22,7 @@ export default async function SettingsPage({ params }: PageProps<"/g/[groupId]/p
         <p className="text-ui">Mengubah aturan tidak mengubah skor yang sudah tercatat. Klasemen dihitung ulang otomatis.</p>
       </div>
       <SettingsForm group={group} />
+      <DeleteGroup groupId={groupId} groupName={group.name} />
     </Page>
   );
 }

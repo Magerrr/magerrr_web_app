@@ -88,6 +88,9 @@ export const groupSettingsSchema = z
   .refine((patch) => Object.keys(patch).length > 0, "Tidak ada perubahan.");
 export type GroupSettingsPatch = z.infer<typeof groupSettingsSchema>;
 
+/** Hapus grup: admin mengetik ulang nama grup sebagai konfirmasi. */
+export const groupDeleteSchema = z.object({ confirmName: z.string().trim().max(60) }).strict();
+
 export const memberCreateSchema = z.object({ displayName: displayNameSchema }).strict();
 
 export const memberUpdateSchema = z
