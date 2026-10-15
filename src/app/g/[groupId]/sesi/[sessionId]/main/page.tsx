@@ -24,7 +24,7 @@ import { LiveCourt } from "./live-court";
 import { PairsEditor } from "./pairs-editor";
 import { RoundPlanner } from "./round-planner";
 import { ScorerControl } from "./scorer-control";
-import { ShuttleCounter } from "./shuttle-counter";
+import { ShuttleCounter, ShuttleProvider, ShuttleQuick } from "./shuttle-counter";
 import { teamLabel, type Names } from "./types";
 
 export const metadata: Metadata = { title: "Papan skor" };
@@ -68,9 +68,9 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
   const myCourt = ctx.running.find((m) => m.players.A.includes(member.id) || m.players.B.includes(member.id))?.courtNo ?? null;
   const history = ctx.matches.filter((m) => m.status !== "running").reverse();
   const matchUrl = (id: string) => `/api/groups/${groupId}/sessions/${sessionId}/matches/${id}`;
-  const hasAside = isHost || (running && (session.shuttle.used > 0 || waiting.length > 0));
+  const hasAside = isHost || (running && waiting.length > 0);
 
-  return (
+  const board = (
     <Page width="wide">
       <TopBar back={back} title={`${formatShortDateId(session.startsAt)}${session.venue ? ` · ${session.venue}` : ""}`} />
       <div className="flex flex-col gap-2">
@@ -145,6 +145,7 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
                       rotation={rotation && match.tournament === null}
                       tag={tagOf(match)}
                       canVoid={isAdmin}
+                      focusExtra={isHost ? <ShuttleQuick /> : null}
                     />
                     {scorer}
                   </div>
@@ -195,21 +196,8 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
 
         {hasAside && (
           <div className="flex min-w-0 flex-col gap-6 @panel:col-start-2 @panel:row-span-2 @panel:row-start-1">
-            {isHost ? (
-              <ShuttleCounter
-                url={`/api/groups/${groupId}/sessions/${sessionId}/shuttle`}
-                initial={session.shuttle}
-                defaultPrice={defaultShuttlePrice}
-                flatShuttle={flatShuttle > 0 ? flatShuttle : null}
-              />
-            ) : (
-              running &&
-              session.shuttle.used > 0 && (
-                <p className="text-ui" data-testid="shuttles-used">
-                  Kok terpakai: {session.shuttle.used}
-                </p>
-              )
-            )}
+            {/* Jumlah kok hanya untuk admin (biaya patungan); tidak ditampilkan ke pemain/skor langsung. */}
+            {isHost && <ShuttleCounter flatShuttle={flatShuttle > 0 ? flatShuttle : null} />}
 
             {running && waiting.length > 0 && <WaitingList entries={waiting} names={names} rotation={rotation} viewerId={member.id} />}
           </div>
@@ -273,6 +261,14 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
         </section>
       </div>
     </Page>
+  );
+  // Admin: kartu "Kok" dan penghitung ringkas di mode fokus skor berbagi satu state.
+  return isHost ? (
+    <ShuttleProvider url={`/api/groups/${groupId}/sessions/${sessionId}/shuttle`} initial={session.shuttle} defaultPrice={defaultShuttlePrice}>
+      {board}
+    </ShuttleProvider>
+  ) : (
+    board
   );
 }
 

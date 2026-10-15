@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { PointBadge } from "@/components/point-badge";
 import { SERVICE_COURT_LABEL, ShuttleIcon } from "@/components/shuttle-icon";
 import { useBusy } from "@/components/busy";
@@ -154,6 +154,103 @@ function useLiveScore(matchId: string, base: string, initial: LiveState, onCompl
   return { games, serving, change, undo, canUndo: history.length > 0 && !completeQueued, sync, retry: () => void flush(), complete, completeQueued, discard };
 }
 
+/*
+ * Lapangan yang sedang mode fokus ("<sesi>:<lapangan>"), disimpan per tab agar tetap fokus saat rotasi memulai
+ * match berikutnya di lapangan yang sama (komponen dipasang ulang) atau halaman dimuat ulang.
+ */
+const FOCUS_KEY = "magerrr:fokus-lapangan";
+let focusedCourt: string | null | undefined;
+const focusListeners = new Set<() => void>();
+function readFocused(): string | null {
+  if (focusedCourt === undefined) {
+    try {
+      focusedCourt = window.sessionStorage.getItem(FOCUS_KEY);
+    } catch {
+      focusedCourt = null;
+    }
+  }
+  return focusedCourt;
+}
+function writeFocused(value: string | null) {
+  focusedCourt = value;
+  try {
+    if (value === null) window.sessionStorage.removeItem(FOCUS_KEY);
+    else window.sessionStorage.setItem(FOCUS_KEY, value);
+  } catch {
+    // tanpa sessionStorage: cukup di memori halaman
+  }
+  focusListeners.forEach((l) => l());
+}
+const subscribeFocus = (l: () => void) => {
+  focusListeners.add(l);
+  return () => void focusListeners.delete(l);
+};
+
+/**
+ * Mode fokus: kartu skor menutupi seluruh layar (dan memakai Fullscreen API bila tersedia) agar pencatat hanya
+ * melihat kontrol skor. Esc atau keluar dari layar penuh peramban juga menutup mode fokus.
+ */
+function useFocusMode(court: string) {
+  const focus = useSyncExternalStore(subscribeFocus, () => readFocused() === court, () => false);
+  const setFocus = useCallback((on: boolean) => writeFocused(on ? court : null), [court]);
+  const usedFullscreen = useRef(false);
+  const exitButton = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!focus) return;
+    // Dipulihkan setelah pasang ulang: layar penuh yang masih aktif tetap milik mode fokus ini.
+    usedFullscreen.current = document.fullscreenElement !== null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    exitButton.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !document.fullscreenElement) setFocus(false);
+    };
+    const onFullscreen = () => {
+      if (usedFullscreen.current && !document.fullscreenElement) {
+        usedFullscreen.current = false;
+        setFocus(false);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("fullscreenchange", onFullscreen);
+    return () => {
+      document.body.style.overflow = overflow;
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("fullscreenchange", onFullscreen);
+    };
+  }, [focus, setFocus]);
+
+  async function enter() {
+    setFocus(true);
+    if (!document.fullscreenEnabled || document.fullscreenElement) return;
+    try {
+      await document.documentElement.requestFullscreen();
+      usedFullscreen.current = true;
+    } catch {
+      // Ditolak peramban: mode fokus tetap menutupi halaman tanpa layar penuh.
+    }
+  }
+
+  async function exit() {
+    setFocus(false);
+    if (usedFullscreen.current && document.fullscreenElement) {
+      usedFullscreen.current = false;
+      await document.exitFullscreen().catch(() => undefined);
+    }
+  }
+
+  return { focus, enter, exit, exitButton };
+}
+
+function FocusIcon({ exit }: { exit: boolean }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {exit ? <path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" /> : <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />}
+    </svg>
+  );
+}
+
 export function LiveCourt({
   groupId,
   sessionId,
@@ -163,6 +260,7 @@ export function LiveCourt({
   rotation,
   tag = null,
   canVoid = true,
+  focusExtra = null,
 }: {
   groupId: string;
   sessionId: string;
@@ -174,6 +272,8 @@ export function LiveCourt({
   tag?: string | null;
   /** tombol "Batalkan match" (admin saja; pencatat skor pemain tidak) */
   canVoid?: boolean;
+  /** isi tambahan khusus mode fokus, mis. penghitung kok admin */
+  focusExtra?: ReactNode;
 }) {
   const router = useRouter();
   const base = `/api/groups/${groupId}/sessions/${sessionId}/matches/${match.id}`;
@@ -192,6 +292,7 @@ export function LiveCourt({
   const leading = current.a === current.b ? null : current.a > current.b ? "A" : "B";
   const points = pointStatus(live.games, match.rules, format);
   const serve = servePosition(live.games, live.serving, match.rules, format);
+  const { focus, enter, exit, exitButton } = useFocusMode(`${sessionId}:${courtNo}`);
 
   /** `rally` = sisi yang mencetak poin: ia yang servis berikutnya (ALGORITHMS §1e); −1 tidak mengubah servis. */
   function score(next: GameScore[], rally?: Side) {
@@ -223,12 +324,42 @@ export function LiveCourt({
   }
 
   return (
-    <section aria-label={`Lapangan ${courtNo}`} data-testid={`court-${courtNo}`} className="flex flex-col gap-3 rounded-2xl border border-ink-black bg-ink-black p-4 text-cream-paper [&_*:focus-visible]:outline-fresh-grass">
-      <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-ui">Lapangan {courtNo}</h3>
-        <p className="text-small">
-          {match.gamesMax > 1 ? `Game ${current.no} · best of ${match.gamesMax}` : `${match.rules.target} poin`}
-        </p>
+    <section
+      aria-label={`Lapangan ${courtNo}`}
+      aria-modal={focus || undefined}
+      role={focus ? "dialog" : undefined}
+      data-testid={`court-${courtNo}`}
+      className={`flex flex-col gap-3 border-ink-black bg-ink-black text-cream-paper [&_*:focus-visible]:outline-fresh-grass ${
+        focus ? "fixed inset-0 z-40 overflow-y-auto p-4 sm:p-6" : "rounded-2xl border p-4"
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-col">
+          <h3 className={focus ? "text-sub" : "text-ui"}>Lapangan {courtNo}</h3>
+          <p className="text-small">
+            {match.gamesMax > 1 ? `Game ${current.no} · best of ${match.gamesMax}` : `${match.rules.target} poin`}
+          </p>
+        </div>
+        {focus ? (
+          <button
+            ref={exitButton}
+            type="button"
+            onClick={() => void exit()}
+            className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-cream-paper px-4 text-ui transition-colors hover:bg-fresh-grass hover:text-ink-black"
+          >
+            <FocusIcon exit />
+            Keluar fokus
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => void enter()}
+            className="inline-flex min-h-11 shrink-0 cursor-pointer items-center gap-2 rounded-full border border-cream-paper px-4 text-small transition-colors hover:bg-fresh-grass hover:text-ink-black"
+          >
+            <FocusIcon exit={false} />
+            Mode fokus
+          </button>
+        )}
       </div>
       {tag && <p className="text-small">{tag}</p>}
       {turn && (
@@ -245,7 +376,7 @@ export function LiveCourt({
             type="button"
             disabled={winner !== null || live.completeQueued}
             onClick={() => score(addPoint(live.games, side, match.rules, format), side)}
-            className={`flex min-h-40 flex-col items-center justify-between gap-2 rounded-2xl border-2 bg-pure-ink p-3 disabled:cursor-default ${
+            className={`flex flex-col items-center justify-between gap-2 rounded-2xl border-2 bg-pure-ink p-3 disabled:cursor-default ${focus ? "min-h-[45dvh]" : "min-h-40"} ${
               leading === side ? "border-fresh-grass" : "border-pure-ink"
             }`}
           >
@@ -254,7 +385,10 @@ export function LiveCourt({
               <span className="sr-only">Tambah poin </span>
               {label(side)}
             </span>
-            <span className={`text-display tabular-nums ${leading === side ? "text-fresh-grass" : "text-cream-paper"}`} data-testid={`score-${side}`}>
+            <span
+              className={`tabular-nums ${focus ? "text-[min(28vw,24dvh)] leading-none font-medium tracking-[-0.06em]" : "text-display"} ${leading === side ? "text-fresh-grass" : "text-cream-paper"}`}
+              data-testid={`score-${side}`}
+            >
               {side === "A" ? current.a : current.b}
             </span>
             <span className="flex flex-col items-center gap-1">
@@ -353,6 +487,7 @@ export function LiveCourt({
           </button>
         )}
       </div>
+      {focus && focusExtra}
       {error && <Notice tone="error">{error}</Notice>}
     </section>
   );

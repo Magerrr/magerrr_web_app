@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { createContext, use, useId, useRef, useState, type ReactNode } from "react";
 import { Button, Card, Field, Notice, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import { shuttleCost } from "@/lib/core/split";
@@ -14,12 +14,30 @@ interface Counter {
 
 const digits = (value: string) => value.replace(/\D/g, "").slice(0, 8);
 
-/** Penghitung kok per slop (§5.5, desain Session "Kok terpakai X dari 12"). Disimpan absolut, perubahan terakhir menang. */
-export function ShuttleCounter({ url, initial, defaultPrice, flatShuttle }: { url: string; initial: Counter; defaultPrice: number | null; flatShuttle: number | null }) {
-  const id = useId();
+type Status = "saved" | "saving" | "error";
+
+interface ShuttleState {
+  counter: Counter;
+  status: Status;
+  error: string | null;
+  update: (next: Counter) => void;
+}
+
+const ShuttleContext = createContext<ShuttleState | null>(null);
+
+function useShuttle(): ShuttleState {
+  const state = use(ShuttleContext);
+  if (!state) throw new Error("ShuttleProvider belum dipasang.");
+  return state;
+}
+
+/**
+ * State penghitung kok bersama (admin): kartu "Kok" dan penghitung ringkas di mode fokus skor memakai nilai yang sama,
+ * sehingga tidak saling menimpa. Disimpan absolut, perubahan terakhir menang.
+ */
+export function ShuttleProvider({ url, initial, defaultPrice, children }: { url: string; initial: Counter; defaultPrice: number | null; children: ReactNode }) {
   const [counter, setCounter] = useState<Counter>({ ...initial, pricePerSlop: initial.pricePerSlop ?? defaultPrice });
-  const [price, setPrice] = useState(String(initial.pricePerSlop ?? defaultPrice ?? ""));
-  const [status, setStatus] = useState<"saved" | "saving" | "error">("saved");
+  const [status, setStatus] = useState<Status>("saved");
   const [error, setError] = useState<string | null>(null);
   const latest = useRef(counter);
   const inFlight = useRef(false);
@@ -50,6 +68,41 @@ export function ShuttleCounter({ url, initial, defaultPrice, flatShuttle }: { ur
     void flush();
   }
 
+  return <ShuttleContext value={{ counter, status, error, update }}>{children}</ShuttleContext>;
+}
+
+const statusLabel = (status: Status) => (status === "saving" ? "Menyimpan…" : status === "error" ? "Belum tersimpan" : "Tersimpan");
+
+/** Penghitung kok ringkas untuk mode fokus skor (admin saja; tidak tampil di skor langsung). */
+export function ShuttleQuick() {
+  const { counter, status, error, update } = useShuttle();
+  return (
+    <div className="flex flex-col gap-2 rounded-2xl border border-cream-paper/40 p-3" data-testid="shuttle-quick">
+      <div className="flex items-center gap-3">
+        <Button variant="accent" className="w-14 text-sub" onClick={() => update({ ...counter, used: Math.max(0, counter.used - 1) })} disabled={counter.used === 0}>
+          −<span className="sr-only"> kurangi kok</span>
+        </Button>
+        <p className="flex flex-1 flex-col items-center">
+          <span className="text-sub tabular-nums" data-testid="shuttle-quick-used">
+            {counter.used}
+          </span>
+          <span className="text-caption">kok terpakai · {statusLabel(status)}</span>
+        </p>
+        <Button variant="accent" className="w-24" onClick={() => update({ ...counter, used: Math.min(999, counter.used + 1) })}>
+          + Kok
+        </Button>
+      </div>
+      {error && <Notice tone="error">{error}</Notice>}
+    </div>
+  );
+}
+
+/** Penghitung kok per slop (§5.5, desain Session "Kok terpakai X dari 12"). */
+export function ShuttleCounter({ flatShuttle }: { flatShuttle: number | null }) {
+  const id = useId();
+  const { counter, status, error, update } = useShuttle();
+  const [price, setPrice] = useState(String(counter.pricePerSlop ?? ""));
+
   const cost = counter.pricePerSlop ? shuttleCost({ pricePerSlop: counter.pricePerSlop, used: counter.used, perSlop: counter.perSlop }) : null;
   const slop = Math.floor(counter.used / counter.perSlop);
   const inSlop = counter.used % counter.perSlop;
@@ -59,7 +112,7 @@ export function ShuttleCounter({ url, initial, defaultPrice, flatShuttle }: { ur
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-lead">Kok</h2>
         <p className="text-small" aria-live="polite">
-          {status === "saving" ? "Menyimpan…" : status === "error" ? "Belum tersimpan" : "Tersimpan"}
+          {statusLabel(status)}
         </p>
       </div>
       <div className="flex items-center gap-3">

@@ -51,6 +51,13 @@ test("pencatat skor: pemain mengajukan diri, hanya satu yang memegang, admin bis
   await board.getByRole("button", { name: "Undo" }).click();
   await expect(board.getByTestId("serve-A")).toHaveText("Servis kanan");
   await expect(board.getByTestId("sync-status")).toHaveText("Tersimpan");
+  // Mode fokus pemain: kontrol skor saja, tanpa penghitung kok (khusus admin); jumlah kok tidak terlihat.
+  await board.getByRole("button", { name: "Mode fokus" }).click();
+  await expect(board.getByRole("dialog", { name: "Lapangan 1" })).toBeVisible();
+  await expect(board.getByTestId("shuttle-quick")).toHaveCount(0);
+  await board.getByRole("button", { name: "Keluar fokus" }).click();
+  await expect(board.getByRole("dialog")).toHaveCount(0);
+  await expect(board.getByTestId("shuttles-used")).toHaveCount(0);
   // Pemain pencatat tidak bisa membatalkan match.
   await expect(board.getByRole("button", { name: "Batalkan match" })).toHaveCount(0);
 
@@ -106,6 +113,22 @@ test("papan skor layar penuh & visual lapangan di skor langsung", async ({ page,
   });
   const [matchId] = (await started.json()).ids as string[];
 
+  // Admin: mode fokus memuat penghitung kok yang sama dengan kartu "Kok"; tetap fokus setelah dimuat ulang.
+  await page.goto(`/g/${group.id}/sesi/${sessionId}/main`);
+  await page.getByRole("button", { name: "Mode fokus" }).click();
+  const focused = page.getByRole("dialog", { name: "Lapangan 1" });
+  await expect(focused).toBeVisible();
+  await focused.getByRole("button", { name: "+ Kok" }).click();
+  await focused.getByRole("button", { name: "+ Kok" }).click();
+  await expect(focused.getByTestId("shuttle-quick-used")).toHaveText("2");
+  await expect(focused.getByTestId("shuttle-quick")).toContainText("Tersimpan");
+  await page.reload();
+  await expect(page.getByRole("dialog", { name: "Lapangan 1" })).toBeVisible();
+  await page.getByRole("button", { name: "Keluar fokus" }).click();
+  await expect(page.getByTestId("shuttle-counter").getByTestId("shuttles-used")).toHaveText("2");
+  const { data: shuttle } = await admin().from("sessions").select("shuttles_used").eq("id", sessionId).single();
+  expect(shuttle!.shuttles_used).toBe(2);
+
   await tv.goto(`${layar}?lapangan=1`);
   const court = tv.getByTestId("display-court-1");
   await expect(court.getByRole("heading", { name: "Lapangan 1" })).toBeVisible();
@@ -125,6 +148,7 @@ test("papan skor layar penuh & visual lapangan di skor langsung", async ({ page,
   await tv.goto(`/s/${token!.share_token}/skor`);
   await expect(tv.getByTestId("live-court-1").getByRole("img", { name: /kiri (Cici dan Dodi|Dodi dan Cici)/ })).toBeVisible();
   await expect(tv.getByTestId("live-serve")).toHaveText("Servis kiri");
+  await expect(tv.getByText(/kok/i)).toHaveCount(0);
   await expect(tv.getByRole("link", { name: /Papan skor layar penuh/ })).toHaveAttribute("href", layar);
   await tv.context().close();
 });
