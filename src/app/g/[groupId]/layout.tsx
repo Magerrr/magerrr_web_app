@@ -1,11 +1,10 @@
 import Link from "next/link";
+import { GroupAvatar } from "@/components/group-avatar";
 import { getMembership, getUser } from "@/lib/db/authz";
 import { unreadCount } from "@/lib/db/chat";
 import { getGroup, listMyGroups } from "@/lib/db/groups";
 import { GroupNav } from "./group-nav";
 import { GroupTabs } from "./group-tabs";
-
-const avatar = (g: { name: string; emoji: string | null }) => g.emoji ?? g.name.slice(0, 1).toUpperCase();
 
 /**
  * Navigasi grup: sidebar di desktop (lg ≥ 1024px), rail di tablet (GroupTabs); ponsel tanpa bar bawah, menu ada di Beranda.
@@ -38,9 +37,7 @@ export default async function GroupLayout({ children, params }: LayoutProps<"/g/
         </Link>
 
         <div className="flex items-center gap-3 px-2">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-full border border-ink-black bg-cream-paper text-lead" aria-hidden="true">
-            {avatar(group)}
-          </span>
+          <GroupAvatar name={group.name} emoji={group.emoji} logoUrl={group.logoUrl} theme={group.theme} />
           <span className="flex min-w-0 flex-col">
             <span className="line-clamp-2 text-ui font-medium break-words">{group.name}</span>
             <span className="truncate text-caption">{member.display_name}</span>
@@ -58,9 +55,7 @@ export default async function GroupLayout({ children, params }: LayoutProps<"/g/
               {others.map((g) => (
                 <li key={g.id}>
                   <Link href={`/g/${g.id}`} className="flex min-h-11 items-center gap-3 rounded-full px-4 text-ui hover:bg-sandstone">
-                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-sandstone text-small" aria-hidden="true">
-                      {avatar(g)}
-                    </span>
+                    <GroupAvatar name={g.name} emoji={g.emoji} logoUrl={g.logoUrl} theme={g.theme} size="sm" />
                     <span className="min-w-0 flex-1 truncate">{g.name}</span>
                   </Link>
                 </li>

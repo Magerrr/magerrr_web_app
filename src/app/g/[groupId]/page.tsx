@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { GroupAvatar } from "@/components/group-avatar";
 import { Icon, type IconName } from "@/components/icons";
 import { NoAccess } from "@/components/no-access";
 import { Badge, ButtonLink, Card, Page, buttonClass, inputBase } from "@/components/ui";
@@ -13,7 +15,8 @@ import { loadKiko } from "@/lib/db/kiko";
 import { loadGroupMatches } from "@/lib/db/matches";
 import { unpaidGroupSettlements } from "@/lib/db/profile";
 import { listSessions, type SessionSummary } from "@/lib/db/sessions";
-import { formatRupiah, formatShortDateId, formatTimeRangeId, initials } from "@/lib/format";
+import { formatRupiah, formatShortDateId, formatTimeRangeId } from "@/lib/format";
+import { THEME_BG } from "@/lib/group-theme";
 import { toJakartaParts } from "@/lib/time";
 import { pageAccess } from "./access";
 import { KikoCard } from "./kiko-card";
@@ -51,14 +54,18 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
 
   return (
     <Page width="wide">
-      <header className="flex items-center gap-3">
-        <span
-          className="flex size-12 shrink-0 items-center justify-center rounded-full border border-ink-black bg-fresh-grass text-ui"
-          aria-hidden="true"
-        >
-          {initials(member.display_name)}
-        </span>
-        <div className="flex min-w-0 flex-1 flex-col">
+      {/* Sampul & logo grup (MAGERRR-8): sampul berasio 3:1, tanpa sampul = pita warna tema; logo menumpang di tepi bawah. */}
+      <div
+        className={`relative overflow-hidden rounded-2xl border border-ink-black ${THEME_BG[group.theme]} ${group.coverUrl ? "aspect-[3/1] max-h-56 w-full" : "h-14"}`}
+        data-testid="group-cover"
+      >
+        {group.coverUrl && (
+          <Image src={group.coverUrl} alt="" fill unoptimized priority sizes="(min-width: 1152px) 1152px, 100vw" className="object-cover" />
+        )}
+      </div>
+      <header className="-mt-14 flex items-end gap-3 px-3">
+        <GroupAvatar name={group.name} emoji={group.emoji} logoUrl={group.logoUrl} theme={group.theme} size="xl" className="border-2 ring-4 ring-cream-paper" />
+        <div className="flex min-w-0 flex-1 flex-col pb-1">
           <p className="text-small">
             {greeting(now)}, {member.display_name}
           </p>

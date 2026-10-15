@@ -4,6 +4,7 @@ import { Page, TopBar } from "@/components/ui";
 import { getGroup } from "@/lib/db/groups";
 import { pageAccess } from "../access";
 import { DeleteGroup } from "./delete-group";
+import { GroupImages } from "./group-images";
 import { SettingsForm } from "./settings-form";
 
 export const metadata: Metadata = { title: "Pengaturan grup" };
@@ -22,6 +23,7 @@ export default async function SettingsPage({ params }: PageProps<"/g/[groupId]/p
         <p className="text-ui">Mengubah aturan tidak mengubah skor yang sudah tercatat. Klasemen dihitung ulang otomatis.</p>
       </div>
       <SettingsForm group={group} />
+      <GroupImages groupId={groupId} logoUrl={group.logoUrl} coverUrl={group.coverUrl} />
       <DeleteGroup groupId={groupId} groupName={group.name} />
     </Page>
   );

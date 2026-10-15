@@ -5,6 +5,7 @@ import { useState } from "react";
 import { NumberField, RulesPicker, draftFromRules, rulesFromDraft, toInt } from "@/components/rules-picker";
 import { Button, Card, Field, Notice, Segmented, inputBase, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
+import { GROUP_THEMES, THEME_BG, THEME_LABEL } from "@/lib/group-theme";
 import { PLAY_MODE_OPTIONS, toOfferedMode } from "../sesi/status";
 import type { GroupSettings } from "@/lib/db/groups";
 
@@ -23,6 +24,7 @@ export function SettingsForm({ group }: { group: GroupSettings }) {
   const [roundTo, setRoundTo] = useState(group.roundTo);
   const [playMode, setPlayMode] = useState(toOfferedMode(group.defaultPlayMode));
   const [visibility, setVisibility] = useState<"private" | "public">(group.isPublic ? "public" : "private");
+  const [theme, setTheme] = useState(group.theme);
   const [status, setStatus] = useState<{ tone: "info" | "error"; text: string } | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -43,6 +45,7 @@ export function SettingsForm({ group }: { group: GroupSettings }) {
       roundTo,
       defaultPlayMode: playMode,
       isPublic: visibility === "public",
+      theme,
     });
     setPending(false);
     setStatus(result.ok ? { tone: "info", text: "Pengaturan disimpan." } : { tone: "error", text: result.error });
@@ -59,6 +62,22 @@ export function SettingsForm({ group }: { group: GroupSettings }) {
         <Field label="Ikon (opsional)" htmlFor="emoji" hint="Satu emoji sebagai ikon grup.">
           <input id="emoji" value={emoji} onChange={(e) => setEmoji(e.target.value)} maxLength={16} className={`${inputBase} w-24`} />
         </Field>
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-2 text-ui font-medium">Warna tema</legend>
+          <div className="flex flex-wrap gap-2">
+            {GROUP_THEMES.map((t) => (
+              <label
+                key={t}
+                className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-ink-black bg-pure-white py-1 pr-4 pl-1 text-ui has-checked:bg-ink-black has-checked:text-cream-paper has-focus-visible:outline-2 has-focus-visible:outline-offset-2"
+              >
+                <input type="radio" name="theme" value={t} checked={theme === t} onChange={() => setTheme(t)} className="sr-only" />
+                <span aria-hidden="true" className={`size-8 rounded-full border border-ink-black ${THEME_BG[t]}`} />
+                {THEME_LABEL[t]}
+              </label>
+            ))}
+          </div>
+          <p className="text-small">Warna sampul & ikon grup di beranda dan daftar grup.</p>
+        </fieldset>
         <Segmented
           legend="Siapa yang bisa gabung"
           name="visibility"

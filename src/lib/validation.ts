@@ -5,6 +5,7 @@ import { TOURNAMENT_FORMATS } from "@/lib/core/tournament";
 import { KIKO_ACC, KIKO_FUR, KIKO_HAT, KIKO_JERSEY } from "@/lib/core/mascot";
 import { assertValidRules } from "@/lib/core/rules";
 import { formatRupiah } from "@/lib/format";
+import { GROUP_THEMES } from "@/lib/group-theme";
 import { SHARE_CHANNELS } from "@/lib/analytics-core";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -83,6 +84,7 @@ export const groupSettingsSchema = z
     roundTo: z.union(ROUND_TO.map((n) => z.literal(n))),
     defaultPlayMode: z.enum(PLAY_MODES),
     isPublic: z.boolean(),
+    theme: z.enum(GROUP_THEMES),
   })
   .partial()
   .strict()

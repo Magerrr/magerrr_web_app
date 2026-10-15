@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { GroupAvatar } from "@/components/group-avatar";
@@ -34,8 +35,13 @@ export default async function PublicGroupPage({ params }: PageProps<"/jelajah/[g
   return (
     <Page width="narrow">
       <TopBar back="/jelajah" />
+      {group.coverUrl && (
+        <div className="relative aspect-[3/1] w-full overflow-hidden rounded-2xl border border-ink-black bg-sandstone">
+          <Image src={group.coverUrl} alt="" fill unoptimized priority sizes="(min-width: 640px) 576px, 100vw" className="object-cover" />
+        </div>
+      )}
       <div className="flex items-center gap-4">
-        <GroupAvatar name={group.name} emoji={group.emoji} size="lg" />
+        <GroupAvatar name={group.name} emoji={group.emoji} logoUrl={group.logoUrl} theme={group.theme} size="lg" />
         <div className="flex min-w-0 flex-col gap-1">
           <p className="text-small">Grup publik · {group.memberCount} anggota</p>
           <h1 className="text-title break-words">{group.name}</h1>

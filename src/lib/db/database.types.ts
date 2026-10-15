@@ -207,14 +207,14 @@ isOneToOne: false
                   ]
                 },"groups": {
                   Row: {
-                    "created_at": string,"default_play_mode": Database["public"]['Enums']["play_mode"],"emoji": string | null,"id": string,"invite_code": string,"is_public": boolean,"match_games": number,"name": string,"owner_id": string,"round_to": number,"rules": NonNullable<Json>,"scoring": NonNullable<Json>
+                    "cover_path": string | null,"created_at": string,"default_play_mode": Database["public"]['Enums']["play_mode"],"emoji": string | null,"id": string,"invite_code": string,"is_public": boolean,"logo_path": string | null,"match_games": number,"name": string,"owner_id": string,"round_to": number,"rules": NonNullable<Json>,"scoring": NonNullable<Json>,"theme": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"default_play_mode"?: Database["public"]['Enums']["play_mode"],"emoji"?: string | null,"id"?: string,"invite_code"?: string,"is_public"?: boolean,"match_games"?: number,"name": string,"owner_id": string,"round_to"?: number,"rules"?: NonNullable<Json>,"scoring"?: NonNullable<Json>
+                    "cover_path"?: string | null,"created_at"?: string,"default_play_mode"?: Database["public"]['Enums']["play_mode"],"emoji"?: string | null,"id"?: string,"invite_code"?: string,"is_public"?: boolean,"logo_path"?: string | null,"match_games"?: number,"name": string,"owner_id": string,"round_to"?: number,"rules"?: NonNullable<Json>,"scoring"?: NonNullable<Json>,"theme"?: string
                   }
                   Update: {
-                    "created_at"?: string,"default_play_mode"?: Database["public"]['Enums']["play_mode"],"emoji"?: string | null,"id"?: string,"invite_code"?: string,"is_public"?: boolean,"match_games"?: number,"name"?: string,"owner_id"?: string,"round_to"?: number,"rules"?: NonNullable<Json>,"scoring"?: NonNullable<Json>
+                    "cover_path"?: string | null,"created_at"?: string,"default_play_mode"?: Database["public"]['Enums']["play_mode"],"emoji"?: string | null,"id"?: string,"invite_code"?: string,"is_public"?: boolean,"logo_path"?: string | null,"match_games"?: number,"name"?: string,"owner_id"?: string,"round_to"?: number,"rules"?: NonNullable<Json>,"scoring"?: NonNullable<Json>,"theme"?: string
                   }
                   Relationships: [
                     {

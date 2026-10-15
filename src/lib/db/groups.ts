@@ -2,8 +2,10 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import type { GameRules } from "@/lib/core/rules";
 import type { ScoringConfig } from "@/lib/core/standings";
+import type { GroupTheme } from "@/lib/group-theme";
 import { isToken, isUuid, type GroupSettingsPatch } from "@/lib/validation";
 import { guestCookies, type AuthUser } from "./authz";
+import { MEDIA_BUCKET, groupImageUrl, groupMediaPaths } from "./group-media";
 import { QRIS_BUCKET } from "./payments";
 import type { Database } from "./database.types";
 import { serviceClient } from "./supabase";
@@ -11,10 +13,30 @@ import { serviceClient } from "./supabase";
 type GroupRow = Database["public"]["Tables"]["groups"]["Row"];
 type PlayMode = Database["public"]["Enums"]["play_mode"];
 
-export interface GroupSettings {
+/** Identitas tampilan grup (MAGERRR-8): ikon, logo, sampul, warna tema. */
+export interface GroupLook {
   id: string;
   name: string;
   emoji: string | null;
+  theme: GroupTheme;
+  logoUrl: string | null;
+  coverUrl: string | null;
+}
+
+const LOOK_COLUMNS = "id, name, emoji, theme, logo_path, cover_path" as const;
+
+function toLook(row: Pick<GroupRow, "id" | "name" | "emoji" | "theme" | "logo_path" | "cover_path">): GroupLook {
+  return {
+    id: row.id,
+    name: row.name,
+    emoji: row.emoji,
+    theme: row.theme as GroupTheme,
+    logoUrl: groupImageUrl(row.id, "logo", row.logo_path),
+    coverUrl: groupImageUrl(row.id, "cover", row.cover_path),
+  };
+}
+
+export interface GroupSettings extends GroupLook {
   ownerId: string;
   rules: GameRules;
   matchGames: 1 | 3 | 5;
@@ -25,13 +47,12 @@ export interface GroupSettings {
   isPublic: boolean;
 }
 
-const GROUP_COLUMNS = "id, name, emoji, owner_id, rules, match_games, scoring, round_to, default_play_mode, is_public" as const;
+const GROUP_COLUMNS =
+  "id, name, emoji, theme, logo_path, cover_path, owner_id, rules, match_games, scoring, round_to, default_play_mode, is_public" as const;
 
 function toSettings(row: Omit<GroupRow, "invite_code" | "created_at">): GroupSettings {
   return {
-    id: row.id,
-    name: row.name,
-    emoji: row.emoji,
+    ...toLook(row),
     ownerId: row.owner_id,
     rules: row.rules as unknown as GameRules,
     matchGames: row.match_games as GroupSettings["matchGames"],
@@ -58,10 +79,7 @@ export async function getInviteCode(groupId: string): Promise<string> {
   return data.invite_code;
 }
 
-export interface GroupSummary {
-  id: string;
-  name: string;
-  emoji: string | null;
+export interface GroupSummary extends GroupLook {
   role: "admin" | "referee" | "member";
   via: "account" | "guest";
   memberName: string;
@@ -70,14 +88,14 @@ export interface GroupSummary {
 /** Grup milik pengunjung: lewat akun login dan lewat cookie tamu. */
 export async function listMyGroups(user: AuthUser | null): Promise<GroupSummary[]> {
   const db = serviceClient();
-  const select = "role, display_name, groups!inner(id, name, emoji)" as const;
+  const select = `role, display_name, groups!inner(${LOOK_COLUMNS})` as const;
   const result: GroupSummary[] = [];
 
   if (user) {
     const { data, error } = await db.from("members").select(select).eq("user_id", user.id).eq("is_active", true);
     if (error) throw error;
     for (const m of data) {
-      result.push({ ...m.groups, role: m.role, via: "account", memberName: m.display_name });
+      result.push({ ...toLook(m.groups), role: m.role, via: "account", memberName: m.display_name });
     }
   }
 
@@ -91,7 +109,7 @@ export async function listMyGroups(user: AuthUser | null): Promise<GroupSummary[
     if (error) throw error;
     for (const m of data) {
       if (guests.some((g) => g.groupId === m.groups.id)) {
-        result.push({ ...m.groups, role: m.role, via: "guest", memberName: m.display_name });
+        result.push({ ...toLook(m.groups), role: m.role, via: "guest", memberName: m.display_name });
       }
     }
   }
@@ -127,6 +145,7 @@ export async function updateGroup(groupId: string, actorMemberId: string, patch:
   if (patch.roundTo) update.round_to = patch.roundTo;
   if (patch.defaultPlayMode) update.default_play_mode = patch.defaultPlayMode;
   if (patch.isPublic !== undefined) update.is_public = patch.isPublic;
+  if (patch.theme) update.theme = patch.theme;
 
   // Trigger audit_group_rules mencatat perubahan aturan beserta pelakunya.
   const { error } = await serviceClient(actorMemberId).from("groups").update(update).eq("id", groupId);
@@ -135,7 +154,7 @@ export async function updateGroup(groupId: string, actorMemberId: string, patch:
 
 /**
  * Hapus grup beserta semua datanya (anggota, sesi, match, patungan, obrolan, audit) lewat RPC `delete_group`
- * (urutan hapus eksplisit, lihat migrasi 0015). Gambar QRIS anggota dihapus dari
+ * (urutan hapus eksplisit, lihat migrasi 0015). Gambar QRIS anggota serta logo/sampul/momen grup dihapus dari
  * Storage setelah baris database hilang (best effort: gagal hapus berkas tidak membatalkan penghapusan grup).
  * Panggil hanya setelah requireAdmin.
  */
@@ -147,13 +166,15 @@ export async function deleteGroup(groupId: string): Promise<void> {
     .eq("members.group_id", groupId)
     .not("qr_image_path", "is", null);
   if (infoError) throw infoError;
+  const media = await groupMediaPaths(groupId);
 
   const { error } = await db.rpc("delete_group", { p_group: groupId });
   if (error) throw error;
 
   const paths = infos.map((i) => i.qr_image_path).filter((p): p is string => p !== null);
-  if (paths.length > 0) {
-    const removed = await db.storage.from(QRIS_BUCKET).remove(paths);
+  for (const [bucket, list] of [[QRIS_BUCKET, paths], [MEDIA_BUCKET, media]] as const) {
+    if (list.length === 0) continue;
+    const removed = await db.storage.from(bucket).remove([...list]);
     if (removed.error) console.error(removed.error);
   }
 }
@@ -166,10 +187,7 @@ export async function rotateInviteCode(groupId: string, actorMemberId: string): 
   return code;
 }
 
-export interface PublicGroup {
-  id: string;
-  name: string;
-  emoji: string | null;
+export interface PublicGroup extends GroupLook {
   memberCount: number;
 }
 
@@ -179,7 +197,7 @@ const PUBLIC_LIMIT = 50;
 export async function listPublicGroups(query = ""): Promise<PublicGroup[]> {
   let request = serviceClient()
     .from("groups")
-    .select("id, name, emoji, members(count)")
+    .select(`${LOOK_COLUMNS}, members(count)`)
     .eq("is_public", true)
     .eq("members.is_active", true)
     .order("created_at", { ascending: false })
@@ -188,7 +206,7 @@ export async function listPublicGroups(query = ""): Promise<PublicGroup[]> {
   if (term) request = request.ilike("name", `%${term}%`);
   const { data, error } = await request;
   if (error) throw error;
-  return data.map((g) => ({ id: g.id, name: g.name, emoji: g.emoji, memberCount: g.members[0]?.count ?? 0 }));
+  return data.map((g) => ({ ...toLook(g), memberCount: g.members[0]?.count ?? 0 }));
 }
 
 /** Grup publik untuk halaman pratinjau & gabung terbuka, atau null bila tidak ada / privat. */
@@ -196,13 +214,13 @@ export async function findPublicGroup(groupId: string): Promise<PublicGroup | nu
   if (!isUuid(groupId)) return null;
   const { data, error } = await serviceClient()
     .from("groups")
-    .select("id, name, emoji, members(count)")
+    .select(`${LOOK_COLUMNS}, members(count)`)
     .eq("id", groupId)
     .eq("is_public", true)
     .eq("members.is_active", true)
     .maybeSingle();
   if (error) throw error;
-  return data && { id: data.id, name: data.name, emoji: data.emoji, memberCount: data.members[0]?.count ?? 0 };
+  return data && { ...toLook(data), memberCount: data.members[0]?.count ?? 0 };
 }
 
 export async function findGroupByInvite(code: string): Promise<{ id: string; name: string; emoji: string | null } | null> {

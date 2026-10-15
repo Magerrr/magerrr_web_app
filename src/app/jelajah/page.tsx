@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { GroupAvatar } from "@/components/group-avatar";
 import { Icon } from "@/components/icons";
 import { Card, Page, TopBar, buttonClass, inputBase } from "@/components/ui";
 import { listPublicGroups } from "@/lib/db/groups";
+import { THEME_BG } from "@/lib/group-theme";
 
 export const metadata: Metadata = { title: "Jelajahi grup" };
 
@@ -41,14 +43,19 @@ export default async function ExplorePage({ searchParams }: PageProps<"/jelajah"
             <li key={g.id} className="min-w-0">
               <Link
                 href={`/jelajah/${g.id}`}
-                className="flex h-full min-h-16 items-center gap-4 rounded-2xl border border-ink-black bg-pure-white p-4 hover:bg-cream-paper"
+                className="flex h-full flex-col overflow-hidden rounded-2xl border border-ink-black bg-pure-white hover:bg-cream-paper"
               >
-                <GroupAvatar name={g.name} emoji={g.emoji} />
-                <span className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="truncate text-lead">{g.name}</span>
-                  <span className="text-small">{g.memberCount} anggota</span>
+                <span className={`relative block aspect-[3/1] w-full border-b border-ink-black ${THEME_BG[g.theme]}`} aria-hidden="true">
+                  {g.coverUrl && <Image src={g.coverUrl} alt="" fill unoptimized sizes="(min-width: 640px) 384px, 100vw" className="object-cover" />}
                 </span>
-                <Icon name="chevron" />
+                <span className="flex min-h-16 items-center gap-4 p-4">
+                  <GroupAvatar name={g.name} emoji={g.emoji} logoUrl={g.logoUrl} theme={g.theme} />
+                  <span className="flex min-w-0 flex-1 flex-col gap-1">
+                    <span className="truncate text-lead">{g.name}</span>
+                    <span className="text-small">{g.memberCount} anggota</span>
+                  </span>
+                  <Icon name="chevron" />
+                </span>
               </Link>
             </li>
           ))}

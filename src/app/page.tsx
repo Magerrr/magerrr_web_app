@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { GroupAvatar } from "@/components/group-avatar";
 import { Badge, ButtonLink, Card, Page } from "@/components/ui";
 import { getUser } from "@/lib/db/authz";
 import { listMyGroups } from "@/lib/db/groups";
@@ -41,9 +42,7 @@ export default async function Home() {
                 href={`/g/${group.id}`}
                 className="flex h-full min-h-16 items-center gap-4 rounded-2xl border border-ink-black bg-pure-white p-4 hover:bg-cream-paper"
               >
-                <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-sandstone text-sub" aria-hidden="true">
-                  {group.emoji ?? group.name.slice(0, 1).toUpperCase()}
-                </span>
+                <GroupAvatar name={group.name} emoji={group.emoji} logoUrl={group.logoUrl} theme={group.theme} />
                 <span className="flex min-w-0 flex-1 flex-col gap-1">
                   <span className="truncate text-lead">{group.name}</span>
                   <span className="text-small">sebagai {group.memberName}</span>
