@@ -193,7 +193,7 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
               rotation={rotation}
               fixed={session.playMode === "fix_pasangan"}
               rotationStarted={session.rotationQueue !== null}
-              emptyCourts={ctx.emptyCourts.length}
+              emptyCourts={ctx.emptyCourts}
               availableCount={ctx.present.filter((id) => !ctx.onCourt.has(id)).length}
               names={names}
             />

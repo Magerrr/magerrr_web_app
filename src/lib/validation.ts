@@ -170,7 +170,10 @@ const kindSchema = z.enum(["doubles", "singles"]);
 const courtNoSchema = z.int().min(1, "Nomor lapangan tidak valid.").max(12, "Nomor lapangan tidak valid.");
 const seedSchema = z.int().min(0).max(2_147_483_647);
 
-export const planSchema = z.object({ kind: kindSchema, seed: seedSchema }).strict();
+/** `courts`: lapangan kosong yang diisi (MAGERRR-10); tanpa `courts` = semua lapangan kosong. */
+export const planSchema = z
+  .object({ kind: kindSchema, seed: seedSchema, courts: z.array(courtNoSchema).min(1, "Pilih minimal satu lapangan.").max(12).optional() })
+  .strict();
 
 export const startRoundSchema = z
   .object({

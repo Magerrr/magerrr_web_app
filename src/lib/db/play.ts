@@ -179,22 +179,27 @@ function assertRunning(ctx: PlayContext): void {
   if (ctx.session.status !== "running") throw new HttpError(422, "Mulai sesi dulu sebelum mencatat skor.");
 }
 
-/** Usulan susunan untuk semua lapangan kosong (belum disimpan). */
-export async function proposeRound(ctx: PlayContext, kind: MatchKind, seed: number): Promise<Proposal> {
+/**
+ * Usulan susunan untuk lapangan kosong (belum disimpan). `only`: hanya lapangan ini yang diisi (MAGERRR-10),
+ * urut nomor; lapangan yang tidak kosong ditolak. Tanpa `only` = semua lapangan kosong.
+ */
+export async function proposeRound(ctx: PlayContext, kind: MatchKind, seed: number, only?: number[]): Promise<Proposal> {
   assertRunning(ctx);
   if (ctx.emptyCourts.length === 0) throw new HttpError(422, "Semua lapangan sedang dipakai.");
+  if (only?.some((c) => !ctx.emptyCourts.includes(c))) throw new HttpError(409, "Ada lapangan yang tidak kosong. Muat ulang halaman.");
+  const emptyCourts = only ? ctx.emptyCourts.filter((c) => only.includes(c)) : ctx.emptyCourts;
   const available = ctx.present.filter((id) => !ctx.onCourt.has(id));
 
   if (isRotation(ctx)) {
     let courts: Lineup[] = [];
     let queue: MemberId[];
     if (ctx.session.rotationQueue === null) {
-      const start = startRotation(available, ctx.emptyCourts.length, kind);
-      courts = start.courts.map((t, i) => ({ ...t, courtNo: ctx.emptyCourts[i], kind }));
+      const start = startRotation(available, emptyCourts.length, kind);
+      courts = start.courts.map((t, i) => ({ ...t, courtNo: emptyCourts[i], kind }));
       queue = start.queue;
     } else {
       queue = reconcileQueue(ctx.session.rotationQueue, ctx.present, [...ctx.onCourt]);
-      for (const courtNo of ctx.emptyCourts) {
+      for (const courtNo of emptyCourts) {
         const filled = fillCourt(queue, kind);
         if (!filled.teams) break;
         courts.push({ ...filled.teams, courtNo, kind });
@@ -212,12 +217,12 @@ export async function proposeRound(ctx: PlayContext, kind: MatchKind, seed: numb
     if ((ctx.session.fixedPairs ?? []).length === 0) throw new HttpError(422, "Atur pasangan tetap dulu.");
     const rated = await memberRatings(ctx, pairs.flat());
     const { states, opponentCount } = fixedContext({ pairs, ratings: rated, sessionMatches: ctx.matches });
-    const plan = planFixedRound({ pairs: states, courts: ctx.emptyCourts.length, opponentCount }, seed);
+    const plan = planFixedRound({ pairs: states, courts: emptyCourts.length, opponentCount }, seed);
     const paired = new Set(pairs.flat());
     return {
       mode: "fix_pasangan",
       kind,
-      courts: plan.courts.map((t, i) => ({ ...t, courtNo: ctx.emptyCourts[i], kind })),
+      courts: plan.courts.map((t, i) => ({ ...t, courtNo: emptyCourts[i], kind })),
       // pasangan yang istirahat (urut prioritas), lalu pemain tanpa pasangan
       waiting: [...plan.resting.flat(), ...available.filter((id) => !paired.has(id))],
       hint: plan.hint,
@@ -231,11 +236,11 @@ export async function proposeRound(ctx: PlayContext, kind: MatchKind, seed: numb
     sessionMatches: ctx.matches,
     groupMatches: await loadGroupMatches(ctx.group.id),
   });
-  const plan = planRound({ players, courts: ctx.emptyCourts.length, format: kind, history }, seed);
+  const plan = planRound({ players, courts: emptyCourts.length, format: kind, history }, seed);
   return {
     mode: "kocok",
     kind,
-    courts: plan.courts.map((t, i) => ({ ...t, courtNo: ctx.emptyCourts[i], kind })),
+    courts: plan.courts.map((t, i) => ({ ...t, courtNo: emptyCourts[i], kind })),
     waiting: plan.resting,
     hint: plan.hint,
     seed,
