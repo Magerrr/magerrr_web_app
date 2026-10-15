@@ -9,6 +9,11 @@ import { sendJson } from "@/lib/api-client";
 import type { Member } from "@/lib/db/authz";
 
 const GRADES = ["A", "B", "C", "D"] as const;
+const ROLES: { value: Member["role"]; label: string }[] = [
+  { value: "member", label: "Pemain" },
+  { value: "referee", label: "Wasit" },
+  { value: "admin", label: "Admin" },
+];
 
 export function InviteCard({ groupId, groupName, inviteUrl }: { groupId: string; groupName: string; inviteUrl: string }) {
   const router = useRouter();
@@ -147,6 +152,7 @@ export function MemberList({
                   <span className="truncate">{m.display_name}</span>
                 </Link>
                 {m.role === "admin" && <Badge tone="accent">Admin</Badge>}
+                {m.role === "referee" && <Badge tone="sunshine">Wasit</Badge>}
                 {m.user_id === null && <Badge tone="outline">Tamu</Badge>}
                 {m.id === selfId && <Badge>Kamu</Badge>}
                 {!editable && m.grade && <Badge>Grade {m.grade}</Badge>}
@@ -170,13 +176,21 @@ export function MemberList({
                     </select>
                   </label>
                   {canToggleRole && (
-                    <Button
-                      variant="secondary"
-                      disabled={busy === m.id}
-                      onClick={() => update(m.id, { role: m.role === "admin" ? "member" : "admin" })}
-                    >
-                      {m.role === "admin" ? "Cabut admin" : "Jadikan admin"}
-                    </Button>
+                    <label className="flex items-center gap-2 text-small">
+                      Peran
+                      <select
+                        value={m.role}
+                        disabled={busy === m.id}
+                        onChange={(e) => update(m.id, { role: e.target.value as Member["role"] })}
+                        className="h-11 rounded-lg border-2 border-ink-black bg-pure-white px-3 text-ui"
+                      >
+                        {ROLES.map((r) => (
+                          <option key={r.value} value={r.value}>
+                            {r.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   )}
                 </div>
               )}
@@ -184,7 +198,15 @@ export function MemberList({
           );
         })}
       </ul>
-      {editable && <p className="text-caption">Grade A paling kuat, D pemula. Dipakai untuk kocok pasangan yang seimbang.</p>}
+      {editable && (
+        <div className="flex flex-col gap-1 text-caption">
+          <p>Grade A paling kuat, D pemula. Dipakai untuk kocok pasangan yang seimbang.</p>
+          <p>
+            Wasit mengurus permainan: kocok & mulai ronde, catat dan ubah skor, batalkan match, mulai match turnamen. Pengaturan grup,
+            anggota, sesi, dan patungan tetap khusus admin. Peran hanya untuk anggota yang masuk dengan akun.
+          </p>
+        </div>
+      )}
     </section>
   );
 }

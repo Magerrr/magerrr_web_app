@@ -88,13 +88,13 @@ export function assertCanScore(ctx: PlayContext, actor: ScorerActor, matchId: st
   const scorer = scorerOf(ctx, match.courtNo);
   if (canScore(scorer, actor)) return;
   const name = ctx.members.find((m) => m.id === scorer)?.display_name;
-  throw new HttpError(403, scorer ? `Skor lapangan ini sedang dipegang ${name ?? "pemain lain"}. Muat ulang halaman.` : "Hanya admin grup yang boleh mencatat skor lapangan ini.");
+  throw new HttpError(403, scorer ? `Skor lapangan ini sedang dipegang ${name ?? "pemain lain"}. Muat ulang halaman.` : "Hanya admin atau wasit grup yang boleh mencatat skor lapangan ini.");
 }
 
 const SCORER_REFUSAL = {
   not_present: "Pencatat skor harus peserta yang hadir di sesi ini.",
-  taken: "Lapangan ini sudah punya pencatat skor. Minta admin bila ingin ganti.",
-  not_allowed: "Hanya admin yang bisa menunjuk atau mengganti pencatat skor.",
+  taken: "Lapangan ini sudah punya pencatat skor. Minta admin atau wasit bila ingin ganti.",
+  not_allowed: "Hanya admin atau wasit yang bisa menunjuk atau mengganti pencatat skor.",
 } as const;
 
 /** Tunjuk / ajukan diri / lepas pencatat skor lapangan (ALGORITHMS §1d). */
@@ -110,11 +110,11 @@ export async function setCourtScorer(ctx: PlayContext, actor: ScorerActor, court
   if (next === null) {
     // Pemain hanya melepas baris miliknya sendiri (bisa saja sudah diganti admin sesaat sebelumnya).
     const query = table.delete().match(key);
-    const { error } = actor.isAdmin ? await query : await query.eq("member_id", actor.id);
+    const { error } = actor.isOfficial ? await query : await query.eq("member_id", actor.id);
     if (error) throw error;
     return null;
   }
-  if (actor.isAdmin) {
+  if (actor.isOfficial) {
     const { error } = await table.upsert({ ...key, member_id: next, assigned_at: new Date().toISOString() });
     if (error) throw error;
     return next;

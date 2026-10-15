@@ -96,7 +96,7 @@ export const memberCreateSchema = z.object({ displayName: displayNameSchema }).s
 export const memberUpdateSchema = z
   .object({
     grade: z.enum(["A", "B", "C", "D"]).nullable(),
-    role: z.enum(["admin", "member"]),
+    role: z.enum(["admin", "referee", "member"]),
   })
   .partial()
   .strict()

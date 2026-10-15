@@ -59,7 +59,7 @@ export interface GroupSummary {
   id: string;
   name: string;
   emoji: string | null;
-  role: "admin" | "member";
+  role: "admin" | "referee" | "member";
   via: "account" | "guest";
   memberName: string;
 }

@@ -39,7 +39,7 @@ export async function addGuest(groupId: string, displayName: string): Promise<Me
   return data;
 }
 
-/** Ubah grade / peran. Panggil hanya setelah requireAdmin. */
+/** Ubah grade / peran (pemain, wasit, admin). Panggil hanya setelah requireAdmin. */
 export async function updateMember(
   groupId: string,
   actor: Member,
@@ -62,8 +62,8 @@ export async function updateMember(
     if (target.user_id !== null && target.user_id === target.groups.owner_id) {
       throw new HttpError(422, "Pembuat grup selalu admin.");
     }
-    if (patch.role === "admin" && target.user_id === null) {
-      throw new HttpError(422, "Tamu harus masuk dengan akun sebelum bisa jadi admin.");
+    if (patch.role !== "member" && target.user_id === null) {
+      throw new HttpError(422, `Tamu harus masuk dengan akun sebelum bisa jadi ${patch.role === "admin" ? "admin" : "wasit"}.`);
     }
   }
 

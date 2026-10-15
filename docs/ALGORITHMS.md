@@ -80,14 +80,14 @@ Test vector (bwf21): `[{0,0}]` games=1 → `A` · `[{10,5}]` games=1 → `A` · 
 
 ### 1d. Pencatat skor per lapangan
 
-Satu lapangan di satu sesi punya paling banyak **satu** pencatat (anggota). `canScore(scorer, actor)`: tanpa pencatat → hanya admin; dengan pencatat → hanya pencatat itu (admin pun harus mengambil alih dulu).
+Satu lapangan di satu sesi punya paling banyak **satu** pencatat (anggota). Di bagian ini "admin" berarti **pengurus permainan**: admin atau wasit grup (`actor.isOfficial`, MAGERRR-11). `canScore(scorer, actor)`: tanpa pencatat → hanya admin/wasit; dengan pencatat → hanya pencatat itu (admin/wasit pun harus mengambil alih dulu).
 
 `scorerRefusal(current, next, actor, present)` → `null` (boleh) atau alasan:
 - `next` bukan peserta hadir → `not_present`.
 - Admin: selalu boleh (tunjuk, ganti, kosongkan).
 - Pemain: `next = null` boleh bila `current` dirinya atau kosong, selain itu `not_allowed`; `next` orang lain → `not_allowed`; `next = dirinya` boleh bila `current` kosong atau dirinya, selain itu `taken`.
 
-Test vector (h admin, b & c pemain, hadir h/b/c): admin `null→b`, `b→c`, `b→null` → null · `null→x` → `not_present` · b `null→b` → null · b `c→b` → `taken` · b `null→c` → `not_allowed` · b `c→null` → `not_allowed` · b `b→null` → null.
+Test vector (h admin, b & c pemain, hadir h/b/c; wasit w berperilaku sama dengan h): admin `null→b`, `b→c`, `b→null` → null · `null→x` → `not_present` · b `null→b` → null · b `c→b` → `taken` · b `null→c` → `not_allowed` · b `c→null` → `not_allowed` · b `b→null` → null.
 
 ### 1e. Posisi kok saat servis
 

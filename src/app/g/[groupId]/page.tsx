@@ -60,6 +60,7 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
           <h1 className="text-sub break-words">{group.name}</h1>
         </div>
         {isAdmin && <Badge tone="accent">Admin</Badge>}
+        {member.role === "referee" && via === "account" && <Badge tone="sunshine">Wasit</Badge>}
         {via === "guest" && <Badge tone="outline">Tamu</Badge>}
         <Link
           href="/"

@@ -106,6 +106,7 @@ export default async function MemberProfilePage({ params, searchParams }: PagePr
           <h1 className="text-title break-words">{profile.displayName}</h1>
           <p className="flex flex-wrap justify-center gap-2">
             {profile.role === "admin" && <Badge tone="accent">Admin</Badge>}
+            {profile.role === "referee" && <Badge tone="sunshine">Wasit</Badge>}
             {profile.userId === null && <Badge tone="outline">Tamu</Badge>}
             {profile.grade && <Badge>Grade {profile.grade}</Badge>}
             {profile.id === me && <Badge>Kamu</Badge>}

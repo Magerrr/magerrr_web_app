@@ -8,6 +8,7 @@ import { MyTurn, WaitingList } from "@/components/waiting-list";
 import { Badge, ButtonLink, Card, Notice, Page, TopBar, buttonClass } from "@/components/ui";
 import { canScore } from "@/lib/core/scorer";
 import { pointStatus } from "@/lib/core/scoring";
+import { canOfficiate, isGroupAdmin } from "@/lib/db/authz";
 import { getGroup } from "@/lib/db/groups";
 import type { SessionMatch } from "@/lib/db/matches";
 import { publicEnv } from "@/lib/env";
@@ -33,8 +34,10 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
   const { groupId, sessionId } = await params;
   const access = await pageAccess(groupId, "member");
   if (access.denied) return <NoAccess reason={access.denied} next={`/g/${groupId}/sesi/${sessionId}/main`} />;
-  const { member, via } = access.membership;
-  const isAdmin = member.role === "admin" && via === "account";
+  const { member } = access.membership;
+  const isAdmin = isGroupAdmin(access.membership);
+  /** admin atau wasit: kocok, mulai ronde, catat/ubah/batalkan match, pasangan, pencatat skor (MAGERRR-11) */
+  const isOfficial = canOfficiate(access.membership);
 
   const [group, session] = await Promise.all([getGroup(groupId), isUuid(sessionId) ? getSession(groupId, sessionId) : null]);
   const back = `/g/${groupId}/sesi/${sessionId}`;
@@ -60,9 +63,12 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
   const names: Names = Object.fromEntries(ctx.members.map((m) => [m.id, m.display_name]));
   const running = session.status === "running";
   const rotation = session.playMode === "rotasi";
+  /** pengurus permainan saat sesi berlangsung: susun & mulai ronde */
+  const canRun = isOfficial && running;
+  /** jumlah kok (biaya patungan) tetap khusus admin */
   const isHost = isAdmin && running;
   /** Lapangan yang skornya dipegang pengunjung ini (ALGORITHMS §1d). */
-  const scoresCourt = (courtNo: number) => running && canScore(ctx.scorers[courtNo] ?? null, { id: member.id, isAdmin });
+  const scoresCourt = (courtNo: number) => running && canScore(ctx.scorers[courtNo] ?? null, { id: member.id, isOfficial });
   const scoresAny = Array.from({ length: session.courtCount }, (_, i) => i + 1).some(scoresCourt);
   const waiting = waitingView(ctx, new Date());
   const myCourt = ctx.running.find((m) => m.players.A.includes(member.id) || m.players.B.includes(member.id))?.courtNo ?? null;
@@ -115,7 +121,7 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
               pairs={session.fixedPairs ?? []}
               present={ctx.present}
               names={names}
-              editable={isAdmin && session.status !== "finished"}
+              editable={isOfficial && session.status !== "finished"}
             />
           )}
 
@@ -128,7 +134,7 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
                   courtNo={courtNo}
                   scorer={ctx.scorers[courtNo] ?? null}
                   viewerId={member.id}
-                  isAdmin={isAdmin}
+                  isOfficial={isOfficial}
                   present={ctx.present}
                   names={names}
                 />
@@ -144,7 +150,7 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
                       names={names}
                       rotation={rotation && match.tournament === null}
                       tag={tagOf(match)}
-                      canVoid={isAdmin}
+                      canVoid={isOfficial}
                       focusExtra={isHost ? <ShuttleQuick /> : null}
                     />
                     {scorer}
@@ -180,7 +186,7 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
             </ButtonLink>
           )}
 
-          {isHost && ctx.emptyCourts.length > 0 && (
+          {canRun && ctx.emptyCourts.length > 0 && (
             <RoundPlanner
               groupId={groupId}
               sessionId={sessionId}
@@ -208,7 +214,7 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
             <h2 id="riwayat-match" className="text-sub">
               Match ({history.filter((m) => m.status === "completed").length})
             </h2>
-            {isAdmin && session.status !== "planned" && (
+            {isOfficial && session.status !== "planned" && (
               <ButtonLink href={`/g/${groupId}/sesi/${sessionId}/catat`} variant="secondary">
                 Catat manual
               </ButtonLink>
@@ -246,7 +252,7 @@ export default async function PlayPage({ params }: PageProps<"/g/[groupId]/sesi/
                       </div>
                     ))}
                   </div>
-                  {isAdmin && m.status === "completed" && (
+                  {isOfficial && m.status === "completed" && (
                     <div className="mt-1 flex gap-4">
                       <Link href={`/g/${groupId}/sesi/${sessionId}/catat/${m.id}`} className="flex min-h-11 items-center px-1 text-small underline underline-offset-4">
                         Ubah skor

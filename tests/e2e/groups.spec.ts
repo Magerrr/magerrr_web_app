@@ -172,5 +172,6 @@ test("admin mengubah pengaturan, menambah tamu, dan mengatur grade lewat UI", as
     const { data } = await admin().from("members").select("grade").eq("group_id", group.id).eq("display_name", "Sari").single();
     return data?.grade;
   }).toBe("B");
-  await expect(sari.getByRole("button", { name: "Jadikan admin" })).toHaveCount(0);
+  // Tamu tidak bisa diberi peran (admin/wasit wajib akun).
+  await expect(sari.getByLabel("Peran")).toHaveCount(0);
 });

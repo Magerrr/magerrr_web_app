@@ -5,6 +5,7 @@ import { CopyLink } from "@/components/copy-link";
 import { NoAccess } from "@/components/no-access";
 import { Badge, Card, Notice, Page, TopBar, buttonClass } from "@/components/ui";
 import { groupLetter, type TournamentFormat } from "@/lib/core/tournament";
+import { canOfficiate, isGroupAdmin } from "@/lib/db/authz";
 import { getGroup } from "@/lib/db/groups";
 import { loadPlay } from "@/lib/db/play";
 import { getSession } from "@/lib/db/sessions";
@@ -48,8 +49,9 @@ export default async function TournamentPage({ params, searchParams }: PageProps
   const { groupId, sessionId } = await params;
   const access = await pageAccess(groupId, "member");
   if (access.denied) return <NoAccess reason={access.denied} next={`/g/${groupId}/sesi/${sessionId}/turnamen`} />;
-  const { member, via } = access.membership;
-  const isAdmin = member.role === "admin" && via === "account";
+  const isAdmin = isGroupAdmin(access.membership);
+  /** admin atau wasit memulai match turnamen (MAGERRR-11); buat/hapus turnamen tetap admin */
+  const isOfficial = canOfficiate(access.membership);
 
   const [group, session] = await Promise.all([getGroup(groupId), isUuid(sessionId) ? getSession(groupId, sessionId) : null]);
   const back = `/g/${groupId}/sesi/${sessionId}`;
@@ -99,7 +101,7 @@ export default async function TournamentPage({ params, searchParams }: PageProps
   const tabParam = (await searchParams).tab;
   const tab: Tab = tabs.find((t) => t === tabParam) ?? tabs[0];
   const publicUrl = `${publicEnv().siteUrl}/s/${session.shareToken}/turnamen`;
-  const canStart = isAdmin && session.status === "running";
+  const canStart = isOfficial && session.status === "running";
   const played = ctx.matches.some((m) => m.tournament?.id === tournament.id && m.status !== "void");
   const champion = view.champion;
   const busy = (seed: number) => view.entries[seed - 1].players.some((id) => ctx.onCourt.has(id));

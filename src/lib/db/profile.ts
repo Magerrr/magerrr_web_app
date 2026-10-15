@@ -6,7 +6,7 @@ import { serviceClient } from "./supabase";
 export interface MemberProfile {
   id: string;
   displayName: string;
-  role: "admin" | "member";
+  role: "admin" | "referee" | "member";
   grade: "A" | "B" | "C" | "D" | null;
   /** null = tamu (belum terhubung akun) */
   userId: string | null;

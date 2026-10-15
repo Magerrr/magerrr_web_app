@@ -11,14 +11,14 @@ const ADMIN = "";
 
 /**
  * Pencatat skor satu lapangan (ALGORITHMS §1d): hanya satu orang yang memegang skor.
- * Admin memilih pemain (atau kembali ke admin); pemain mengajukan diri saat belum ada pencatat, atau melepasnya.
+ * Admin/wasit memilih pemain (atau kembali ke admin/wasit); pemain mengajukan diri saat belum ada pencatat, atau melepasnya.
  */
 export function ScorerControl({
   url,
   courtNo,
   scorer,
   viewerId,
-  isAdmin,
+  isOfficial,
   present,
   names,
 }: {
@@ -26,7 +26,8 @@ export function ScorerControl({
   courtNo: number;
   scorer: string | null;
   viewerId: string;
-  isAdmin: boolean;
+  /** admin atau wasit */
+  isOfficial: boolean;
   /** peserta hadir yang bisa ditunjuk */
   present: string[];
   names: Names;
@@ -54,7 +55,7 @@ export function ScorerControl({
 
   return (
     <div className="flex flex-col gap-2 rounded-2xl border border-ink-black bg-pure-white px-4 py-3" data-testid={`scorer-${courtNo}`}>
-      {isAdmin ? (
+      {isOfficial ? (
         <div className="flex flex-wrap items-end gap-2">
           <label htmlFor={selectId} className="flex min-w-0 flex-1 flex-col gap-1 text-small">
             Pencatat skor lapangan {courtNo}

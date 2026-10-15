@@ -10,7 +10,7 @@ import { MatchForm } from "./match-form";
 /** Halaman bersama untuk catat manual (tanpa matchId) dan ubah skor (dengan matchId). */
 export async function MatchFormPage({ groupId, sessionId, matchId }: { groupId: string; sessionId: string; matchId?: string }) {
   const path = `/g/${groupId}/sesi/${sessionId}/catat${matchId ? `/${matchId}` : ""}`;
-  const access = await pageAccess(groupId, "admin");
+  const access = await pageAccess(groupId, "official");
   if (access.denied) return <NoAccess reason={access.denied} next={path} />;
 
   const [group, session] = await Promise.all([getGroup(groupId), isUuid(sessionId) ? getSession(groupId, sessionId) : null]);

@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { canScore, scorerRefusal } from "./scorer";
 
-const admin = { id: "h", isAdmin: true };
-const budi = { id: "b", isAdmin: false };
-const cici = { id: "c", isAdmin: false };
+const admin = { id: "h", isOfficial: true };
+const budi = { id: "b", isOfficial: false };
+const cici = { id: "c", isOfficial: false };
+/** wasit (MAGERRR-11): pengurus permainan seperti admin */
+const wasit = { id: "w", isOfficial: true };
 const present = ["h", "b", "c"];
 
 describe("canScore (ALGORITHMS §1d)", () => {
@@ -20,6 +22,16 @@ describe("canScore (ALGORITHMS §1d)", () => {
   });
 });
 
+describe("wasit (ALGORITHMS §1d)", () => {
+  it("wasit mencatat lapangan tanpa pencatat dan menunjuk/mencabut seperti admin", () => {
+    expect(canScore(null, wasit)).toBe(true);
+    expect(canScore("b", wasit)).toBe(false);
+    expect(scorerRefusal("b", "c", wasit, present)).toBeNull();
+    expect(scorerRefusal("b", null, wasit, present)).toBeNull();
+    expect(scorerRefusal(null, "x", wasit, present)).toBe("not_present");
+  });
+});
+
 describe("scorerRefusal (ALGORITHMS §1d)", () => {
   it("admin menunjuk, mengganti, atau mengosongkan", () => {
     expect(scorerRefusal(null, "b", admin, present)).toBeNull();
@@ -30,7 +42,7 @@ describe("scorerRefusal (ALGORITHMS §1d)", () => {
 
   it("hanya peserta hadir yang bisa jadi pencatat", () => {
     expect(scorerRefusal(null, "x", admin, present)).toBe("not_present");
-    expect(scorerRefusal(null, "x", { id: "x", isAdmin: false }, present)).toBe("not_present");
+    expect(scorerRefusal(null, "x", { id: "x", isOfficial: false }, present)).toBe("not_present");
   });
 
   it("pemain mengajukan diri hanya saat lapangan kosong pencatat", () => {

@@ -49,6 +49,7 @@ export default async function Home() {
                   <span className="text-small">sebagai {group.memberName}</span>
                 </span>
                 {group.role === "admin" && <Badge tone="accent">Admin</Badge>}
+                {group.role === "referee" && group.via === "account" && <Badge tone="sunshine">Wasit</Badge>}
                 {group.via === "guest" && <Badge tone="outline">Tamu</Badge>}
               </Link>
             </li>

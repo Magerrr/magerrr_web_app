@@ -110,11 +110,26 @@ export async function requireMember(groupId: string): Promise<Membership> {
     : new HttpError(401, "Masuk atau buka tautan undangan grup dulu.");
 }
 
+/** Admin grup dengan akun (tamu tidak bisa jadi admin). */
+export const isGroupAdmin = (m: Membership) => m.via === "account" && m.member.role === "admin";
+
+/** Pengurus permainan: admin atau wasit dengan akun (MAGERRR-11). Boleh kocok, catat/ubah skor, batalkan match, turnamen. */
+export const canOfficiate = (m: Membership) => m.via === "account" && (m.member.role === "admin" || m.member.role === "referee");
+
 /** Admin grup. Admin wajib login dengan akun (tamu tidak bisa jadi admin). */
 export async function requireAdmin(groupId: string): Promise<Membership> {
   const membership = await requireMember(groupId);
-  if (membership.member.role !== "admin" || membership.via !== "account") {
+  if (!isGroupAdmin(membership)) {
     throw new HttpError(403, "Hanya admin grup yang boleh melakukan ini.");
+  }
+  return membership;
+}
+
+/** Admin atau wasit grup (urusan permainan). */
+export async function requireOfficial(groupId: string): Promise<Membership> {
+  const membership = await requireMember(groupId);
+  if (!canOfficiate(membership)) {
+    throw new HttpError(403, "Hanya admin atau wasit grup yang boleh melakukan ini.");
   }
   return membership;
 }

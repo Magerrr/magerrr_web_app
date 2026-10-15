@@ -550,7 +550,7 @@ isOneToOne: true
                            }
           }
           Enums: {
-            "grade": "A"|"B"|"C"|"D","match_kind": "doubles"|"singles","match_status": "running"|"completed"|"void","member_role": "admin"|"member","pay_status": "unpaid"|"paid","play_mode": "kocok"|"rotasi"|"fix_pasangan"|"round_robin","rsvp_status": "going"|"not_going"|"maybe","session_status": "planned"|"running"|"finished","split_mode": "equal"|"custom"|"weighted"
+            "grade": "A"|"B"|"C"|"D","match_kind": "doubles"|"singles","match_status": "running"|"completed"|"void","member_role": "admin"|"referee"|"member","pay_status": "unpaid"|"paid","play_mode": "kocok"|"rotasi"|"fix_pasangan"|"round_robin","rsvp_status": "going"|"not_going"|"maybe","session_status": "planned"|"running"|"finished","split_mode": "equal"|"custom"|"weighted"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -670,7 +670,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "grade": ["A", "B", "C", "D"],"match_kind": ["doubles", "singles"],"match_status": ["running", "completed", "void"],"member_role": ["admin", "member"],"pay_status": ["unpaid", "paid"],"play_mode": ["kocok", "rotasi", "fix_pasangan", "round_robin"],"rsvp_status": ["going", "not_going", "maybe"],"session_status": ["planned", "running", "finished"],"split_mode": ["equal", "custom", "weighted"]
+            "grade": ["A", "B", "C", "D"],"match_kind": ["doubles", "singles"],"match_status": ["running", "completed", "void"],"member_role": ["admin", "referee", "member"],"pay_status": ["unpaid", "paid"],"play_mode": ["kocok", "rotasi", "fix_pasangan", "round_robin"],"rsvp_status": ["going", "not_going", "maybe"],"session_status": ["planned", "running", "finished"],"split_mode": ["equal", "custom", "weighted"]
           }
         }
 } as const
