@@ -72,7 +72,8 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
 
       {/*
         Lebar (@3xl = 48rem): kolom kiri = sesi berikutnya + daftar sesi, kolom kanan 22rem = Kiko, aksi, menu.
-        Ponsel: satu kolom dengan urutan sesi berikutnya, aksi, menu, daftar sesi (`contents` + `order`).
+        Ponsel: satu kolom urut kepentingan: sesi berikutnya, aksi (Buat sesi), daftar sesi, lalu menu lain
+        (`contents` + `order`). Ponsel tidak punya bar bawah, jadi semua menu grup ada di sini.
       */}
       <div className="flex flex-col gap-6 @3xl:grid @3xl:grid-cols-[minmax(0,1fr)_22rem] @3xl:items-start @3xl:gap-x-8">
         <div className="contents @3xl:flex @3xl:min-w-0 @3xl:flex-col @3xl:gap-6">
@@ -81,7 +82,7 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
               <FeaturedSession groupId={groupId} session={featured} now={now} />
             </div>
           )}
-        <section aria-labelledby="riwayat" className="order-4 flex min-w-0 flex-col gap-3">
+        <section aria-labelledby="riwayat" className="order-3 flex min-w-0 flex-col gap-3">
           <h2 id="riwayat" className="text-sub">
             Sesi
           </h2>
@@ -138,21 +139,23 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
             )}
 
             {isAdmin && (
-              <ButtonLink href={`/g/${groupId}/sesi/baru`} size="lg" className="max-lg:hidden">
+              <ButtonLink href={`/g/${groupId}/sesi/baru`} size="lg" className="sm:max-lg:hidden">
                 Buat sesi
               </ButtonLink>
             )}
           </div>
         )}
 
-        {/* Desktop memakai sidebar (layout.tsx); menu ini untuk ponsel & tablet. Anggota & Peringkat ada di navigasi utama. */}
-        <nav aria-label="Menu grup" className="order-3 flex flex-col gap-4 lg:hidden">
+        {/* Desktop memakai sidebar (layout.tsx); menu ini untuk ponsel & tablet. Anggota & Profil hanya di ponsel (tablet punya rail). */}
+        <nav aria-label="Menu grup" className="order-4 flex flex-col gap-4 lg:hidden">
           <ul className="grid grid-cols-4 gap-2">
             <Tile href={`/g/${groupId}/leaderboard`} icon="chart" label="Leaderboard" dark />
+            <Tile href={`/g/${groupId}/anggota`} icon="people" label="Anggota" className="sm:hidden" />
             <Tile href={`/g/${groupId}/musim`} icon="trophy" label="Musim" />
             <Tile href={`/g/${groupId}/recap`} icon="recap" label="Recap" full="Recap bulan & musim" />
             <Tile href={`/g/${groupId}/kiko`} icon="cat" label="Kiko" full="Kiko kamu" />
             <Tile href={`/g/${groupId}/pembayaran`} icon="card" label="Pembayaran" full="Info pembayaran" />
+            <Tile href={`/g/${groupId}/anggota/${member.id}`} icon="user" label="Profil" full="Profil kamu" className="sm:hidden" />
             {isAdmin && <Tile href={`/g/${groupId}/pengaturan`} icon="gear" label="Pengaturan" full="Pengaturan grup" />}
           </ul>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -236,9 +239,9 @@ function FeaturedSession({ groupId, session: s, now }: { groupId: string; sessio
   );
 }
 
-function Tile({ href, icon, label, full, dark }: { href: string; icon: IconName; label: string; full?: string; dark?: boolean }) {
+function Tile({ href, icon, label, full, dark, className }: { href: string; icon: IconName; label: string; full?: string; dark?: boolean; className?: string }) {
   return (
-    <li>
+    <li className={className}>
       <Link href={href} aria-label={full} className="flex min-h-11 flex-col items-center gap-1.5 text-caption">
         <span
           className={

@@ -9,8 +9,6 @@ interface Props {
   memberId: string;
   /** hanya admin akun yang boleh membuat sesi: tombol (+) tampil untuknya */
   canCreate: boolean;
-  /** rail tablet di awal layout; bar ponsel sesudah konten (supaya spacer-nya di bawah halaman) */
-  variant: "rail" | "bar";
 }
 
 interface Tab {
@@ -53,11 +51,11 @@ const PLUS = (
 );
 
 /**
- * Navigasi utama grup: bar bawah mengambang di ponsel (hanya di halaman tingkat atas, supaya tidak menutupi
- * tombol sticky di halaman kerja) dan rail 88px di tablet (sm ≤ lebar < lg, semua halaman grup).
- * Desktop memakai sidebar (layout.tsx). Penanda aktif dari URL; teks aktif fresh-grass di atas ink-black.
+ * Navigasi utama grup: rail 88px di tablet (sm ≤ lebar < lg, semua halaman grup). Desktop memakai sidebar
+ * (layout.tsx); ponsel tanpa bar bawah, menunya ada di dalam layar Beranda. Penanda aktif dari URL; teks aktif
+ * fresh-grass di atas ink-black.
  */
-export function GroupTabs({ groupId, memberId, canCreate, variant }: Props) {
+export function GroupTabs({ groupId, memberId, canCreate }: Props) {
   const pathname = usePathname();
   const base = `/g/${groupId}`;
   const tabs: Tab[] = [
@@ -69,85 +67,38 @@ export function GroupTabs({ groupId, memberId, canCreate, variant }: Props) {
   const create = canCreate ? { href: `${base}/sesi/baru`, label: "Buat sesi" } : null;
 
   const isActive = (tab: Tab) => pathname === tab.href || (tab.within ?? []).some((prefix) => pathname.startsWith(`${prefix}/`));
-  // Bar bawah hanya di halaman tingkat atas.
-  const barVisible = tabs.some((tab) => pathname === tab.href);
-
-  if (variant === "rail") {
-    return (
-      <nav
-        aria-label="Navigasi utama"
-        className="sticky top-0 hidden h-dvh w-22 shrink-0 flex-col items-center gap-2 border-r border-ink-black bg-pure-white py-5 sm:flex lg:hidden"
-      >
-        {create && (
-          <Link
-            href={create.href}
-            aria-label={create.label}
-            className="mb-3 flex size-14 items-center justify-center rounded-full border border-ink-black bg-fresh-grass text-ink-black"
-          >
-            {PLUS}
-          </Link>
-        )}
-        {tabs.map((tab) => {
-          const active = isActive(tab);
-          return (
-            <Link
-              key={tab.key}
-              href={tab.href}
-              aria-current={active ? "page" : undefined}
-              className={
-                "relative flex min-h-14 w-18 flex-col items-center justify-center gap-1 rounded-2xl text-caption " +
-                (active ? "bg-ink-black text-fresh-grass" : "text-ink-black hover:bg-sandstone")
-              }
-            >
-              {tab.icon}
-              {tab.label}
-            </Link>
-          );
-        })}
-      </nav>
-    );
-  }
 
   return (
-    <>
-      {barVisible && (
-        <>
-          <div className="h-28 sm:hidden" aria-hidden="true" />
-          <nav
-            aria-label="Navigasi utama"
-            className="fixed inset-x-4 bottom-5 z-20 flex h-17 items-center justify-around rounded-2xl bg-ink-black px-1.5 sm:hidden"
-          >
-            {tabs.slice(0, 2).map((tab) => (
-              <BarItem key={tab.key} tab={tab} active={isActive(tab)} />
-            ))}
-            {create ? (
-              <Link
-                href={create.href}
-                aria-label={create.label}
-                className="-mt-8 flex size-14 items-center justify-center rounded-full border-4 border-cream-paper bg-fresh-grass text-ink-black"
-              >
-                {PLUS}
-              </Link>
-            ) : null}
-            {tabs.slice(2).map((tab) => (
-              <BarItem key={tab.key} tab={tab} active={isActive(tab)} />
-            ))}
-          </nav>
-        </>
-      )}
-    </>
-  );
-}
-
-function BarItem({ tab, active }: { tab: Tab; active: boolean }) {
-  return (
-    <Link
-      href={tab.href}
-      aria-current={active ? "page" : undefined}
-      className={"flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 text-caption " + (active ? "text-fresh-grass" : "text-cream-paper")}
+    <nav
+      aria-label="Navigasi utama"
+      className="sticky top-0 hidden h-dvh w-22 shrink-0 flex-col items-center gap-2 border-r border-ink-black bg-pure-white py-5 sm:flex lg:hidden"
     >
-      {tab.icon}
-      {tab.label}
-    </Link>
+      {create && (
+        <Link
+          href={create.href}
+          aria-label={create.label}
+          className="mb-3 flex size-14 items-center justify-center rounded-full border border-ink-black bg-fresh-grass text-ink-black"
+        >
+          {PLUS}
+        </Link>
+      )}
+      {tabs.map((tab) => {
+        const active = isActive(tab);
+        return (
+          <Link
+            key={tab.key}
+            href={tab.href}
+            aria-current={active ? "page" : undefined}
+            className={
+              "relative flex min-h-14 w-18 flex-col items-center justify-center gap-1 rounded-2xl text-caption " +
+              (active ? "bg-ink-black text-fresh-grass" : "text-ink-black hover:bg-sandstone")
+            }
+          >
+            {tab.icon}
+            {tab.label}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }

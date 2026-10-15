@@ -8,7 +8,7 @@ import { GroupTabs } from "./group-tabs";
 const avatar = (g: { name: string; emoji: string | null }) => g.emoji ?? g.name.slice(0, 1).toUpperCase();
 
 /**
- * Navigasi grup: sidebar di desktop (lg ≥ 1024px), rail di tablet, bar bawah di ponsel (GroupTabs).
+ * Navigasi grup: sidebar di desktop (lg ≥ 1024px), rail di tablet (GroupTabs); ponsel tanpa bar bawah, menu ada di Beranda.
  * Hanya tampilan: akses tetap dicek tiap halaman (pageAccess) karena layout tidak dirender ulang saat pindah halaman.
  * Pengunjung yang bukan anggota mendapat halaman saja (NoAccess) tanpa sidebar.
  */
@@ -25,7 +25,7 @@ export default async function GroupLayout({ children, params }: LayoutProps<"/g/
 
   return (
     <div className="sm:flex lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]">
-      <GroupTabs {...tabs} variant="rail" />
+      <GroupTabs {...tabs} />
       <aside
         aria-label="Navigasi samping"
         className="sticky top-0 hidden h-dvh flex-col gap-6 self-start overflow-y-auto border-r border-ink-black bg-pure-white px-3 py-6 lg:flex"
@@ -86,7 +86,6 @@ export default async function GroupLayout({ children, params }: LayoutProps<"/g/
 
       <div className="min-w-0 sm:flex-1">
         {children}
-        <GroupTabs {...tabs} variant="bar" />
       </div>
     </div>
   );
