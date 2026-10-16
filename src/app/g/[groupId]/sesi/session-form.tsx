@@ -5,7 +5,7 @@ import { useState } from "react";
 import { AttendeePicker, type PickerMember } from "@/components/attendee-picker";
 import { CostEstimate } from "@/components/cost-estimate";
 import { NumberField, RulesPicker, draftFromRules, rulesFromDraft, toInt } from "@/components/rules-picker";
-import { Button, Card, Field, Notice, Segmented, inputClass } from "@/components/ui";
+import { Button, Card, Field, Notice, Segmented, dateInputClass, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import type { GameRules } from "@/lib/core/rules";
 import { courtCost } from "@/lib/core/split";
@@ -108,12 +108,13 @@ export function SessionForm({
     <form action={submit} className="flex flex-col gap-5">
       <Card className="flex flex-col gap-5">
         <h2 className="text-sub">Waktu & tempat</h2>
-        <div className="grid grid-cols-2 gap-3">
+        {/* Dua kolom hanya bila cukup lebar; item grid `min-w-0` agar input tanggal tidak melebar keluar kartu (MAGERRR-16). */}
+        <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 [&>*]:min-w-0">
           <Field label="Tanggal" htmlFor="date">
-            <input id="date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} />
+            <input id="date" type="date" required value={date} onChange={(e) => setDate(e.target.value)} className={dateInputClass} />
           </Field>
           <Field label="Jam mulai" htmlFor="time">
-            <input id="time" type="time" required value={time} onChange={(e) => setTime(e.target.value)} className={inputClass} />
+            <input id="time" type="time" required value={time} onChange={(e) => setTime(e.target.value)} className={dateInputClass} />
           </Field>
         </div>
         <Field label="Durasi sewa" htmlFor="duration">

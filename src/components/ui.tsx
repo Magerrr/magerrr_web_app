@@ -71,6 +71,11 @@ export function Notice({ tone = "info", children }: { tone?: "info" | "error"; c
 /** Gaya field tanpa lebar; pakai `inputClass` (lebar penuh) atau tambahkan lebar sendiri. */
 export const inputBase = "h-13 rounded-lg border-2 border-ink-black bg-pure-white px-4 text-ui text-ink-black";
 export const inputClass = `${inputBase} w-full`;
+/**
+ * Input tanggal/jam: Safari iOS & Chrome Android memberi lebar minimum bawaan yang bisa melebihi kolom sempit
+ * (MAGERRR-16), jadi lebar minimum dinolkan, tampilan bawaan dilepas, dan nilai rata kiri.
+ */
+export const dateInputClass = `${inputClass} min-w-0 appearance-none text-left [&::-webkit-date-and-time-value]:min-h-[1.5em] [&::-webkit-date-and-time-value]:text-left`;
 
 export function Field({
   label,

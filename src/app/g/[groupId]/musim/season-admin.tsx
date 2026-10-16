@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
-import { Button, Field, Notice, inputClass } from "@/components/ui";
+import { Button, Field, Notice, dateInputClass, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import { seasonSchema } from "@/lib/validation";
 
@@ -34,10 +34,10 @@ export function NewSeasonForm({ groupId, defaultName, today }: { groupId: string
         <input id={`${id}-name`} value={name} onChange={(e) => setName(e.target.value)} maxLength={60} className={inputClass} required />
       </Field>
       <Field label="Mulai" htmlFor={`${id}-start`}>
-        <input id={`${id}-start`} type="date" value={startsOn} onChange={(e) => setStartsOn(e.target.value)} className={inputClass} required />
+        <input id={`${id}-start`} type="date" value={startsOn} onChange={(e) => setStartsOn(e.target.value)} className={dateInputClass} required />
       </Field>
       <Field label="Selesai (opsional)" htmlFor={`${id}-end`} hint="Kosongkan bila musim berjalan sampai ditutup manual.">
-        <input id={`${id}-end`} type="date" value={endsOn} onChange={(e) => setEndsOn(e.target.value)} className={inputClass} />
+        <input id={`${id}-end`} type="date" value={endsOn} onChange={(e) => setEndsOn(e.target.value)} className={dateInputClass} />
       </Field>
       {error && <Notice tone="error">{error}</Notice>}
       <Button type="submit" size="lg" loading={pending}>
