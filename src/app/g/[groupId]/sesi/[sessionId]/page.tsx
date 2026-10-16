@@ -50,13 +50,14 @@ export default async function SessionPage({ params }: PageProps<"/g/[groupId]/se
   const editable = isAdmin && session.status !== "finished";
   const present = members.filter((m) => session.presentIds.includes(m.id));
   const hostId = session.createdBy ?? member.id;
-  // Perkiraan di halaman sesi hanya untuk biaya "rata ke semua peserta hadir"; rincian lengkap di Patungan.
+  // Perkiraan di halaman sesi hanya untuk biaya "rata ke semua peserta hadir" atau iuran flat; rincian lengkap di Patungan.
   const costs =
-    session.expenses.length > 0 && session.expenses.every((e) => e.splitAll)
+    session.flatFee !== null || (session.expenses.length > 0 && session.expenses.every((e) => e.splitAll))
       ? {
           items: session.expenses.map((e) => ({ label: e.name, amount: e.amount, paidBy: e.paidBy })),
           hostId,
           roundTo: group.roundTo,
+          flatFee: session.flatFee,
         }
       : null;
 
@@ -189,7 +190,7 @@ export default async function SessionPage({ params }: PageProps<"/g/[groupId]/se
                     </li>
                   ))}
                 </ul>
-                {costs && <CostEstimate items={costs.items} participants={session.presentIds} hostId={costs.hostId} roundTo={costs.roundTo} />}
+                {costs && <CostEstimate items={costs.items} participants={session.presentIds} hostId={costs.hostId} roundTo={costs.roundTo} flatFee={costs.flatFee} />}
               </>
             )}
           </section>

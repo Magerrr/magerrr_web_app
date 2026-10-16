@@ -90,6 +90,24 @@ export function computeNet(expenses: Expense[], participants: MemberId[]): Map<M
   return net;
 }
 
+/**
+ * Iuran flat (§5.7): tiap peserta berbagian `flatFee`; biaya ditanggung pengelola (`hostId`), penalang lain diganti
+ * pengelola. Positif = berutang, negatif = menalangi/menerima. Σ = 0.
+ */
+export function flatNet(expenses: Expense[], participants: MemberId[], hostId: MemberId, flatFee: Rupiah): Map<MemberId, number> {
+  assertRupiah(flatFee, "iuran flat", 1);
+  const net = new Map<MemberId, number>(participants.map((id) => [id, flatFee]));
+  for (const expense of expenses) {
+    assertRupiah(expense.amount, `biaya ${expense.id}`, 1);
+    net.set(expense.paidBy, (net.get(expense.paidBy) ?? 0) - expense.amount);
+  }
+  net.set(hostId, 0);
+  let others = 0;
+  for (const value of net.values()) others += value;
+  net.set(hostId, -others);
+  return net;
+}
+
 /** Bulatkan utang ke atas ke kelipatan roundTo; kelebihan dikreditkan ke host (atau kreditur terbesar). */
 export function applyRounding(
   net: Map<MemberId, number>,
@@ -152,10 +170,14 @@ export interface BillInput {
   expenses: Expense[];
   hostId: MemberId;
   roundTo: number;
+  /** iuran flat per peserta (§5.7); kosong = bagi rata */
+  flatFee?: Rupiah | null;
 }
 
 export interface Bill {
   total: Rupiah;
+  /** iuran flat: Σ iuran − total biaya (positif = kelebihan untuk pengelola); null = bagi rata */
+  surplus: number | null;
   /** Σ bagian tiap orang sebelum pembulatan */
   shares: Map<MemberId, Rupiah>;
   net: Map<MemberId, number>;
@@ -164,18 +186,24 @@ export interface Bill {
   transfers: Transfer[];
 }
 
-/** shareExpense → computeNet → applyRounding → settle. */
-export function splitBill({ participants, expenses, hostId, roundTo }: BillInput): Bill {
+/** shareExpense → computeNet → applyRounding → settle; dengan `flatFee`: flatNet → applyRounding → settle. */
+export function splitBill({ participants, expenses, hostId, roundTo, flatFee }: BillInput): Bill {
+  const total = expenses.reduce((s, e) => s + e.amount, 0);
   const shares = new Map<MemberId, Rupiah>();
-  for (const expense of expenses) {
-    for (const [id, share] of shareExpense(expense, participants)) {
-      shares.set(id, (shares.get(id) ?? 0) + share);
+  if (flatFee != null) {
+    for (const id of participants) shares.set(id, flatFee);
+  } else {
+    for (const expense of expenses) {
+      for (const [id, share] of shareExpense(expense, participants)) {
+        shares.set(id, (shares.get(id) ?? 0) + share);
+      }
     }
   }
-  const net = computeNet(expenses, participants);
+  const net = flatFee != null ? flatNet(expenses, participants, hostId, flatFee) : computeNet(expenses, participants);
   const rounded = applyRounding(net, roundTo, hostId);
   return {
-    total: expenses.reduce((s, e) => s + e.amount, 0),
+    total,
+    surplus: flatFee != null ? flatFee * new Set(participants).size - total : null,
     shares,
     net,
     rounded,
@@ -306,10 +334,14 @@ export interface PersonBill {
   transfer: Rupiah;
 }
 
-/** Rincian per orang dari bagian tersimpan dan transfer; urut memberId ↑ (UI mengurutkan ulang). */
+/**
+ * Rincian per orang dari bagian tersimpan dan transfer; urut memberId ↑ (UI mengurutkan ulang).
+ * `flat` (§5.7): bagian tiap peserta = iuran, bukan bagian biaya.
+ */
 export function billPeople(
   expenses: { amount: Rupiah; paidBy: MemberId; shares: Record<MemberId, Rupiah> }[],
   transfers: Transfer[],
+  flat?: { fee: Rupiah; participants: MemberId[] } | null,
 ): PersonBill[] {
   const people = new Map<MemberId, PersonBill>();
   const get = (memberId: MemberId) => {
@@ -319,8 +351,9 @@ export function billPeople(
   };
   for (const e of expenses) {
     get(e.paidBy).paid += e.amount;
-    for (const [id, amount] of Object.entries(e.shares)) get(id).share += amount;
+    if (!flat) for (const [id, amount] of Object.entries(e.shares)) get(id).share += amount;
   }
+  if (flat) for (const id of flat.participants) get(id).share += flat.fee;
   for (const t of transfers) {
     get(t.from).transfer += t.amount;
     get(t.to).transfer -= t.amount;

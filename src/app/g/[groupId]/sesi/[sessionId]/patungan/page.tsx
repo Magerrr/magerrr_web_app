@@ -12,6 +12,7 @@ import { formatDateId, formatRupiah } from "@/lib/format";
 import { isUuid } from "@/lib/validation";
 import { pageAccess } from "../../../access";
 import { ExpensesPanel } from "./expenses-panel";
+import { FlatFeeForm } from "./flat-fee-form";
 
 export const metadata: Metadata = { title: "Patungan" };
 
@@ -47,7 +48,10 @@ export default async function SplitBillPage({ params }: PageProps<"/g/[groupId]/
   const api = `/api/groups/${groupId}/sessions/${session.id}`;
   const total = state.expenses.reduce((s, e) => s + e.amount, 0);
 
-  const hasBill = state.expenses.length > 0;
+  const flat = state.flatFee;
+  const hostName = names[state.hostId] ?? "pengelola";
+  // Iuran flat menagih walau belum ada biaya tercatat (MAGERRR-14).
+  const hasBill = state.expenses.length > 0 || (flat !== null && state.settlements.length > 0);
 
   const costs = (
     <>
@@ -62,6 +66,8 @@ export default async function SplitBillPage({ params }: PageProps<"/g/[groupId]/
         </div>
       )}
 
+      <FlatFeeForm url={`${api}/bill`} flatFee={flat} hostName={hostName} names={names} isAdmin={isAdmin} />
+
       <section aria-labelledby="biaya" className="flex flex-col gap-3">
         <h2 id="biaya" className="text-sub">
           Biaya
@@ -75,6 +81,7 @@ export default async function SplitBillPage({ params }: PageProps<"/g/[groupId]/
           payers={payers}
           defaultPayer={state.hostId || member.id}
           isAdmin={isAdmin}
+          flat={flat !== null}
         />
       </section>
     </>
@@ -101,10 +108,22 @@ export default async function SplitBillPage({ params }: PageProps<"/g/[groupId]/
                 <h2 id="transfer" className="text-sub">
                   Siapa bayar ke siapa
                 </h2>
-                <p className="text-small">
-                  Total {formatRupiah(total)} dibagi {participants.length} peserta. Tagihan dibulatkan ke atas
-                  {group.roundTo > 1 ? ` ke kelipatan ${formatRupiah(group.roundTo)}` : ""}; kelebihannya untuk host.
-                </p>
+                {flat !== null ? (
+                  <p className="text-small" data-testid="flat-summary">
+                    Iuran flat {formatRupiah(flat)} × {participants.length} peserta = {formatRupiah(flat * participants.length)}, dibayar ke {hostName}.
+                    Biaya {formatRupiah(total)} ditanggung {hostName}
+                    {flat * participants.length > total
+                      ? `; kelebihan ${formatRupiah(flat * participants.length - total)} untuk ${hostName}.`
+                      : flat * participants.length < total
+                        ? `; kekurangan ${formatRupiah(total - flat * participants.length)} ditanggung ${hostName}.`
+                        : "."}
+                  </p>
+                ) : (
+                  <p className="text-small">
+                    Total {formatRupiah(total)} dibagi {participants.length} peserta. Tagihan dibulatkan ke atas
+                    {group.roundTo > 1 ? ` ke kelipatan ${formatRupiah(group.roundTo)}` : ""}; kelebihannya untuk host.
+                  </p>
+                )}
                 <TransferList
                   settlements={state.settlements}
                   names={names}

@@ -388,3 +388,10 @@ export const accountNameSchema = z.object({ displayName: displayNameSchema, appl
 export const accountEmailSchema = z
   .object({ email: z.string().trim().toLowerCase().pipe(z.email("Alamat email tidak valid.").max(254, "Alamat email terlalu panjang.")) })
   .strict();
+
+/** Cara patungan sesi (MAGERRR-14): null = bagi rata, angka = iuran flat per peserta (ALGORITHMS §5.7). */
+export const flatFeeSchema = z
+  .object({
+    flatFee: z.int("Iuran harus bilangan bulat.").min(1, "Iuran minimal Rp1.").max(10_000_000, "Iuran terlalu besar.").nullable(),
+  })
+  .strict();

@@ -10,19 +10,22 @@ export function CostEstimate({
   participants,
   hostId,
   roundTo,
+  flatFee = null,
 }: {
   /** biaya dibagi rata ke peserta hadir; `paidBy` = yang menalangi */
   items: { label: string; amount: number; paidBy: string }[];
   participants: string[];
   hostId: string;
   roundTo: number;
+  /** iuran flat per peserta (MAGERRR-14); null = bagi rata */
+  flatFee?: number | null;
 }) {
   const lines = items.filter((l) => l.amount > 0);
   const expenses: Expense[] = lines.map((l, i) => ({ id: String(i), amount: l.amount, paidBy: l.paidBy, mode: "equal" }));
   const total = expenses.reduce((s, e) => s + e.amount, 0);
   const range =
-    expenses.length > 0 && participants.length > 0
-      ? debtRange(splitBill({ participants, expenses, hostId, roundTo }).rounded)
+    (expenses.length > 0 || flatFee !== null) && participants.length > 0
+      ? debtRange(splitBill({ participants, expenses, hostId, roundTo, flatFee }).rounded)
       : null;
 
   return (
@@ -36,7 +39,7 @@ export function CostEstimate({
           </div>
         ))}
         <div className="flex items-baseline justify-between gap-3 border-t border-cream-paper/30 pt-2">
-          <dt>Patungan ÷ {participants.length} pemain</dt>
+          <dt>{flatFee !== null ? `Iuran flat · ${participants.length} pemain` : `Patungan ÷ ${participants.length} pemain`}</dt>
           <dd className="text-lead" data-testid="per-person">
             {range
               ? range.min === range.max
@@ -47,11 +50,13 @@ export function CostEstimate({
         </div>
       </dl>
       <p className="text-caption">
-        {total === 0
-          ? "Isi biaya untuk melihat perkiraan."
-          : participants.length === 0
-            ? "Tandai peserta hadir untuk melihat perkiraan."
-            : `Total ${formatRupiah(total)}. Tagihan tiap orang dibulatkan ke atas${roundTo > 1 ? ` ke kelipatan ${formatRupiah(roundTo)}` : ""}; kelebihannya untuk host.`}
+        {flatFee !== null
+          ? `Tiap pemain bayar ${formatRupiah(flatFee)} ke pengelola sesi, yang menanggung biaya${total > 0 ? ` ${formatRupiah(total)}` : ""} dan selisihnya.`
+          : total === 0
+            ? "Isi biaya untuk melihat perkiraan."
+            : participants.length === 0
+              ? "Tandai peserta hadir untuk melihat perkiraan."
+              : `Total ${formatRupiah(total)}. Tagihan tiap orang dibulatkan ke atas${roundTo > 1 ? ` ke kelipatan ${formatRupiah(roundTo)}` : ""}; kelebihannya untuk host.`}
       </p>
     </div>
   );

@@ -64,6 +64,7 @@ export function ExpensesPanel({
   payers,
   defaultPayer,
   isAdmin,
+  flat = false,
 }: {
   groupId: string;
   sessionId: string;
@@ -75,6 +76,8 @@ export function ExpensesPanel({
   payers: string[];
   defaultPayer: string;
   isAdmin: boolean;
+  /** iuran flat (MAGERRR-14): biaya ditanggung pengelola, tidak dibagi per orang */
+  flat?: boolean;
 }) {
   const [editing, setEditing] = useState<string | "new" | null>(null);
   const [notice, setNotice] = useState<{ tone: "info" | "error"; text: string } | null>(null);
@@ -103,7 +106,7 @@ export function ExpensesPanel({
   }
 
   const total = expenses.reduce((s, e) => s + e.amount, 0);
-  const formProps = { groupId, sessionId, names, participants, payers, onCancel: () => setEditing(null), onDone: done };
+  const formProps = { groupId, sessionId, names, participants, payers, flat, onCancel: () => setEditing(null), onDone: done };
 
   return (
     <div className="flex flex-col gap-3">
@@ -125,24 +128,26 @@ export function ExpensesPanel({
                   <span className="flex min-w-0 flex-1 flex-col gap-1">
                     <span className="truncate text-ui">{e.name}</span>
                     <span className="text-small">
-                      Ditalangi {nameOf(names, e.paidBy)} · {describeSplit(e, names)}
+                      Ditalangi {nameOf(names, e.paidBy)} · {flat ? "Ditanggung pengelola (iuran flat)" : describeSplit(e, names)}
                     </span>
                   </span>
                   <span className="text-lead tabular-nums">{formatRupiah(e.amount)}</span>
                 </div>
-                <details className="text-small">
-                  <summary className="min-h-11 cursor-pointer content-center">Bagian tiap orang</summary>
-                  <ul className="flex flex-col gap-1 pb-2" data-testid="expense-shares">
-                    {Object.entries(e.shares)
-                      .sort(([a], [b]) => nameOf(names, a).localeCompare(nameOf(names, b), "id"))
-                      .map(([id, amount]) => (
-                        <li key={id} className="flex justify-between gap-3 tabular-nums">
-                          <span>{nameOf(names, id)}</span>
-                          <span>{formatRupiah(amount)}</span>
-                        </li>
-                      ))}
-                  </ul>
-                </details>
+                {!flat && (
+                  <details className="text-small">
+                    <summary className="min-h-11 cursor-pointer content-center">Bagian tiap orang</summary>
+                    <ul className="flex flex-col gap-1 pb-2" data-testid="expense-shares">
+                      {Object.entries(e.shares)
+                        .sort(([a], [b]) => nameOf(names, a).localeCompare(nameOf(names, b), "id"))
+                        .map(([id, amount]) => (
+                          <li key={id} className="flex justify-between gap-3 tabular-nums">
+                            <span>{nameOf(names, id)}</span>
+                            <span>{formatRupiah(amount)}</span>
+                          </li>
+                        ))}
+                    </ul>
+                  </details>
+                )}
                 {isAdmin && (
                   <div className="flex gap-2">
                     <Button variant="secondary" onClick={() => setEditing(e.id)} disabled={editing !== null}>
@@ -188,6 +193,7 @@ function ExpenseForm({
   payers,
   defaultPayer,
   initial,
+  flat,
   onCancel,
   onDone,
 }: {
@@ -198,6 +204,7 @@ function ExpenseForm({
   payers: string[];
   defaultPayer: string;
   initial?: ExpenseView;
+  flat: boolean;
   onCancel: () => void;
   onDone: (reset: SettlementState[], text: string) => void;
 }) {
@@ -206,7 +213,9 @@ function ExpenseForm({
   const [name, setName] = useState(initial?.name ?? "Sewa lapangan");
   const [amount, setAmount] = useState(initial ? String(initial.amount) : "");
   const [paidBy, setPaidBy] = useState(initial?.paidBy ?? defaultPayer);
-  const [split, setSplit] = useState<SplitKind>(initialSplit(initial));
+  const [chosenSplit, setSplit] = useState<SplitKind>(initialSplit(initial));
+  // Iuran flat: biaya tidak dibagi per orang; disimpan sebagai "rata semua hadir" agar kembali normal bila mode diganti.
+  const split: SplitKind = flat ? "all" : chosenSplit;
   const [members, setMembers] = useState(
     new Set(initial && !initial.splitAll && initial.mode === "equal" ? Object.keys(initial.shares) : participants),
   );
@@ -305,9 +314,13 @@ function ExpenseForm({
           ))}
         </select>
       </Field>
-      <Segmented legend="Cara bagi" name={`${id}-split`} value={split} options={SPLIT_OPTIONS} onChange={setSplit} />
+      {flat ? (
+        <p className="text-small">Iuran flat: biaya ini ditanggung pengelola sesi, tidak dibagi per orang.</p>
+      ) : (
+        <Segmented legend="Cara bagi" name={`${id}-split`} value={split} options={SPLIT_OPTIONS} onChange={setSplit} />
+      )}
 
-      {split === "all" && <p className="text-small">Dibagi rata ke {participants.length} peserta hadir dan ikut berubah bila peserta berubah.</p>}
+      {split === "all" && !flat && <p className="text-small">Dibagi rata ke {participants.length} peserta hadir dan ikut berubah bila peserta berubah.</p>}
       {split !== "all" && (
         <fieldset className="flex min-w-0 flex-col gap-2">
           <legend className="mb-2 text-small font-medium">
@@ -362,7 +375,7 @@ function ExpenseForm({
         </fieldset>
       )}
 
-      {preview && split !== "custom" && (
+      {preview && split !== "custom" && !flat && (
         <div className="flex flex-col gap-1 text-small" data-testid="share-preview">
           <p className="font-medium">Bagian tiap orang</p>
           <ul className="flex flex-col gap-1">

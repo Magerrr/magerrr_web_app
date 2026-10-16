@@ -51,6 +51,8 @@ export interface SessionDetail extends SessionSummary {
   rsvp: Record<string, RsvpStatus>;
   /** penghitung kok (§5.5); pricePerSlop null = belum diisi */
   shuttle: ShuttleCounter;
+  /** iuran flat per peserta (§5.7, MAGERRR-14); null = bagi rata */
+  flatFee: number | null;
 }
 
 const SUMMARY_COLUMNS = "id, starts_at, duration_min, venue, court_count, status, attendees(count)" as const;
@@ -118,7 +120,7 @@ export async function getSession(groupId: string, sessionId: string): Promise<Se
   const { data: s, error } = await db
     .from("sessions")
     .select(
-      "id, group_id, starts_at, duration_min, venue, court_count, status, play_mode, rules, match_games, note, created_by, rotation_queue, share_token, recap_public, shuttle_price_per_slop, shuttle_per_slop, shuttles_used, fixed_pairs, attendees(member_id, present, rsvp), expenses(id, name, amount, paid_by, mode, preset, split_all, meta)",
+      "id, group_id, starts_at, duration_min, venue, court_count, status, play_mode, rules, match_games, note, created_by, rotation_queue, share_token, recap_public, shuttle_price_per_slop, shuttle_per_slop, shuttles_used, fixed_pairs, flat_fee, attendees(member_id, present, rsvp), expenses(id, name, amount, paid_by, mode, preset, split_all, meta)",
     )
     .eq("id", sessionId)
     .eq("group_id", groupId)
@@ -147,6 +149,7 @@ export async function getSession(groupId: string, sessionId: string): Promise<Se
     fixedPairs: (s.fixed_pairs as [string, string][] | null) ?? null,
     rsvp: Object.fromEntries(s.attendees.filter((a) => a.rsvp !== null).map((a) => [a.member_id, a.rsvp!])),
     shuttle: { pricePerSlop: s.shuttle_price_per_slop, perSlop: s.shuttle_per_slop, used: s.shuttles_used },
+    flatFee: s.flat_fee,
     expenses: s.expenses.map((e) => ({
       id: e.id,
       name: e.name,

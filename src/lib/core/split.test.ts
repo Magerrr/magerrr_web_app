@@ -9,6 +9,7 @@ import {
   computeNet,
   courtCost,
   debtRange,
+  flatNet,
   settle,
   shareExpense,
   shuttleCost,
@@ -358,6 +359,80 @@ describe("billPeople", () => {
     expect(billPeople([{ amount: 100, paidBy: "x", shares: { a: 100 } }], [{ from: "a", to: "x", amount: 100 }])).toEqual([
       { memberId: "a", share: 100, paid: 0, transfer: 100 },
       { memberId: "x", share: 0, paid: 100, transfer: -100 },
+    ]);
+  });
+});
+
+describe("test vector §5.7 — iuran flat (MAGERRR-14)", () => {
+  it("#1 sama dengan rata: 7 transfer × 35000 ke Raka, surplus 0", () => {
+    const expenses = [expense("lapangan", 240_000, RAKA), expense("kok", 40_000, RAKA)];
+    const net = flatNet(expenses, EIGHT, RAKA, 35_000);
+    expect(net.get(RAKA)).toBe(-245_000);
+    for (const id of OTHERS) expect(net.get(id)).toBe(35_000);
+    const bill = splitBill({ participants: EIGHT, expenses, hostId: RAKA, roundTo: 500, flatFee: 35_000 });
+    expect(bill.transfers).toEqual(OTHERS.map((from) => ({ from, to: RAKA, amount: 35_000 })));
+    expect(bill.surplus).toBe(0);
+    for (const id of EIGHT) expect(bill.shares.get(id)).toBe(35_000);
+  });
+
+  it("#2 kelebihan iuran: tiap lainnya +30000, Raka −150000, surplus +30000", () => {
+    const six = EIGHT.slice(0, 6);
+    const bill = splitBill({ participants: six, expenses: [expense("lapangan", 150_000, RAKA)], hostId: RAKA, roundTo: 500, flatFee: 30_000 });
+    expect(bill.net.get(RAKA)).toBe(-150_000);
+    for (const id of six.slice(1)) expect(bill.net.get(id)).toBe(30_000);
+    expect(bill.surplus).toBe(30_000);
+    expect(bill.total).toBe(150_000);
+  });
+
+  it("#3 penalang lain: B diganti pengelola; C→A 50000, D→A 40000, D→B 10000; surplus +20000", () => {
+    const expenses = [expense("lapangan", 120_000, "A"), expense("kok", 60_000, "B")];
+    const net = flatNet(expenses, ["A", "B", "C", "D"], "A", 50_000);
+    expect(Object.fromEntries(net)).toEqual({ A: -90_000, B: -10_000, C: 50_000, D: 50_000 });
+    const bill = splitBill({ participants: ["A", "B", "C", "D"], expenses, hostId: "A", roundTo: 1, flatFee: 50_000 });
+    expect(bill.transfers).toEqual([
+      { from: "C", to: "A", amount: 50_000 },
+      { from: "D", to: "A", amount: 40_000 },
+      { from: "D", to: "B", amount: 10_000 },
+    ]);
+    expect(bill.surplus).toBe(20_000);
+  });
+
+  it("#4 pengelola tidak hadir, tanpa biaya: H menerima 2 × 20000, surplus +40000", () => {
+    const bill = splitBill({ participants: ["p1", "p2"], expenses: [], hostId: "H", roundTo: 500, flatFee: 20_000 });
+    expect(Object.fromEntries(bill.net)).toEqual({ p1: 20_000, p2: 20_000, H: -40_000 });
+    expect(bill.transfers).toEqual([
+      { from: "p1", to: "H", amount: 20_000 },
+      { from: "p2", to: "H", amount: 20_000 },
+    ]);
+    expect(bill.surplus).toBe(40_000);
+  });
+
+  it("#5 flatFee tidak valid → RangeError; tanpa flatFee surplus null", () => {
+    for (const fee of [0, -1000, 1500.5]) expect(() => flatNet([], ["a"], "a", fee)).toThrow(RangeError);
+    expect(splitBill({ participants: ["a", "b"], expenses: [expense("x", 1000, "a")], hostId: "a", roundTo: 1 }).surplus).toBeNull();
+  });
+
+  it("property: Σ net = 0 untuk input acak", () => {
+    const rand = mulberry32(14);
+    for (let round = 0; round < 200; round++) {
+      const people = Array.from({ length: 1 + Math.floor(rand() * 8) }, (_, i) => `m${i}`);
+      const host = rand() < 0.2 ? "luar" : people[Math.floor(rand() * people.length)];
+      const expenses = Array.from({ length: Math.floor(rand() * 4) }, (_, i) =>
+        expense(`e${i}`, 1 + Math.floor(rand() * 300_000), rand() < 0.5 ? host : people[Math.floor(rand() * people.length)]),
+      );
+      const fee = 1 + Math.floor(rand() * 60_000);
+      expect(sum(flatNet(expenses, people, host, fee).values())).toBe(0);
+      const bill = splitBill({ participants: people, expenses, hostId: host, roundTo: 500, flatFee: fee });
+      expect(sum(bill.rounded.values())).toBe(0);
+      for (const t of bill.transfers) expect(Number.isSafeInteger(t.amount) && t.amount > 0).toBe(true);
+    }
+  });
+
+  it("billPeople mode flat: bagian = iuran tiap peserta, bukan bagian biaya", () => {
+    const people = billPeople([{ amount: 120_000, paidBy: "A", shares: { A: 120_000 } }], [{ from: "C", to: "A", amount: 50_000 }], { fee: 50_000, participants: ["A", "C"] });
+    expect(people).toEqual([
+      { memberId: "A", share: 50_000, paid: 120_000, transfer: -50_000 },
+      { memberId: "C", share: 50_000, paid: 0, transfer: 50_000 },
     ]);
   });
 });

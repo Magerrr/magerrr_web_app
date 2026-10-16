@@ -63,4 +63,19 @@ describe("billText", () => {
   it("whatsappUrl meng-encode teks", () => {
     expect(whatsappUrl("a b\nc&d")).toBe("https://wa.me/?text=a%20b%0Ac%26d");
   });
+
+  it("iuran flat: kepala menyebut iuran per orang, bukan total biaya (MAGERRR-14)", () => {
+    const text = billText({
+      groupName: "Mabar Jumat",
+      startsAt: new Date("2026-10-09T12:00:00Z"),
+      venue: null,
+      total: 150000,
+      participants: 6,
+      flatFee: 30000,
+      transfers: [{ from: "Dimas", to: "Raka", amount: 30000, paid: false }],
+      payTo: [],
+      url: "https://magerrr.test/s/abc/tagihan",
+    });
+    expect(text.split("\n").slice(0, 3)).toEqual(["Tagihan mabar Mabar Jumat", "Jumat, 9 Oktober 2026", "Iuran flat Rp30.000/orang · 6 orang"]);
+  });
 });

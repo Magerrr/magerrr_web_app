@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  flatFeeSchema,
   accountEmailSchema,
   accountNameSchema,
   chatCursor,
@@ -185,5 +186,14 @@ describe("profil akun (MAGERRR-12)", () => {
     expect(accountEmailSchema.parse({ email: "  Budi@Example.COM " }).email).toBe("budi@example.com");
     for (const bad of ["", "budi", "budi@", "@example.com"]) expect(accountEmailSchema.safeParse({ email: bad }).success).toBe(false);
     expect(accountEmailSchema.safeParse({ email: "a@b.co", extra: 1 }).success).toBe(false);
+  });
+});
+
+describe("flatFeeSchema (MAGERRR-14)", () => {
+  it("null = bagi rata; iuran integer 1–10 juta", () => {
+    expect(flatFeeSchema.parse({ flatFee: null })).toEqual({ flatFee: null });
+    expect(flatFeeSchema.parse({ flatFee: 35000 })).toEqual({ flatFee: 35000 });
+    for (const bad of [0, -1, 1.5, 10_000_001, "35000"]) expect(flatFeeSchema.safeParse({ flatFee: bad }).success).toBe(false);
+    expect(flatFeeSchema.safeParse({}).success).toBe(false);
   });
 });

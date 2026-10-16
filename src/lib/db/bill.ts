@@ -52,6 +52,8 @@ export interface BillState {
   participants: MemberId[];
   expenses: StoredExpense[];
   settlements: StoredSettlement[];
+  /** iuran flat per peserta (§5.7); null = bagi rata */
+  flatFee: Rupiah | null;
 }
 
 interface ShareRow {
@@ -65,7 +67,7 @@ export async function loadBill(session: SessionDetail): Promise<BillState> {
   const { data, error } = await serviceClient()
     .from("sessions")
     .select(
-      "bill_version, expenses(id, name, amount, paid_by, mode, preset, meta, split_all, created_at, expense_shares(member_id, amount, weight)), settlements(id, from_member, to_member, amount, status, self_reported, paid_at)",
+      "bill_version, flat_fee, expenses(id, name, amount, paid_by, mode, preset, meta, split_all, created_at, expense_shares(member_id, amount, weight)), settlements(id, from_member, to_member, amount, status, self_reported, paid_at)",
     )
     .eq("id", session.id)
     .single();
@@ -89,6 +91,7 @@ export async function loadBill(session: SessionDetail): Promise<BillState> {
     });
   return {
     version: data.bill_version,
+    flatFee: data.flat_fee,
     hostId: session.createdBy ?? expenses[0]?.paidBy ?? "",
     participants: [...session.presentIds].sort(compareId),
     expenses,
@@ -125,21 +128,29 @@ interface ComputedBill {
   reset: SettlementState[];
 }
 
-/** shareExpense → splitBill (computeNet → applyRounding → settle) → reconcileSettlements. */
-function computeBill(state: BillState, expenses: StoredExpense[], participants: MemberId[], roundTo: number): ComputedBill {
-  if (participants.length === 0 && expenses.some((e) => e.splitAll)) {
+/**
+ * shareExpense → splitBill (computeNet → applyRounding → settle) → reconcileSettlements.
+ * Iuran flat (§5.7): biaya ditanggung pengelola, jadi bagian tiap biaya tersimpan seluruhnya atas nama pengelola.
+ */
+function computeBill(state: BillState, expenses: StoredExpense[], participants: MemberId[], roundTo: number, flatFee = state.flatFee): ComputedBill {
+  if (flatFee !== null) {
+    if (!state.hostId) throw new HttpError(422, "Pengelola sesi tidak diketahui, jadi iuran flat belum bisa dipakai.");
+  } else if (participants.length === 0 && expenses.some((e) => e.splitAll)) {
     throw new HttpError(422, "Minimal satu peserta hadir untuk membagi biaya rata.");
   }
   const core = expenses.map(coreExpense);
-  const shares = core.flatMap((expense, i) =>
-    [...shareExpense(expense, participants)].map(([member_id, amount]) => ({
-      expense_id: expense.id,
-      member_id,
-      amount,
-      weight: expenses[i].mode === "weighted" ? (expense.weights?.[member_id] ?? 0) : null,
-    })),
-  );
-  const { transfers } = splitBill({ participants, expenses: core, hostId: state.hostId, roundTo });
+  const shares =
+    flatFee !== null
+      ? core.map((expense) => ({ expense_id: expense.id, member_id: state.hostId, amount: expense.amount, weight: null }))
+      : core.flatMap((expense, i) =>
+          [...shareExpense(expense, participants)].map(([member_id, amount]) => ({
+            expense_id: expense.id,
+            member_id,
+            amount,
+            weight: expenses[i].mode === "weighted" ? (expense.weights?.[member_id] ?? 0) : null,
+          })),
+        );
+  const { transfers } = splitBill({ participants, expenses: core, hostId: state.hostId, roundTo, flatFee });
   const { rows, reset } = reconcileSettlements(state.settlements, transfers);
   return { shares, settlements: rows, reset };
 }
@@ -286,6 +297,25 @@ export async function recomputeBill(
   return persist(state, session.id, actorId, "recompute", null, computed, present ? participants : null);
 }
 
+/**
+ * Ganti cara patungan (MAGERRR-14): `flatFee` null = bagi rata, angka = iuran flat per peserta. Tagihan dihitung dulu
+ * (gagal → tidak ada yang berubah), lalu kolom sesi diperbarui (diaudit trigger) dan tagihan disimpan.
+ */
+export async function setFlatFee(
+  group: GroupSettings,
+  session: SessionDetail,
+  actorId: string,
+  flatFee: Rupiah | null,
+): Promise<{ reset: SettlementState[] }> {
+  const state = await loadBill(session);
+  const computed = computeBill(state, state.expenses, state.participants, group.roundTo, flatFee);
+  if (state.flatFee !== flatFee) {
+    const { error } = await serviceClient(actorId).from("sessions").update({ flat_fee: flatFee }).eq("id", session.id);
+    if (error) throw error;
+  }
+  return persist(state, session.id, actorId, "recompute", null, computed, null);
+}
+
 export type PaymentAction = "paid" | "unpaid" | "reject" | "self_report";
 
 /** Ubah status satu transfer; `now` = waktu tandai lunas. */
@@ -336,7 +366,7 @@ export async function loadBillView(group: { id: string; name: string }, session:
     state,
     groupName: group.name,
     names,
-    people: billPeople(state.expenses, state.settlements),
+    people: billPeople(state.expenses, state.settlements, state.flatFee !== null ? { fee: state.flatFee, participants: state.participants } : null),
     progress: billProgress(state.settlements),
     payTo,
     publicUrl,
@@ -346,6 +376,7 @@ export async function loadBillView(group: { id: string; name: string }, session:
       venue: session.venue,
       total: state.expenses.reduce((s, e) => s + e.amount, 0),
       participants: state.participants.length,
+      flatFee: state.flatFee,
       transfers: state.settlements.map((s) => ({ from: nameOf(s.from), to: nameOf(s.to), amount: s.amount, paid: s.status === "paid" })),
       payTo: payTo.filter((p) => receivers.includes(p.memberId)).map((p) => ({ name: nameOf(p.memberId), infos: p.infos })),
       url: publicUrl,

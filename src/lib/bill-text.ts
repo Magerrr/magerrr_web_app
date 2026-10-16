@@ -7,6 +7,8 @@ export interface BillTextInput {
   venue: string | null;
   total: number;
   participants: number;
+  /** iuran flat per orang (§5.7); null = bagi rata */
+  flatFee?: number | null;
   /** nama sudah diselesaikan; urut seperti di layar */
   transfers: { from: string; to: string; amount: number; paid: boolean }[];
   payTo: { name: string; infos: { kind: "bank" | "ewallet" | "qris"; label: string; accountNo: string | null; accountName: string | null }[] }[];
@@ -17,7 +19,7 @@ export function billText(b: BillTextInput): string {
   const lines = [
     `Tagihan mabar ${b.groupName}`,
     `${formatDateId(b.startsAt)}${b.venue ? ` · ${b.venue}` : ""}`,
-    `Total ${formatRupiah(b.total)} · ${b.participants} orang`,
+    b.flatFee ? `Iuran flat ${formatRupiah(b.flatFee)}/orang · ${b.participants} orang` : `Total ${formatRupiah(b.total)} · ${b.participants} orang`,
   ];
   const receivers = [...new Set(b.transfers.map((t) => t.to))];
   for (const to of receivers) {

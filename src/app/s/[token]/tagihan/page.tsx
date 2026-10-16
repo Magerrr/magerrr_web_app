@@ -23,9 +23,10 @@ export default async function PublicBillPage({ params }: PageProps<"/s/[token]/t
   const me = membership?.member.id ?? null;
   const total = state.expenses.reduce((s, e) => s + e.amount, 0);
   const receivers = view.payTo.filter((p) => state.settlements.some((s) => s.to === p.memberId));
+  const hasBill = state.expenses.length > 0 || (state.flatFee !== null && state.settlements.length > 0);
 
   return (
-    <Page width={state.expenses.length === 0 ? "regular" : "wide"}>
+    <Page width={hasBill ? "wide" : "regular"}>
       <div className="flex flex-col gap-2">
         <p className="text-small">{group.name}</p>
         <h1 className="text-title">Tagihan patungan</h1>
@@ -35,7 +36,7 @@ export default async function PublicBillPage({ params }: PageProps<"/s/[token]/t
         </p>
       </div>
 
-      {state.expenses.length === 0 ? (
+      {!hasBill ? (
         <Card>
           <p className="text-ui">Belum ada biaya yang dicatat untuk sesi ini.</p>
         </Card>
@@ -51,6 +52,11 @@ export default async function PublicBillPage({ params }: PageProps<"/s/[token]/t
                 <h2 id="transfer" className="text-sub">
                   Siapa bayar ke siapa
                 </h2>
+                {state.flatFee !== null && (
+                  <p className="text-ui" data-testid="flat-summary">
+                    Iuran flat {formatRupiah(state.flatFee)} per orang.
+                  </p>
+                )}
                 <p className="text-small">Cari namamu, transfer ke penerima, lalu tekan &ldquo;Saya sudah bayar&rdquo;. Host akan mengonfirmasi.</p>
                 <TransferList
                   settlements={state.settlements}

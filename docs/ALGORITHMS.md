@@ -225,6 +225,21 @@ Test vector: S1 p2→p1 35000 unpaid · S1 p3→p1 35000 **paid** · S2 p1→p2 
 `counterpartBalances(·, p2)` → p1 (owes 35000, owed 20000, net −15000, count 2), p3 (owes 0, owed 10000, net +10000, count 1).
 `counterpartBalances(·, p3)` → p2 (net −10000); transfer lunas ke p1 tidak muncul. Tanpa transfer → `[]`.
 
+### 5.7 Iuran flat `flatNet(expenses, participants, hostId, flatFee)` (MAGERRR-14)
+Cara patungan per sesi: **bagi rata** (§5.1–5.4, bawaan) atau **flat** = tiap peserta hadir membayar nominal tetap `flatFee` (integer ≥ 1) ke pengelola sesi (`hostId`, pembuat sesi). Biaya (`expenses`) tidak dibagi: pengelola menanggungnya dan memegang selisihnya.
+- Bagian tiap peserta = `flatFee` (biaya tidak punya bagian per orang).
+- Untuk `m ≠ hostId`: `net[m] = (m ∈ participants ? flatFee : 0) − Σ amount yang dibayar m` (penalang selain pengelola diganti pengelola).
+- `net[hostId] = −Σ_{m ≠ hostId} net[m]` (pengelola boleh tidak hadir). **Σ net = 0.**
+- `surplus = flatFee·|participants| − Σ amount` (positif = kelebihan iuran untuk pengelola, negatif = kekurangan ditanggung pengelola). Hanya informasi.
+- Lalu pembulatan (§5.3) dan transfer minimal (§5.4) seperti biasa.
+
+Test vector:
+1. **Sama dengan rata:** peserta 8 (Raka host, p2…p8), flat 35000, lapangan 240000 + kok 40000 dibayar Raka, `roundTo=500` → tiap lainnya +35000, Raka −245000; 7 transfer × 35000 ke Raka; surplus 0.
+2. **Kelebihan iuran:** peserta 6 (Raka host, p2…p6), flat 30000, lapangan 150000 dibayar Raka → tiap lainnya +30000, Raka −150000; surplus +30000.
+3. **Penalang lain:** A (host), B, C, D; flat 50000; A bayar lapangan 120000, B bayar kok 60000, `roundTo=1` → net B −10000, C +50000, D +50000, A −90000; `settle`: C→A 50000, D→A 40000, D→B 10000; surplus +20000.
+4. **Pengelola tidak hadir, tanpa biaya:** host H, peserta p1, p2, flat 20000 → p1 +20000, p2 +20000, H −40000; surplus +40000.
+5. `flatFee` 0, negatif, atau pecahan → `RangeError`.
+
 ## 6. Recap sorotan `buildRecap(session, matches, expenses)` (P0)
 Output: `{ champion, bestPair, tightestGame, biggestWin, longestWinStreak, mostPlayed, totals }`.
 - `champion`: peringkat 1 `standings` dengan period=`session` (tie → seri, tampilkan semua).

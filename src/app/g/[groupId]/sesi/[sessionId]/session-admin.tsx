@@ -64,7 +64,7 @@ export function AttendanceEditor({
   sessionId: string;
   members: PickerMember[];
   presentIds: string[];
-  costs: { items: { label: string; amount: number; paidBy: string }[]; hostId: string; roundTo: number } | null;
+  costs: { items: { label: string; amount: number; paidBy: string }[]; hostId: string; roundTo: number; flatFee: number | null } | null;
 }) {
   const router = useRouter();
   const [members, setMembers] = useState(initialMembers);
@@ -112,7 +112,7 @@ export function AttendanceEditor({
       <Button size="lg" onClick={save} disabled={!dirty || pending}>
         {pending ? "Menyimpan…" : dirty ? "Simpan peserta" : "Peserta tersimpan"}
       </Button>
-      {costs && <CostEstimate items={costs.items} participants={[...selected]} hostId={costs.hostId} roundTo={costs.roundTo} />}
+      {costs && <CostEstimate items={costs.items} participants={[...selected]} hostId={costs.hostId} roundTo={costs.roundTo} flatFee={costs.flatFee} />}
     </div>
   );
 }
