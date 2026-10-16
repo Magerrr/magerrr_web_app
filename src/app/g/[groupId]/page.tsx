@@ -7,7 +7,7 @@ import { FeaturedSession } from "@/components/featured-session";
 import { GroupAvatar } from "@/components/group-avatar";
 import { Icon, type IconName } from "@/components/icons";
 import { NoAccess } from "@/components/no-access";
-import { Badge, ButtonLink, Card, Page, buttonClass, inputBase } from "@/components/ui";
+import { Badge, ButtonLink, Card, Page, TopBar, buttonClass, inputBase } from "@/components/ui";
 import { guestCookieName } from "@/lib/db/authz";
 import { unreadCount } from "@/lib/db/chat";
 import { counterpartBalances } from "@/lib/core/balance";
@@ -57,11 +57,13 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
 
   return (
     <Page width="wide">
+      {/* Kembali ke beranda pengguna lewat panah di atas (MAGERRR-19), bukan tombol ikon grup. */}
+      <TopBar back="/" backLabel="Kembali ke beranda" />
       {/*
         Sampul & logo grup (MAGERRR-8): sampul berasio 3:1, tanpa sampul = pita warna tema; hanya logo yang menumpang di tepi bawah.
         Kepala hanya identitas grup (MAGERRR-20): tanpa sapaan & nama pengguna.
       */}
-      <div className="flex flex-col">
+      <div className="-mt-2 flex flex-col">
         <div
           className={`relative overflow-hidden rounded-2xl border border-ink-black ${THEME_BG[group.theme]} ${group.coverUrl ? "aspect-[3/1] max-h-56 w-full" : "h-14"}`}
           data-testid="group-cover"
@@ -89,13 +91,6 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
               </div>
             )}
           </div>
-          <Link
-            href="/"
-            aria-label="Semua grup"
-            className="mt-2 flex size-11 shrink-0 items-center justify-center rounded-full border border-ink-black bg-pure-white hover:bg-sandstone"
-          >
-            <Icon name="grid" />
-          </Link>
         </header>
       </div>
 

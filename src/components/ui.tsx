@@ -218,10 +218,10 @@ export function BackLink({ href, label = "Kembali" }: { href: string; label?: st
   );
 }
 
-export function TopBar({ back, title, children }: { back?: string; title?: string; children?: ReactNode }) {
+export function TopBar({ back, backLabel, title, children }: { back?: string; backLabel?: string; title?: string; children?: ReactNode }) {
   return (
     <header className="flex min-h-11 items-center gap-3">
-      {back && <BackLink href={back} />}
+      {back && <BackLink href={back} label={backLabel} />}
       {title ? <p className="min-w-0 flex-1 truncate text-lead">{title}</p> : <div className="flex-1" />}
       {children}
     </header>
