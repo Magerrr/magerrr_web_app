@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState, type PointerEvent, type ReactNode } from "react";
-import { Icon } from "./icons";
 
 /** Geser horizontal (px) sebelum kartu berganti; di bawahnya tetap tap biasa. */
 const SWIPE_PX = 60;
@@ -10,7 +9,8 @@ const PEEK = 2;
 
 /**
  * Tumpukan kartu sesi di beranda (MAGERRR-15): kartu teratas utuh, dua kartu berikutnya mengintip di bawahnya.
- * Ganti kartu dengan geser kiri/kanan (Pointer Events, jalan di sentuh & mouse) atau tombol sebelumnya/berikutnya.
+ * Ganti kartu dengan geser kiri/kanan (Pointer Events, jalan di sentuh & mouse) atau panah kiri/kanan saat tumpukan
+ * difokus; tanpa tombol navigasi.
  * Kartu di belakang `inert` (tidak bisa difokus/dibaca) sampai jadi kartu teratas.
  */
 export function SessionStack({ cards, label = "Sesi terdekat" }: { cards: ReactNode[]; label?: string }) {
@@ -53,7 +53,21 @@ export function SessionStack({ cards, label = "Sesi terdekat" }: { cards: ReactN
   }
 
   return (
-    <div className="flex flex-col gap-3" role="group" aria-roledescription="tumpukan kartu" aria-label={label}>
+    <div
+      className="flex flex-col gap-3 rounded-2xl"
+      role="group"
+      aria-roledescription="tumpukan kartu"
+      aria-label={count > 1 ? `${label}. Geser kartu, atau tekan panah kiri/kanan, untuk ganti sesi.` : label}
+      // Pengganti tombol navigasi untuk keyboard: fokus tumpukan lalu panah kiri/kanan.
+      tabIndex={count > 1 ? 0 : undefined}
+      onKeyDown={(e) => {
+        if (count < 2 || e.target !== e.currentTarget) return;
+        if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+          e.preventDefault();
+          go(e.key === "ArrowRight" ? 1 : -1);
+        }
+      }}
+    >
       <div
         className="grid touch-pan-y select-none"
         style={{ paddingBottom: Math.min(count - 1, PEEK) * 12 }}
@@ -98,28 +112,11 @@ export function SessionStack({ cards, label = "Sesi terdekat" }: { cards: ReactN
           );
         })}
       </div>
+      {/* Tanpa tombol navigasi (permintaan pengguna): posisi hanya diumumkan ke pembaca layar. */}
       {count > 1 && (
-        <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => go(-1)}
-            aria-label="Sesi sebelumnya"
-            className="flex size-11 cursor-pointer items-center justify-center rounded-full border border-ink-black bg-pure-white hover:bg-fresh-grass"
-          >
-            <Icon name="back" size={18} />
-          </button>
-          <p className="text-small" aria-live="polite" data-testid="stack-position">
-            {top + 1} dari {count}
-          </p>
-          <button
-            type="button"
-            onClick={() => go(1)}
-            aria-label="Sesi berikutnya"
-            className="flex size-11 cursor-pointer items-center justify-center rounded-full border border-ink-black bg-pure-white hover:bg-fresh-grass"
-          >
-            <Icon name="chevron" size={18} />
-          </button>
-        </div>
+        <p className="sr-only" aria-live="polite" data-testid="stack-position">
+          Sesi {top + 1} dari {count}
+        </p>
       )}
     </div>
   );

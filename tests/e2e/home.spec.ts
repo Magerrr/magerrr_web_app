@@ -65,11 +65,19 @@ test("beranda akun: sapaan + profil, sesi terdekat dari semua grup, lalu semua s
   const stack = page.getByTestId("session-stack");
   await expect(stack.getByTestId("featured-session")).toHaveText([/Beranda A.*GOR Berlangsung/, /Beranda B.*GOR Besok/, /Beranda A.*GOR Minggu Depan/]);
   await expect(stack.locator('[data-depth="0"]')).toContainText("Berlangsung");
-  await expect(page.getByTestId("stack-position")).toHaveText("1 dari 3");
-  await page.getByRole("button", { name: "Sesi berikutnya" }).click();
-  await expect(page.getByTestId("stack-position")).toHaveText("2 dari 3");
+  await expect(page.getByTestId("stack-position")).toHaveText("Sesi 1 dari 3");
+  await expect(page.getByRole("button", { name: "Sesi berikutnya" })).toHaveCount(0);
+  // Geser kiri → kartu berikutnya.
+  const box = (await stack.boundingBox())!;
+  await page.mouse.move(box.x + box.width * 0.7, box.y + 40);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.2, box.y + 44, { steps: 8 });
+  await page.mouse.up();
+  await expect(page.getByTestId("stack-position")).toHaveText("Sesi 2 dari 3");
   await expect(stack.locator('[data-depth="0"]')).toContainText("GOR Besok");
-  await page.getByRole("button", { name: "Sesi sebelumnya" }).click();
+  // Keyboard: fokus tumpukan, panah kiri → kembali.
+  await page.getByRole("group", { name: /Sesi terdekat/ }).focus();
+  await page.keyboard.press("ArrowLeft");
   await expect(stack.locator('[data-depth="0"]')).toContainText("GOR Berlangsung");
   await expect(page.getByText("GOR Selesai")).toHaveCount(0);
 
