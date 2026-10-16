@@ -7,6 +7,7 @@ import { assertValidRules } from "@/lib/core/rules";
 import { formatRupiah } from "@/lib/format";
 import { GROUP_THEMES } from "@/lib/group-theme";
 import { SHARE_CHANNELS } from "@/lib/analytics-core";
+import { isWebUrl, roundCoord } from "@/lib/venue";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TOKEN = /^[0-9a-f]{32}$/;
@@ -122,6 +123,20 @@ const sessionDetailsShape = {
   time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Jam tidak valid."),
   durationMin: z.int().min(30, "Durasi minimal 30 menit.").max(720, "Durasi maksimal 12 jam."),
   venue: optionalText(80, "Nama tempat maksimal 80 karakter."),
+  /** tautan peta (MAGERRR-18); http/https saja */
+  venueUrl: z
+    .string()
+    .trim()
+    .max(500, "Tautan peta terlalu panjang.")
+    .refine((v) => v === "" || isWebUrl(v), "Tautan peta harus diawali https://")
+    .nullish()
+    .transform((v) => v || null),
+  /** titik yang dipilih di peta; lat & lng berpasangan */
+  venuePoint: z
+    .object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) })
+    .strict()
+    .nullish()
+    .transform((v) => (v ? { lat: roundCoord(v.lat), lng: roundCoord(v.lng) } : null)),
   courtCount: z.int().min(1, "Minimal 1 lapangan.").max(12, "Maksimal 12 lapangan."),
   playMode: z.enum(PLAY_MODES),
   /** null = ikut aturan grup */

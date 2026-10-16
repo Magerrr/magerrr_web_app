@@ -3,7 +3,9 @@ import Link from "next/link";
 import { CopyLink } from "@/components/copy-link";
 import { CostEstimate } from "@/components/cost-estimate";
 import { NoAccess } from "@/components/no-access";
-import { Badge, ButtonLink, Card, Page, Split, TopBar, buttonClass } from "@/components/ui";
+import { Icon } from "@/components/icons";
+import { Badge, ButtonLink, Card, Page, Split, TopBar, buttonClass, textLinkClass } from "@/components/ui";
+import { mapsUrl } from "@/lib/venue";
 import { canPlay, playersOf } from "@/lib/core/roles";
 import { getGroup } from "@/lib/db/groups";
 import { listMembers } from "@/lib/db/members";
@@ -50,6 +52,7 @@ export default async function SessionPage({ params }: PageProps<"/g/[groupId]/se
   const editable = isAdmin && session.status !== "finished";
   const present = members.filter((m) => session.presentIds.includes(m.id));
   const hostId = session.createdBy ?? member.id;
+  const mapLink = mapsUrl(session.location);
   // Perkiraan di halaman sesi hanya untuk biaya "rata ke semua peserta hadir" atau iuran flat; rincian lengkap di Patungan.
   const costs =
     session.flatFee !== null || (session.expenses.length > 0 && session.expenses.every((e) => e.splitAll))
@@ -73,6 +76,12 @@ export default async function SessionPage({ params }: PageProps<"/g/[groupId]/se
           {formatTimeRangeId(session.startsAt, session.durationMin)}
           {session.venue ? ` · ${session.venue}` : ""}
         </p>
+        {mapLink && (
+          <a href={mapLink} target="_blank" rel="noopener noreferrer" className={`${textLinkClass} gap-2`} data-testid="venue-map-link">
+            <Icon name="pin" size={18} />
+            Buka lokasi di peta
+          </a>
+        )}
       </div>
 
       <Split

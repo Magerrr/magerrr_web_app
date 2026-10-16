@@ -1,9 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AttendeePicker, type PickerMember } from "@/components/attendee-picker";
 import { CostEstimate } from "@/components/cost-estimate";
+import type { Point } from "@/components/venue-picker";
 import { NumberField, RulesPicker, draftFromRules, rulesFromDraft, toInt } from "@/components/rules-picker";
 import { Button, Card, Field, Notice, Segmented, dateInputClass, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
@@ -17,6 +19,9 @@ export interface SessionDefaults {
   time: string;
   durationMin: number;
   venue: string | null;
+  /** tautan peta / titik di peta (MAGERRR-18) */
+  venueUrl: string | null;
+  venuePoint: Point | null;
   courtCount: number;
   playMode: OfferedPlayMode;
   rules: GameRules;
@@ -25,6 +30,19 @@ export interface SessionDefaults {
 }
 
 const DURATIONS = [60, 90, 120, 150, 180, 240, 300, 360];
+
+type LocationKind = "none" | "link" | "map";
+const LOCATION_OPTIONS: { value: LocationKind; label: string }[] = [
+  { value: "none", label: "Tanpa lokasi" },
+  { value: "link", label: "Tautan peta" },
+  { value: "map", label: "Pilih di peta" },
+];
+
+// Leaflet butuh `window`; dimuat hanya saat "Pilih di peta" dibuka.
+const VenuePicker = dynamic(() => import("@/components/venue-picker").then((m) => m.VenuePicker), {
+  ssr: false,
+  loading: () => <p className="text-small">Memuat peta…</p>,
+});
 const MAX_COURTS = 12;
 
 type CreateExtras = {
@@ -54,6 +72,9 @@ export function SessionForm({
   const [time, setTime] = useState(defaults.time);
   const [durationMin, setDurationMin] = useState(defaults.durationMin);
   const [venue, setVenue] = useState(defaults.venue ?? "");
+  const [locationKind, setLocationKind] = useState<LocationKind>(defaults.venueUrl ? "link" : defaults.venuePoint ? "map" : "none");
+  const [venueUrl, setVenueUrl] = useState(defaults.venueUrl ?? "");
+  const [venuePoint, setVenuePoint] = useState<Point | null>(defaults.venuePoint);
   const [courts, setCourts] = useState(defaults.courtCount);
   const [playMode, setPlayMode] = useState(defaults.playMode);
   const [rulesDraft, setRulesDraft] = useState(draftFromRules(defaults.rules));
@@ -79,6 +100,8 @@ export function SessionForm({
       time,
       durationMin,
       venue,
+      venueUrl: locationKind === "link" ? venueUrl : null,
+      venuePoint: locationKind === "map" ? venuePoint : null,
       courtCount: courts,
       playMode,
       rules: rulesFromDraft(rulesDraft),
@@ -129,6 +152,23 @@ export function SessionForm({
         <Field label="Tempat" htmlFor="venue" hint="Nama GOR atau lokasi.">
           <input id="venue" value={venue} onChange={(e) => setVenue(e.target.value)} maxLength={80} autoComplete="off" className={inputClass} />
         </Field>
+        <Segmented legend="Lokasi di peta (opsional)" name="location-kind" value={locationKind} options={LOCATION_OPTIONS} onChange={setLocationKind} />
+        {locationKind === "link" && (
+          <Field label="Tautan peta" htmlFor="venue-url" hint="Tempel tautan dari Google Maps atau aplikasi peta lain.">
+            <input
+              id="venue-url"
+              type="url"
+              inputMode="url"
+              value={venueUrl}
+              onChange={(e) => setVenueUrl(e.target.value)}
+              maxLength={500}
+              placeholder="https://maps.app.goo.gl/…"
+              autoComplete="off"
+              className={inputClass}
+            />
+          </Field>
+        )}
+        {locationKind === "map" && <VenuePicker value={venuePoint} onChange={setVenuePoint} onPickName={(name) => setVenue((v) => v.trim() || name.slice(0, 80))} />}
         <div className="flex items-center gap-3">
           <p id="courts-label" className="flex-1 text-small font-medium">
             Jumlah lapangan

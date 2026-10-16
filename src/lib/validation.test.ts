@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  sessionUpdateSchema,
   flatFeeSchema,
   accountEmailSchema,
   accountNameSchema,
@@ -195,5 +196,19 @@ describe("flatFeeSchema (MAGERRR-14)", () => {
     expect(flatFeeSchema.parse({ flatFee: 35000 })).toEqual({ flatFee: 35000 });
     for (const bad of [0, -1, 1.5, 10_000_001, "35000"]) expect(flatFeeSchema.safeParse({ flatFee: bad }).success).toBe(false);
     expect(flatFeeSchema.safeParse({}).success).toBe(false);
+  });
+});
+
+describe("lokasi sesi (MAGERRR-18)", () => {
+  const base = { date: "2026-10-16", time: "19:00", durationMin: 120, venue: "GOR", courtCount: 1, playMode: "kocok", rules: null, matchGames: null, note: null };
+  it("tautan & titik opsional; titik dibulatkan; tautan non-web ditolak", () => {
+    const parsed = sessionUpdateSchema.parse({ ...base, venueUrl: " https://maps.app.goo.gl/x ", venuePoint: { lat: -6.17539241, lng: 106.82715284 } });
+    expect(parsed.venueUrl).toBe("https://maps.app.goo.gl/x");
+    expect(parsed.venuePoint).toEqual({ lat: -6.175392, lng: 106.827153 });
+    expect(sessionUpdateSchema.parse(base)).toMatchObject({ venueUrl: null, venuePoint: null });
+    expect(sessionUpdateSchema.parse({ ...base, venueUrl: "" }).venueUrl).toBeNull();
+    expect(sessionUpdateSchema.safeParse({ ...base, venueUrl: "javascript:alert(1)" }).success).toBe(false);
+    expect(sessionUpdateSchema.safeParse({ ...base, venuePoint: { lat: 91, lng: 0 } }).success).toBe(false);
+    expect(sessionUpdateSchema.safeParse({ ...base, venuePoint: { lat: 1 } }).success).toBe(false);
   });
 });

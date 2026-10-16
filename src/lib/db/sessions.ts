@@ -4,6 +4,7 @@ import { checkTransition, type SessionStatus } from "@/lib/core/session";
 import { courtCost, type Expense, type SettlementState } from "@/lib/core/split";
 import { HttpError } from "@/lib/http-error";
 import { fromJakartaParts } from "@/lib/time";
+import type { VenueLocation } from "@/lib/venue";
 import { isToken, type SessionCreateInput, type SessionUpdateInput } from "@/lib/validation";
 import { recomputeBill } from "./bill";
 import { assignSeasons } from "./seasons";
@@ -53,6 +54,8 @@ export interface SessionDetail extends SessionSummary {
   shuttle: ShuttleCounter;
   /** iuran flat per peserta (§5.7, MAGERRR-14); null = bagi rata */
   flatFee: number | null;
+  /** tautan peta / titik tempat (MAGERRR-18) */
+  location: VenueLocation;
 }
 
 const SUMMARY_COLUMNS = "id, starts_at, duration_min, venue, court_count, status, attendees(count)" as const;
@@ -120,7 +123,7 @@ export async function getSession(groupId: string, sessionId: string): Promise<Se
   const { data: s, error } = await db
     .from("sessions")
     .select(
-      "id, group_id, starts_at, duration_min, venue, court_count, status, play_mode, rules, match_games, note, created_by, rotation_queue, share_token, recap_public, shuttle_price_per_slop, shuttle_per_slop, shuttles_used, fixed_pairs, flat_fee, attendees(member_id, present, rsvp), expenses(id, name, amount, paid_by, mode, preset, split_all, meta)",
+      "id, group_id, starts_at, duration_min, venue, venue_url, venue_lat, venue_lng, court_count, status, play_mode, rules, match_games, note, created_by, rotation_queue, share_token, recap_public, shuttle_price_per_slop, shuttle_per_slop, shuttles_used, fixed_pairs, flat_fee, attendees(member_id, present, rsvp), expenses(id, name, amount, paid_by, mode, preset, split_all, meta)",
     )
     .eq("id", sessionId)
     .eq("group_id", groupId)
@@ -150,6 +153,7 @@ export async function getSession(groupId: string, sessionId: string): Promise<Se
     rsvp: Object.fromEntries(s.attendees.filter((a) => a.rsvp !== null).map((a) => [a.member_id, a.rsvp!])),
     shuttle: { pricePerSlop: s.shuttle_price_per_slop, perSlop: s.shuttle_per_slop, used: s.shuttles_used },
     flatFee: s.flat_fee,
+    location: { url: s.venue_url, lat: s.venue_lat, lng: s.venue_lng },
     expenses: s.expenses.map((e) => ({
       id: e.id,
       name: e.name,
@@ -204,6 +208,9 @@ function sessionRow(input: SessionUpdateInput, group: GroupSettings) {
   return {
     starts_at: startsAt.toISOString(),
     venue: input.venue,
+    venue_url: input.venueUrl,
+    venue_lat: input.venuePoint?.lat ?? null,
+    venue_lng: input.venuePoint?.lng ?? null,
     court_count: input.courtCount,
     duration_min: input.durationMin,
     play_mode: input.playMode,

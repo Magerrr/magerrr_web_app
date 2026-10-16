@@ -33,6 +33,8 @@ export default async function EditSessionPage({ params }: PageProps<"/g/[groupId
           time,
           durationMin: session.durationMin ?? 120,
           venue: session.venue,
+          venueUrl: session.location.url,
+          venuePoint: session.location.lat !== null && session.location.lng !== null ? { lat: session.location.lat, lng: session.location.lng } : null,
           courtCount: session.courtCount,
           playMode: toOfferedMode(session.playMode),
           rules: session.rules ?? group.rules,
