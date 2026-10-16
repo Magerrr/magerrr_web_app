@@ -20,7 +20,6 @@ import { listSessions } from "@/lib/db/sessions";
 import { formatRupiah } from "@/lib/format";
 import { THEME_BG } from "@/lib/group-theme";
 import { activeSessions } from "@/lib/session-order";
-import { greeting } from "@/lib/time";
 import { pageAccess } from "./access";
 import { KikoCard } from "./kiko-card";
 import { SessionLink } from "./session-link";
@@ -58,7 +57,10 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
 
   return (
     <Page width="wide">
-      {/* Sampul & logo grup (MAGERRR-8): sampul berasio 3:1, tanpa sampul = pita warna tema; hanya logo yang menumpang di tepi bawah. */}
+      {/*
+        Sampul & logo grup (MAGERRR-8): sampul berasio 3:1, tanpa sampul = pita warna tema; hanya logo yang menumpang di tepi bawah.
+        Kepala hanya identitas grup (MAGERRR-20): tanpa sapaan & nama pengguna.
+      */}
       <div className="flex flex-col">
         <div
           className={`relative overflow-hidden rounded-2xl border border-ink-black ${THEME_BG[group.theme]} ${group.coverUrl ? "aspect-[3/1] max-h-56 w-full" : "h-14"}`}
@@ -78,9 +80,6 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
             className="relative -mt-8 border-2 ring-4 ring-cream-paper sm:-mt-10 sm:size-20"
           />
           <div className="flex min-w-0 flex-1 flex-col gap-1 pt-2">
-            <p className="text-small">
-              {greeting(now)}, {member.display_name}
-            </p>
             <h1 className="text-sub break-words">{group.name}</h1>
             {(isAdmin || (member.role === "referee" && via === "account") || via === "guest") && (
               <div className="flex flex-wrap gap-2">
@@ -101,9 +100,9 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
       </div>
 
       {/*
-        Lebar (@3xl = 48rem): kolom kiri = sesi berikutnya + daftar sesi, kolom kanan 22rem = Kiko, aksi, menu.
-        Ponsel: satu kolom urut kepentingan: sesi berikutnya, aksi (Buat sesi), daftar sesi, lalu menu lain
-        (`contents` + `order`). Ponsel tidak punya bar bawah, jadi semua menu grup ada di sini.
+        Lebar (@3xl = 48rem): kolom kiri = sesi berlangsung/terdekat, momen, daftar sesi (paling bawah); kolom kanan 22rem =
+        Kiko, aksi, menu. Ponsel satu kolom (MAGERRR-20): sesi berlangsung/terdekat, aksi (Buat sesi), semua menu, momen,
+        lalu daftar sesi paling bawah (`contents` + `order`). Ponsel tidak punya bar bawah, jadi semua menu grup ada di sini.
       */}
       <div className="flex flex-col gap-6 @3xl:grid @3xl:grid-cols-[minmax(0,1fr)_22rem] @3xl:items-start @3xl:gap-x-8">
         <div className="contents @3xl:flex @3xl:min-w-0 @3xl:flex-col @3xl:gap-6">
@@ -112,7 +111,26 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
               <FeaturedSession groupId={groupId} session={featured} now={now} />
             </div>
           )}
-        <section aria-labelledby="riwayat" className="order-3 flex min-w-0 flex-col gap-3">
+        {moments.length > 0 && (
+          <section aria-labelledby="momen-terbaru" className="order-4 flex min-w-0 flex-col gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="momen-terbaru" className="text-sub">
+                Momen
+              </h2>
+              <Link href={`/g/${groupId}/momen`} className="flex min-h-11 items-center px-1 text-small underline underline-offset-4">
+                Lihat semua
+              </Link>
+            </div>
+            <ul className="grid grid-cols-3 gap-2 @xl:grid-cols-6 @3xl:grid-cols-3 @5xl:grid-cols-6" data-testid="recent-moments">
+              {moments.map((m) => (
+                <li key={m.id} className="relative aspect-square overflow-hidden rounded-xl border border-ink-black bg-sandstone">
+                  <Image src={m.url} alt={m.caption ?? `Foto dari ${m.memberName}`} fill unoptimized sizes="160px" className="object-cover" />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        <section aria-labelledby="riwayat" className="order-5 flex min-w-0 flex-col gap-3">
           <h2 id="riwayat" className="text-sub">
             Sesi
           </h2>
@@ -152,25 +170,6 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
             </ul>
           )}
         </section>
-        {moments.length > 0 && (
-          <section aria-labelledby="momen-terbaru" className="order-3 flex min-w-0 flex-col gap-3">
-            <div className="flex items-center justify-between gap-3">
-              <h2 id="momen-terbaru" className="text-sub">
-                Momen
-              </h2>
-              <Link href={`/g/${groupId}/momen`} className="flex min-h-11 items-center px-1 text-small underline underline-offset-4">
-                Lihat semua
-              </Link>
-            </div>
-            <ul className="grid grid-cols-3 gap-2 @xl:grid-cols-6 @3xl:grid-cols-3 @5xl:grid-cols-6" data-testid="recent-moments">
-              {moments.map((m) => (
-                <li key={m.id} className="relative aspect-square overflow-hidden rounded-xl border border-ink-black bg-sandstone">
-                  <Image src={m.url} alt={m.caption ?? `Foto dari ${m.memberName}`} fill unoptimized sizes="160px" className="object-cover" />
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
         </div>
 
         <div className="contents @3xl:flex @3xl:min-w-0 @3xl:flex-col @3xl:gap-6">
@@ -196,7 +195,7 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
         )}
 
         {/* Desktop memakai sidebar (layout.tsx); menu ini untuk ponsel & tablet. Anggota & Profil hanya di ponsel (tablet punya rail). */}
-        <nav aria-label="Menu grup" className="order-4 flex flex-col gap-4 lg:hidden">
+        <nav aria-label="Menu grup" className="order-3 flex flex-col gap-4 lg:hidden">
           <ul className="grid grid-cols-4 gap-2">
             <Tile href={`/g/${groupId}/leaderboard`} icon="chart" label="Leaderboard" dark />
             <Tile href={`/g/${groupId}/anggota`} icon="people" label="Anggota" className="sm:hidden" />

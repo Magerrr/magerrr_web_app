@@ -35,7 +35,7 @@ test("grup publik tampil di Jelajahi dan bisa digabung tanpa tautan; grup privat
   await user.getByLabel("Nama panggilan").fill("Penjelajah");
   await user.getByRole("button", { name: "Gabung grup" }).click();
   await expect(user).toHaveURL(new RegExp(`/g/${group.id}$`));
-  await expect(user.getByText(/Selamat (pagi|siang|sore|malam), Penjelajah/)).toBeVisible();
+  await expect(user.getByRole("heading", { level: 1, name })).toBeVisible();
 
   // Tamu tanpa akun: halaman grup mengarah ke pratinjau, lalu gabung sebagai tamu.
   const guestCtx = await browser.newContext({ baseURL });
@@ -55,7 +55,8 @@ test("grup publik tampil di Jelajahi dan bisa digabung tanpa tautan; grup privat
   await user.goto(`/jelajah?q=${encodeURIComponent(name)}`);
   await expect(user.getByTestId("public-groups")).toHaveCount(0);
   await user.goto(`/g/${group.id}`);
-  await expect(user.getByText(/Selamat (pagi|siang|sore|malam), Penjelajah/)).toBeVisible();
+  await expect(user).toHaveURL(new RegExp(`/g/${group.id}$`));
+  await expect(user.getByRole("heading", { level: 1, name })).toBeVisible();
 
   await userCtx.close();
   await guestCtx.close();
