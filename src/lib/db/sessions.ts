@@ -82,6 +82,36 @@ export async function listSessions(groupId: string, q = ""): Promise<SessionSumm
   }));
 }
 
+export interface GroupSessionSummary extends SessionSummary {
+  groupId: string;
+}
+
+/**
+ * Sesi dari beberapa grup sekaligus (beranda & "Semua sesi", MAGERRR-13), jam mulai terbaru dulu, paling banyak `limit`.
+ * Sesi mendatang ikut di atas karena urutan menurun. Panggil hanya dengan grup milik pengunjung (listMyGroups).
+ */
+export async function listSessionsOfGroups(groupIds: string[], limit = 100): Promise<GroupSessionSummary[]> {
+  if (groupIds.length === 0) return [];
+  const { data, error } = await serviceClient()
+    .from("sessions")
+    .select(`group_id, ${SUMMARY_COLUMNS}`)
+    .in("group_id", groupIds)
+    .eq("attendees.present", true)
+    .order("starts_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return data.map((s) => ({
+    id: s.id,
+    groupId: s.group_id,
+    startsAt: new Date(s.starts_at),
+    durationMin: s.duration_min,
+    venue: s.venue,
+    courtCount: s.court_count,
+    status: s.status,
+    presentCount: s.attendees[0]?.count ?? 0,
+  }));
+}
+
 /** Detail sesi milik grup, atau null bila tidak ada / milik grup lain. */
 export async function getSession(groupId: string, sessionId: string): Promise<SessionDetail | null> {
   const db = serviceClient();

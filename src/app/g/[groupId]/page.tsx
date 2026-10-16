@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { FeaturedSession } from "@/components/featured-session";
 import { GroupAvatar } from "@/components/group-avatar";
 import { Icon, type IconName } from "@/components/icons";
 import { NoAccess } from "@/components/no-access";
@@ -15,10 +16,11 @@ import { loadKiko } from "@/lib/db/kiko";
 import { loadGroupMatches } from "@/lib/db/matches";
 import { listMoments } from "@/lib/db/moments";
 import { unpaidGroupSettlements } from "@/lib/db/profile";
-import { listSessions, type SessionSummary } from "@/lib/db/sessions";
-import { formatRupiah, formatShortDateId, formatTimeRangeId } from "@/lib/format";
+import { listSessions } from "@/lib/db/sessions";
+import { formatRupiah } from "@/lib/format";
 import { THEME_BG } from "@/lib/group-theme";
-import { toJakartaParts } from "@/lib/time";
+import { activeSessions } from "@/lib/session-order";
+import { greeting } from "@/lib/time";
 import { pageAccess } from "./access";
 import { KikoCard } from "./kiko-card";
 import { SessionLink } from "./session-link";
@@ -51,7 +53,7 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
   const guestToken = via === "guest" ? (await cookies()).get(guestCookieName(groupId))?.value : undefined;
   const hasActions = isAdmin || Boolean(guestToken);
   const now = new Date();
-  const featured = featuredSession(sessions, now);
+  const featured = activeSessions(sessions, now)[0];
   const kiko = await loadKiko(groupId, member.id, await loadGroupMatches(groupId), now);
 
   return (
@@ -220,70 +222,6 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
         </div>
       </div>
     </Page>
-  );
-}
-
-function greeting(now: Date): string {
-  const hour = Number(toJakartaParts(now).time.slice(0, 2));
-  return hour < 11 ? "Selamat pagi" : hour < 15 ? "Selamat siang" : hour < 18 ? "Selamat sore" : "Selamat malam";
-}
-
-/** Sesi yang sedang berlangsung, kalau tidak ada: sesi rencana terdekat yang belum lewat. */
-function featuredSession(sessions: SessionSummary[], now: Date): SessionSummary | undefined {
-  const running = sessions.find((s) => s.status === "running");
-  if (running) return running;
-  const upcoming = sessions.filter((s) => s.status === "planned" && s.startsAt.getTime() >= now.getTime() - 3 * 3_600_000);
-  return upcoming.sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())[0];
-}
-
-const DAY_MS = 86_400_000;
-function untilLabel(session: SessionSummary, now: Date): string {
-  if (session.status === "running") return "Berlangsung";
-  const day = (d: Date) => Date.parse(toJakartaParts(d).date);
-  const days = Math.round((day(session.startsAt) - day(now)) / DAY_MS);
-  return days <= 0 ? "Hari ini" : days === 1 ? "Besok" : `${days} hari lagi`;
-}
-
-/** Kartu sesi berikutnya (layar Beranda desain): isi ink-black, teks cream-paper, tombol aksen fresh-grass. */
-function FeaturedSession({ groupId, session: s, now }: { groupId: string; session: SessionSummary; now: Date }) {
-  return (
-    <section aria-labelledby="sesi-berikutnya" className="flex flex-col gap-4 rounded-2xl bg-ink-black p-5 text-cream-paper" data-testid="featured-session">
-      <div className="flex items-center gap-2">
-        <span
-          className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-caption text-ink-black ${s.status === "running" ? "bg-fresh-grass" : "bg-sunshine-pop"}`}
-        >
-          {s.status === "running" && <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-ink-black motion-safe:animate-pulse" />}
-          {untilLabel(s, now)}
-        </span>
-        <h2 id="sesi-berikutnya" className="text-small">
-          {s.status === "running" ? "Sesi sekarang" : "Sesi berikutnya"}
-        </h2>
-      </div>
-      <p className="text-title">{formatShortDateId(s.startsAt)}</p>
-      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-small">
-        <li className="flex items-center gap-2">
-          <Icon name="calendar" size={16} className="text-fresh-grass" />
-          {formatTimeRangeId(s.startsAt, s.durationMin)}
-        </li>
-        {s.venue && (
-          <li className="flex min-w-0 items-center gap-2">
-            <Icon name="pin" size={16} className="shrink-0 text-fresh-grass" />
-            <span className="truncate">{s.venue}</span>
-          </li>
-        )}
-      </ul>
-      <div className="flex items-center justify-between gap-3">
-        <p className="text-small">
-          {s.presentCount} hadir · {s.courtCount} lapangan
-        </p>
-        <Link
-          href={`/g/${groupId}/sesi/${s.id}`}
-          className="inline-flex min-h-11 items-center rounded-full bg-fresh-grass px-5 text-ui text-ink-black"
-        >
-          Detail
-        </Link>
-      </div>
-    </section>
   );
 }
 

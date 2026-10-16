@@ -30,3 +30,9 @@ export function nextWeeklyDate(from: string, today: string): string {
   const weeks = Math.max(1, Math.ceil((now.getTime() - base.getTime()) / week));
   return toJakartaParts(new Date(base.getTime() + weeks * week)).date;
 }
+
+/** Sapaan menurut jam WIB (beranda & beranda grup). */
+export function greeting(now: Date): string {
+  const hour = Number(toJakartaParts(now).time.slice(0, 2));
+  return hour < 11 ? "Selamat pagi" : hour < 15 ? "Selamat siang" : hour < 18 ? "Selamat sore" : "Selamat malam";
+}

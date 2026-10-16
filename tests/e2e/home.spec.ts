@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { admin, createGroupViaApi, signInFast, uniqueEmail } from "./support";
 
 test("beranda tampil dalam bahasa Indonesia dengan gaya Meadow", async ({ page }) => {
   await page.goto("/");
@@ -25,4 +26,59 @@ test("manifest PWA tersedia", async ({ request }) => {
   for (const icon of manifest.icons as { src: string }[]) {
     expect((await request.get(icon.src)).ok(), icon.src).toBe(true);
   }
+});
+
+test("beranda akun: sapaan + profil, sesi terdekat dari semua grup, lalu semua sesi (MAGERRR-13)", async ({ page }) => {
+  const email = uniqueEmail("beranda");
+  await signInFast(page, email);
+  const a = await createGroupViaApi(page, `Beranda A ${Date.now()}`);
+  const b = await createGroupViaApi(page, `Beranda B ${Date.now()}`);
+  const wibDate = (days: number) => new Date(Date.now() + 7 * 3_600_000 + days * 86_400_000).toISOString().slice(0, 10);
+  // Mulai sesi butuh minimal 2 peserta hadir: host + satu teman per grup.
+  const players: Record<string, string[]> = {};
+  for (const g of [a, b]) {
+    const { data: host } = await admin().from("members").select("id").eq("group_id", g.id).single();
+    const friend = (await (await page.request.post(`/api/groups/${g.id}/members`, { data: { displayName: "Teman" } })).json()).id as string;
+    players[g.id] = [host!.id, friend];
+  }
+  const session = async (groupId: string, date: string, venue: string, status?: "running" | "finished") => {
+    const res = await page.request.post(`/api/groups/${groupId}/sessions`, {
+      data: { date, time: "19:00", durationMin: 120, venue, courtCount: 1, playMode: "kocok", rules: null, matchGames: null, note: null, attendeeIds: players[groupId], costs: { courtPerHour: null, shuttle: null } },
+    });
+    expect(res.status()).toBe(201);
+    const id = (await res.json()).id as string;
+    for (const to of status === "finished" ? ["running", "finished"] : status ? [status] : []) {
+      expect((await page.request.post(`/api/groups/${groupId}/sessions/${id}/status`, { data: { status: to } })).status()).toBe(200);
+    }
+  };
+  await session(a.id, wibDate(7), "GOR Minggu Depan");
+  await session(b.id, wibDate(1), "GOR Besok");
+  await session(a.id, wibDate(0), "GOR Berlangsung", "running");
+  await session(b.id, "2026-10-01", "GOR Selesai", "finished");
+  await session(a.id, "2026-10-02", "GOR Terlewat");
+
+  await page.goto("/");
+  await expect(page.getByText(/^Selamat (pagi|siang|sore|malam),$/)).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(email.split("@")[0]);
+
+  // Paling atas: sesi berlangsung, lalu rencana terdekat; selesai & yang sudah lewat tidak tampil.
+  const featured = page.getByTestId("featured-session");
+  await expect(featured).toContainText("Berlangsung");
+  await expect(featured).toContainText("GOR Berlangsung");
+  await expect(featured).toContainText("Beranda A");
+  await expect(page.getByTestId("upcoming-sessions").getByTestId("session-item")).toHaveText([/Beranda B.*GOR Besok/, /Beranda A.*GOR Minggu Depan/]);
+  await expect(page.getByText("GOR Selesai")).toHaveCount(0);
+
+  // Profil dari app bar.
+  await page.getByRole("link", { name: "Profil kamu" }).click();
+  await expect(page).toHaveURL(/\/profil$/);
+  await page.goBack();
+
+  // Semua sesi: berlangsung & akan datang, lalu riwayat (terbaru dulu).
+  await page.getByRole("link", { name: "Lihat semua sesi" }).click();
+  await expect(page).toHaveURL(/\/sesi$/);
+  await expect(page.getByTestId("sessions-akan-datang").getByTestId("session-item")).toHaveText([/GOR Berlangsung/, /GOR Besok/, /GOR Minggu Depan/]);
+  await expect(page.getByTestId("sessions-riwayat").getByTestId("session-item")).toHaveText([/Beranda A.*GOR Terlewat/, /Beranda B.*GOR Selesai/]);
+  await page.getByTestId("sessions-riwayat").getByText("GOR Selesai").click();
+  await expect(page).toHaveURL(new RegExp(`/g/${b.id}/sesi/`));
 });

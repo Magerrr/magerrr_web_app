@@ -5,13 +5,17 @@ import type { SessionSummary } from "@/lib/db/sessions";
 import { formatShortDateId, formatTimeRangeId } from "@/lib/format";
 import { STATUS_LABEL, STATUS_TONE } from "./sesi/status";
 
-/** Baris sesi di daftar grup dan di panel kiri split view. `current` = sesi yang sedang dibuka di panel kanan. */
+/**
+ * Baris sesi di daftar grup dan di panel kiri split view. `current` = sesi yang sedang dibuka di panel kanan.
+ * `groupName` = daftar lintas grup (beranda utama & "Semua sesi").
+ */
 export function SessionLink({
   groupId,
   session: s,
   current = false,
   testId = true,
   compact = false,
+  groupName,
 }: {
   groupId: string;
   session: SessionSummary;
@@ -19,6 +23,7 @@ export function SessionLink({
   testId?: boolean;
   /** panel sempit (split view): tanpa ikon, tanggal tidak membungkus */
   compact?: boolean;
+  groupName?: string;
 }) {
   return (
     <Link
@@ -36,6 +41,7 @@ export function SessionLink({
         </span>
       )}
       <span className="flex min-w-0 flex-1 flex-col gap-1">
+        {groupName && <span className="truncate text-caption">{groupName}</span>}
         <span className={compact ? "text-ui whitespace-nowrap" : "text-lead"}>{formatShortDateId(s.startsAt)}</span>
         <span className="truncate text-small">
           {formatTimeRangeId(s.startsAt, s.durationMin)}

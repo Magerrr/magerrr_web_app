@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fromJakartaParts, nextWeeklyDate, toJakartaParts } from "./time";
+import { fromJakartaParts, greeting, nextWeeklyDate, toJakartaParts } from "./time";
 
 describe("fromJakartaParts / toJakartaParts", () => {
   it("19:00 WIB = 12:00 UTC", () => {
@@ -38,5 +38,17 @@ describe("nextWeeklyDate (sesi berulang)", () => {
     expect(nextWeeklyDate("2026-10-09", "2026-10-17")).toBe("2026-10-23");
     expect(nextWeeklyDate("2026-12-31", "2026-12-01")).toBe("2027-01-07");
     expect(() => nextWeeklyDate("2026-02-30", "2026-10-01")).toThrow(RangeError);
+  });
+});
+
+describe("greeting", () => {
+  it("batas jam WIB: pagi < 11, siang < 15, sore < 18, malam", () => {
+    const wib = (time: string) => fromJakartaParts("2026-10-16", time)!;
+    expect(greeting(wib("00:00"))).toBe("Selamat pagi");
+    expect(greeting(wib("10:59"))).toBe("Selamat pagi");
+    expect(greeting(wib("11:00"))).toBe("Selamat siang");
+    expect(greeting(wib("15:00"))).toBe("Selamat sore");
+    expect(greeting(wib("17:59"))).toBe("Selamat sore");
+    expect(greeting(wib("18:00"))).toBe("Selamat malam");
   });
 });

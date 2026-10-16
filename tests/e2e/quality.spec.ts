@@ -175,6 +175,7 @@ test("aksesibilitas, target sentuh, dan lebar 320–1280px di semua halaman utam
     `/s/${f.liveToken}/skor`,
     `/s/${f.liveToken}/layar`,
     "/profil",
+    "/sesi",
   ]) {
     await audit(page, path, problems);
   }
