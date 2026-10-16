@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { FeaturedSession } from "@/components/featured-session";
 import { GroupAvatar } from "@/components/group-avatar";
 import { Icon, type IconName } from "@/components/icons";
+import { SessionStack } from "@/components/session-stack";
 import { Badge, ButtonLink, Card, Page, textLinkClass } from "@/components/ui";
 import { UserAvatar } from "@/components/user-avatar";
 import { getAccount } from "@/lib/db/account";
@@ -11,14 +12,13 @@ import { listMyGroups, type GroupSummary } from "@/lib/db/groups";
 import { listSessionsOfGroups } from "@/lib/db/sessions";
 import { activeSessions } from "@/lib/session-order";
 import { greeting } from "@/lib/time";
-import { SessionLink } from "./g/[groupId]/session-link";
 
-/** Kartu sesi di atas beranda: sesi berlangsung / terdekat dari semua grup (1 kartu besar + sisanya baris). */
-const SHOWN_SESSIONS = 3;
+/** Kartu sesi di tumpukan beranda: sesi berlangsung / terdekat dari semua grup (MAGERRR-15). */
+const SHOWN_SESSIONS = 5;
 
 /**
- * Beranda (MAGERRR-13) mengikuti beranda grup: app bar sapaan + profil, sesi terdekat/berlangsung dari semua grup
- * pengunjung (tautan "Lihat semua sesi"), lalu grup dan menu lain. Pengunjung tanpa akun & tanpa grup = halaman sambutan.
+ * Beranda (MAGERRR-13) mengikuti beranda grup: app bar sapaan + profil, tumpukan kartu sesi terdekat/berlangsung dari
+ * semua grup pengunjung (MAGERRR-15; tautan "Lihat semua sesi"), lalu grup dan menu lain. Pengunjung tanpa akun & tanpa grup = halaman sambutan.
  */
 export default async function Home() {
   const user = await getUser();
@@ -29,7 +29,7 @@ export default async function Home() {
   const [account, sessions] = await Promise.all([user ? getAccount(user.id) : null, listSessionsOfGroups(groups.map((g) => g.id))]);
   const name = account?.displayName ?? groups[0]?.memberName ?? null;
   const groupName = new Map(groups.map((g) => [g.id, g.name]));
-  const [featured, ...others] = activeSessions(sessions, now).slice(0, SHOWN_SESSIONS);
+  const shown = activeSessions(sessions, now).slice(0, SHOWN_SESSIONS);
 
   return (
     <Page width="wide">
@@ -58,19 +58,12 @@ export default async function Home() {
           <h2 id="sesi-terdekat" className="text-sub">
             Sesi terdekat
           </h2>
-          {featured ? (
-            <>
-              <FeaturedSession groupId={featured.groupId} session={featured} now={now} groupName={groupName.get(featured.groupId)} />
-              {others.length > 0 && (
-                <ul className="grid gap-3" data-testid="upcoming-sessions">
-                  {others.map((s) => (
-                    <li key={s.id} className="min-w-0">
-                      <SessionLink groupId={s.groupId} session={s} groupName={groupName.get(s.groupId)} />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </>
+          {shown.length > 0 ? (
+            <SessionStack
+              cards={shown.map((s) => (
+                <FeaturedSession key={s.id} groupId={s.groupId} session={s} now={now} groupName={groupName.get(s.groupId)} headingId={`sesi-${s.id}`} />
+              ))}
+            />
           ) : (
             <Card>
               <p className="text-ui">{groups.length ? "Belum ada sesi yang berlangsung atau terjadwal." : "Gabung atau buat grup untuk mulai mabar."}</p>

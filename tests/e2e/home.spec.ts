@@ -61,12 +61,16 @@ test("beranda akun: sapaan + profil, sesi terdekat dari semua grup, lalu semua s
   await expect(page.getByText(/^Selamat (pagi|siang|sore|malam),$/)).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(email.split("@")[0]);
 
-  // Paling atas: sesi berlangsung, lalu rencana terdekat; selesai & yang sudah lewat tidak tampil.
-  const featured = page.getByTestId("featured-session");
-  await expect(featured).toContainText("Berlangsung");
-  await expect(featured).toContainText("GOR Berlangsung");
-  await expect(featured).toContainText("Beranda A");
-  await expect(page.getByTestId("upcoming-sessions").getByTestId("session-item")).toHaveText([/Beranda B.*GOR Besok/, /Beranda A.*GOR Minggu Depan/]);
+  // Paling atas: tumpukan kartu (MAGERRR-15) — berlangsung, lalu rencana terdekat; selesai & yang sudah lewat tidak tampil.
+  const stack = page.getByTestId("session-stack");
+  await expect(stack.getByTestId("featured-session")).toHaveText([/Beranda A.*GOR Berlangsung/, /Beranda B.*GOR Besok/, /Beranda A.*GOR Minggu Depan/]);
+  await expect(stack.locator('[data-depth="0"]')).toContainText("Berlangsung");
+  await expect(page.getByTestId("stack-position")).toHaveText("1 dari 3");
+  await page.getByRole("button", { name: "Sesi berikutnya" }).click();
+  await expect(page.getByTestId("stack-position")).toHaveText("2 dari 3");
+  await expect(stack.locator('[data-depth="0"]')).toContainText("GOR Besok");
+  await page.getByRole("button", { name: "Sesi sebelumnya" }).click();
+  await expect(stack.locator('[data-depth="0"]')).toContainText("GOR Berlangsung");
   await expect(page.getByText("GOR Selesai")).toHaveCount(0);
 
   // Profil dari app bar.
