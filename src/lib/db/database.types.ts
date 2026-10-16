@@ -538,6 +538,9 @@ isOneToOne: true
 "delete_group":
 { Args: { "p_group": string }; Returns: undefined
                            },
+"delete_session":
+{ Args: { "p_session": string }; Returns: undefined
+                           },
 "delete_tournament":
 { Args: { "p_tournament": string }; Returns: undefined
                            },

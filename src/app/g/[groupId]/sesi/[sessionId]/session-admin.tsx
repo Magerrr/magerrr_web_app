@@ -116,3 +116,55 @@ export function AttendanceEditor({
     </div>
   );
 }
+
+/** Hapus sesi (MAGERRR-17): dua langkah — tombol lalu konfirmasi berisi apa saja yang ikut terhapus. */
+export function DeleteSession({ groupId, sessionId, label, hasCosts }: { groupId: string; sessionId: string; label: string; hasCosts: boolean }) {
+  const router = useRouter();
+  const [confirming, setConfirming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function remove() {
+    setPending(true);
+    setError(null);
+    const result = await sendJson(`/api/groups/${groupId}/sessions/${sessionId}`, "DELETE");
+    if (!result.ok) {
+      setPending(false);
+      return setError(result.error);
+    }
+    router.push(`/g/${groupId}`);
+    router.refresh();
+  }
+
+  return (
+    <section aria-labelledby="hapus-sesi" className="flex flex-col gap-3 rounded-2xl border-2 border-coral-pop bg-pure-white p-5" data-testid="delete-session">
+      <h2 id="hapus-sesi" className="text-sub">
+        Hapus sesi
+      </h2>
+      {confirming ? (
+        <>
+          <p className="text-small">
+            Hapus sesi {label}? Skor match dan klasemen dari sesi ini{hasCosts ? ", biaya, serta tagihan patungan (termasuk status lunas)" : ""} ikut
+            terhapus permanen. Foto momen tetap ada. Tidak bisa dibatalkan.
+          </p>
+          {error && <Notice tone="error">{error}</Notice>}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={remove} loading={pending} className="border-2 border-coral-pop">
+              {pending ? "Menghapus…" : "Ya, hapus sesi"}
+            </Button>
+            <Button variant="secondary" onClick={() => setConfirming(false)} disabled={pending}>
+              Batal
+            </Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-small">Untuk sesi yang batal atau salah dibuat. Semua isinya ikut terhapus.</p>
+          <Button variant="secondary" onClick={() => setConfirming(true)}>
+            Hapus sesi ini
+          </Button>
+        </>
+      )}
+    </section>
+  );
+}

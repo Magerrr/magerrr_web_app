@@ -15,7 +15,7 @@ import { isUuid } from "@/lib/validation";
 import { pageAccess } from "../../access";
 import { PLAY_MODE_LABEL, STATUS_LABEL, STATUS_TONE } from "../status";
 import { ApplyRsvp, RsvpPicker } from "./rsvp";
-import { AttendanceEditor, StatusActions } from "./session-admin";
+import { AttendanceEditor, DeleteSession, StatusActions } from "./session-admin";
 
 export const metadata: Metadata = { title: "Sesi" };
 
@@ -171,6 +171,15 @@ export default async function SessionPage({ params }: PageProps<"/g/[groupId]/se
                 )}
               </dl>
             </Card>
+
+            {isAdmin && (
+              <DeleteSession
+                groupId={groupId}
+                sessionId={session.id}
+                label={formatDateId(session.startsAt)}
+                hasCosts={session.expenses.length > 0 || session.flatFee !== null}
+              />
+            )}
           </>
         }
         aside={

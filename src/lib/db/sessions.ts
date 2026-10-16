@@ -163,6 +163,16 @@ export async function getSession(groupId: string, sessionId: string): Promise<Se
   };
 }
 
+/**
+ * Hapus sesi (MAGERRR-17): kehadiran, match, biaya, tagihan, turnamen, dan pencatat skor ikut terhapus; momen tetap
+ * ada tanpa sesi. Ringkasan sebelum hapus dicatat di audit_log oleh RPC. Panggil hanya setelah requireAdmin.
+ */
+export async function deleteSession(session: SessionDetail, actorId: string): Promise<void> {
+  const { error } = await serviceClient(actorId).rpc("delete_session", { p_session: session.id });
+  if (error?.code === "P0002") throw new HttpError(404, "Sesi tidak ditemukan.");
+  if (error) throw error;
+}
+
 /** Sesi dari token halaman publik (tanpa login), atau null. */
 export async function findSessionByShareToken(token: string): Promise<SessionDetail | null> {
   if (!isToken(token)) return null;
