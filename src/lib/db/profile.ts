@@ -1,6 +1,7 @@
 import "server-only";
 import type { PayStatus } from "@/lib/core/split";
 import { isUuid } from "@/lib/validation";
+import { memberAvatarUrl } from "./account";
 import { serviceClient } from "./supabase";
 
 export interface MemberProfile {
@@ -11,18 +12,30 @@ export interface MemberProfile {
   /** null = tamu (belum terhubung akun) */
   userId: string | null;
   isActive: boolean;
+  /** foto profil akun (MAGERRR-12), atau null */
+  avatarUrl: string | null;
 }
 
 /** Anggota grup (termasuk nonaktif), atau null. Panggil hanya setelah requireMember. */
 export async function getMemberProfile(groupId: string, memberId: string): Promise<MemberProfile | null> {
   const { data, error } = await serviceClient()
     .from("members")
-    .select("id, display_name, role, grade, user_id, is_active")
+    .select("id, display_name, role, grade, user_id, is_active, profiles(avatar_path)")
     .eq("group_id", groupId)
     .eq("id", memberId)
     .maybeSingle();
   if (error) throw error;
-  return data && { id: data.id, displayName: data.display_name, role: data.role, grade: data.grade, userId: data.user_id, isActive: data.is_active };
+  return (
+    data && {
+      id: data.id,
+      displayName: data.display_name,
+      role: data.role,
+      grade: data.grade,
+      userId: data.user_id,
+      isActive: data.is_active,
+      avatarUrl: memberAvatarUrl(groupId, data.id, data.profiles?.avatar_path ?? null),
+    }
+  );
 }
 
 export interface MemberSettlement {

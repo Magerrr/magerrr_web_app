@@ -380,3 +380,11 @@ export const momentFieldsSchema = z
       .pipe(uuidSchema.nullable()),
   })
   .strict();
+
+/** Ubah nama profil akun (MAGERRR-12); `applyToGroups` = nama panggilan di semua grup ikut diganti. */
+export const accountNameSchema = z.object({ displayName: displayNameSchema, applyToGroups: z.boolean() }).strict();
+
+/** Ubah email akun (MAGERRR-12): dikonfirmasi lewat tautan email oleh Supabase Auth. */
+export const accountEmailSchema = z
+  .object({ email: z.string().trim().toLowerCase().pipe(z.email("Alamat email tidak valid.").max(254, "Alamat email terlalu panjang.")) })
+  .strict();

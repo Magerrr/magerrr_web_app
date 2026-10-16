@@ -13,7 +13,10 @@ export default async function Home() {
       <header className="flex min-h-11 items-center justify-between gap-3">
         <p className="text-lead">Magerrr</p>
         {user ? (
-          <form action="/auth/keluar" method="post">
+          <form action="/auth/keluar" method="post" className="flex items-center gap-1">
+            <Link href="/profil" className="flex min-h-11 items-center px-2 text-ui underline underline-offset-4">
+              Profil
+            </Link>
             <button type="submit" className="min-h-11 cursor-pointer rounded-lg px-2 text-ui underline underline-offset-4 transition-colors hover:bg-fresh-grass/25">
               Keluar
             </button>

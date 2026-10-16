@@ -5,6 +5,7 @@ import { Kiko } from "@/components/kiko";
 import { LinkSelect } from "@/components/link-select";
 import { NoAccess } from "@/components/no-access";
 import { Badge, Card, Page, Split, TopBar, bleedX, textLinkClass } from "@/components/ui";
+import { UserAvatar } from "@/components/user-avatar";
 import { currentStreak, frequentOpponents, headToHead, longestWinStreak, playerMatches, recentForm, sideOf, type Outcome } from "@/lib/core/player";
 import { counterpartBalances } from "@/lib/core/balance";
 import { bestPartner, pairStats, partnersOf, standings } from "@/lib/core/standings";
@@ -14,7 +15,7 @@ import { loadGroupMatches } from "@/lib/db/matches";
 import { claimTokenOf, memberNames } from "@/lib/db/members";
 import { publicEnv } from "@/lib/env";
 import { getMemberProfile, memberSettlements } from "@/lib/db/profile";
-import { formatPercent, formatRupiah, formatShortDateId, formatSigned, initials } from "@/lib/format";
+import { formatPercent, formatRupiah, formatShortDateId, formatSigned } from "@/lib/format";
 import { isUuid } from "@/lib/validation";
 import { pageAccess } from "../../access";
 
@@ -97,12 +98,7 @@ export default async function MemberProfilePage({ params, searchParams }: PagePr
       >
         <TopBar back={`/g/${groupId}/anggota`} title={group.name} />
         <div className="flex flex-col items-center gap-3 text-center">
-          <span
-            className="flex size-20 shrink-0 items-center justify-center rounded-full border-4 border-fresh-grass bg-coral-pop text-title text-ink-black"
-            aria-hidden="true"
-          >
-            {initials(profile.displayName)}
-          </span>
+          <UserAvatar name={profile.displayName} url={profile.avatarUrl} size="lg" className="border-4 border-fresh-grass" />
           <h1 className="text-title break-words">{profile.displayName}</h1>
           <p className="flex flex-wrap justify-center gap-2">
             {profile.role === "admin" && <Badge tone="accent">Admin</Badge>}

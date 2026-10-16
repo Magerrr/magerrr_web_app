@@ -14,13 +14,13 @@ export const anon = () =>
 export const uniqueEmail = (prefix: string) =>
   `${prefix}.${Date.now()}.${Math.random().toString(36).slice(2, 8)}@example.test`;
 
-/** Ambil tautan masuk terbaru untuk `email` dari Mailpit (SMTP lokal Supabase). */
-async function magicLinkFromMailpit(request: APIRequestContext, email: string): Promise<string> {
+/** Ambil tautan terbaru untuk `email` (opsional: subjek mengandung `subject`) dari Mailpit (SMTP lokal Supabase). */
+export async function magicLinkFromMailpit(request: APIRequestContext, email: string, subject = ""): Promise<string> {
   let link = "";
   await expect
     .poll(
       async () => {
-        const search = await request.get(`${MAILPIT_URL}/api/v1/search`, { params: { query: `to:"${email}"` } });
+        const search = await request.get(`${MAILPIT_URL}/api/v1/search`, { params: { query: `to:"${email}"${subject ? ` subject:"${subject}"` : ""}` } });
         const { messages } = await search.json();
         if (!messages?.length) return "";
         const message = await (await request.get(`${MAILPIT_URL}/api/v1/message/${messages[0].ID}`)).json();

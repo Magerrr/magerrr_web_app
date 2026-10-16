@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  accountEmailSchema,
+  accountNameSchema,
   chatCursor,
   chatMessageSchema,
   expenseSchema,
@@ -168,5 +170,20 @@ describe("skema maskot, turnamen, obrolan", () => {
     expect(chatCursor("42")).toBe(42);
     expect(chatCursor("0")).toBe(0);
     for (const bad of [null, "", "-1", "1.5", "1e3", "abc", "9".repeat(16)]) expect(chatCursor(bad)).toBeNull();
+  });
+});
+
+describe("profil akun (MAGERRR-12)", () => {
+  it("nama dipangkas, 1–40 karakter, flag grup wajib", () => {
+    expect(accountNameSchema.parse({ displayName: "  Budi ", applyToGroups: true })).toEqual({ displayName: "Budi", applyToGroups: true });
+    expect(accountNameSchema.safeParse({ displayName: "  ", applyToGroups: true }).success).toBe(false);
+    expect(accountNameSchema.safeParse({ displayName: "x".repeat(41), applyToGroups: false }).success).toBe(false);
+    expect(accountNameSchema.safeParse({ displayName: "Budi" }).success).toBe(false);
+  });
+
+  it("email dipangkas & huruf kecil; tidak valid ditolak", () => {
+    expect(accountEmailSchema.parse({ email: "  Budi@Example.COM " }).email).toBe("budi@example.com");
+    for (const bad of ["", "budi", "budi@", "@example.com"]) expect(accountEmailSchema.safeParse({ email: bad }).success).toBe(false);
+    expect(accountEmailSchema.safeParse({ email: "a@b.co", extra: 1 }).success).toBe(false);
   });
 });

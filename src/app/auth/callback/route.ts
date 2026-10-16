@@ -19,6 +19,9 @@ export async function GET(request: NextRequest) {
     ok = !(await supabase.auth.verifyOtp({ token_hash: tokenHash, type })).error;
   }
 
-  const target = ok ? next : `/masuk?error=tautan&next=${encodeURIComponent(next)}`;
+  // Ganti email (MAGERRR-12): dengan konfirmasi ganda, tautan pertama tidak membawa kode (hanya pesan), dan
+  // tautan yang dibuka di perangkat lain tidak bisa ditukar menjadi sesi, padahal email tetap terkonfirmasi.
+  const emailChange = next.startsWith("/profil?email=");
+  const target = ok ? next : emailChange ? "/profil?email=lanjut" : `/masuk?error=tautan&next=${encodeURIComponent(next)}`;
   return NextResponse.redirect(new URL(target, request.nextUrl.origin));
 }
