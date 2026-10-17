@@ -58,7 +58,7 @@ export default async function SplitBillPage({ params }: PageProps<"/g/[groupId]/
       {state.settlements.length > 0 && <BillProgressCard progress={view.progress} />}
 
       {stale && (
-        <div className="flex flex-col gap-3 rounded-2xl border-2 border-coral-pop bg-pure-white p-4" data-testid="stale-bill">
+        <div className="flex flex-col gap-3 rounded-2xl border-1 border-coral-pop bg-pure-white p-4" data-testid="stale-bill">
           <p className="text-small">
             Tagihan tersimpan belum mengikuti peserta, biaya, atau aturan pembulatan terbaru. Hitung ulang agar angkanya sesuai.
           </p>

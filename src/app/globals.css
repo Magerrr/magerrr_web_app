@@ -28,6 +28,9 @@
   --color-surface-1: var(--color-pure-white);
   --color-surface-2: var(--color-sandstone);
 
+  /* Garis tipis (MAGERRR-22): `border` = 0.5px. Penekanan (terpilih, bahaya, kolom isian) pakai `border-1`. */
+  --default-border-width: 0.5px;
+
   --radius-lg: 10px;
   --radius-2xl: 20px;
   --radius-3xl: 25.5px;

@@ -59,7 +59,7 @@ export function Notice({ tone = "info", children }: { tone?: "info" | "error"; c
     <p
       role={tone === "error" ? "alert" : "status"}
       className={cx(
-        "rounded-lg border-2 bg-pure-white px-4 py-3 text-small text-ink-black",
+        "rounded-lg border-1 bg-pure-white px-4 py-3 text-small text-ink-black",
         tone === "error" ? "border-coral-pop" : "border-fresh-grass",
       )}
     >
@@ -69,7 +69,7 @@ export function Notice({ tone = "info", children }: { tone?: "info" | "error"; c
 }
 
 /** Gaya field tanpa lebar; pakai `inputClass` (lebar penuh) atau tambahkan lebar sendiri. */
-export const inputBase = "h-13 rounded-lg border-2 border-ink-black bg-pure-white px-4 text-ui text-ink-black";
+export const inputBase = "h-13 rounded-lg border-1 border-ink-black bg-pure-white px-4 text-ui text-ink-black";
 export const inputClass = `${inputBase} w-full`;
 /**
  * Input tanggal/jam: Safari iOS & Chrome Android memberi lebar minimum bawaan yang bisa melebihi kolom sempit

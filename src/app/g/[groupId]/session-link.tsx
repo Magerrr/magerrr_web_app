@@ -31,7 +31,7 @@ export function SessionLink({
       aria-current={current ? "page" : undefined}
       className={
         "flex h-full min-h-16 items-center rounded-2xl border px-4 py-3 " + (compact ? "gap-2 " : "gap-4 ") +
-        (current ? "border-2 border-ink-black bg-fresh-grass" : "border-ink-black bg-pure-white hover:bg-cream-paper")
+        (current ? "border-1 border-ink-black bg-fresh-grass" : "border-ink-black bg-pure-white hover:bg-cream-paper")
       }
       data-testid={testId ? "session-item" : undefined}
     >

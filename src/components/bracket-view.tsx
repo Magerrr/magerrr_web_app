@@ -230,7 +230,7 @@ export function TournamentSchedule({
             </p>
           )}
           {item.state === "conflict" && (
-            <p className="rounded-lg border-2 border-coral-pop px-3 py-2 text-small" role="note">
+            <p className="rounded-lg border-1 border-coral-pop px-3 py-2 text-small" role="note">
               Tim di match ini tidak cocok dengan jadwal ({item.link.stage === "knockout" && item.round === 1 && view.sources ? "hasil fase grup" : "hasil sebelumnya"}{" "}
               berubah). Batalkan match ini di papan skor agar bisa dimainkan ulang.
             </p>

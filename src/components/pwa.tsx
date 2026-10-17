@@ -31,7 +31,7 @@ export function OfflineBanner() {
   );
   if (online) return null;
   return (
-    <div role="status" className="sticky top-0 z-50 border-b-2 border-ink-black bg-sunshine-pop px-5 py-3 text-center text-small text-ink-black">
+    <div role="status" className="sticky top-0 z-50 border-b-1 border-ink-black bg-sunshine-pop px-5 py-3 text-center text-small text-ink-black">
       Kamu sedang offline. Data yang tampil mungkin bukan yang terbaru, dan perubahan belum bisa disimpan.
     </div>
   );

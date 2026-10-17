@@ -45,7 +45,7 @@ export function StartSlot({
           id={`court-${id.replaceAll(":", "-")}`}
           value={court ?? ""}
           onChange={(e) => setCourt(Number(e.target.value))}
-          className="h-11 min-w-0 flex-1 rounded-lg border-2 border-ink-black bg-pure-white px-3 text-ui"
+          className="h-11 min-w-0 flex-1 rounded-lg border-1 border-ink-black bg-pure-white px-3 text-ui"
         >
           {emptyCourts.map((n) => (
             <option key={n} value={n}>

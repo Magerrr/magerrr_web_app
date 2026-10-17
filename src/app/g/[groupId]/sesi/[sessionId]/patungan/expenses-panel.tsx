@@ -288,7 +288,7 @@ function ExpenseForm({
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-5 rounded-2xl border-2 border-ink-black bg-pure-white p-5" data-testid="expense-form">
+    <form onSubmit={submit} className="flex flex-col gap-5 rounded-2xl border-1 border-ink-black bg-pure-white p-5" data-testid="expense-form">
       <h3 className="text-sub">{initial ? "Ubah biaya" : "Tambah biaya"}</h3>
       <Segmented legend="Jenis" name={`${id}-preset`} value={preset ?? "other"} options={PRESETS.map((p) => ({ value: p.value ?? "other", label: p.label }))} onChange={(v) => pickPreset(v === "other" ? null : (v as ExpensePreset))} />
       <Field label="Nama biaya" htmlFor={`${id}-name`}>
@@ -359,7 +359,7 @@ function ExpenseForm({
                         const set = split === "custom" ? setCustom : setWeights;
                         set((prev) => ({ ...prev, [m]: digits(e.target.value) }));
                       }}
-                      className="my-1 h-11 w-28 min-w-0 shrink-0 rounded-lg border-2 border-ink-black bg-pure-white px-3 text-right text-ui tabular-nums"
+                      className="my-1 h-11 w-28 min-w-0 shrink-0 rounded-lg border-1 border-ink-black bg-pure-white px-3 text-right text-ui tabular-nums"
                     />
                   </>
                 )}

@@ -246,7 +246,7 @@ export function RoundPlanner({
                         aria-label={`Pindahkan susunan lapangan ${courtNo} ke`}
                         value={courtNo}
                         onChange={(e) => setProposal(moveLineup(proposal, courtNo, Number(e.target.value), emptyCourts))}
-                        className="h-11 rounded-lg border-2 border-ink-black bg-pure-white px-2 text-small"
+                        className="h-11 rounded-lg border-1 border-ink-black bg-pure-white px-2 text-small"
                       >
                         {emptyCourts.map((c) => (
                           <option key={c} value={c}>

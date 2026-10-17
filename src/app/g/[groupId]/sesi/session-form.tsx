@@ -231,7 +231,7 @@ export function SessionForm({
       )}
 
       <Field label="Catatan (opsional)" htmlFor="note">
-        <textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={3} className="w-full rounded-lg border-2 border-ink-black bg-pure-white px-4 py-3 text-ui" />
+        <textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={3} className="w-full rounded-lg border-1 border-ink-black bg-pure-white px-4 py-3 text-ui" />
       </Field>
 
       {error && <Notice tone="error">{error}</Notice>}

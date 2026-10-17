@@ -137,7 +137,7 @@ export function DeleteSession({ groupId, sessionId, label, hasCosts }: { groupId
   }
 
   return (
-    <section aria-labelledby="hapus-sesi" className="flex flex-col gap-3 rounded-2xl border-2 border-coral-pop bg-pure-white p-5" data-testid="delete-session">
+    <section aria-labelledby="hapus-sesi" className="flex flex-col gap-3 rounded-2xl border-1 border-coral-pop bg-pure-white p-5" data-testid="delete-session">
       <h2 id="hapus-sesi" className="text-sub">
         Hapus sesi
       </h2>
@@ -149,7 +149,7 @@ export function DeleteSession({ groupId, sessionId, label, hasCosts }: { groupId
           </p>
           {error && <Notice tone="error">{error}</Notice>}
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" onClick={remove} loading={pending} className="border-2 border-coral-pop">
+            <Button variant="secondary" onClick={remove} loading={pending} className="border-1 border-coral-pop">
               {pending ? "Menghapus…" : "Ya, hapus sesi"}
             </Button>
             <Button variant="secondary" onClick={() => setConfirming(false)} disabled={pending}>

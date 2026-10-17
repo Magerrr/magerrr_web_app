@@ -33,7 +33,7 @@ export function PairsEditor({ url, pairs, present, names, editable }: { url: str
       aria-label={label}
       value={value}
       onChange={(e) => setDraft((d) => (d ?? pairs).map((p, i) => (i === pi ? ((side === 0 ? [e.target.value, p[1]] : [p[0], e.target.value]) as Pair) : p)))}
-      className="h-11 min-w-0 flex-1 rounded-lg border-2 border-ink-black bg-pure-white px-2 text-ui"
+      className="h-11 min-w-0 flex-1 rounded-lg border-1 border-ink-black bg-pure-white px-2 text-ui"
     >
       {present.map((id) => (
         <option key={id} value={id}>

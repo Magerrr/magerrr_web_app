@@ -196,7 +196,7 @@ export function ChatRoom({
             rows={Math.min(5, Math.max(1, draft.split("\n").length))}
             maxLength={CHAT_MAX_LENGTH}
             placeholder="Tulis pesan…"
-            className="max-h-40 min-h-11 min-w-0 flex-1 resize-none rounded-2xl field-sizing-content border-2 border-ink-black bg-pure-white px-4 py-2.5 text-ui text-ink-black placeholder:text-ink-black"
+            className="max-h-40 min-h-11 min-w-0 flex-1 resize-none rounded-2xl field-sizing-content border-1 border-ink-black bg-pure-white px-4 py-2.5 text-ui text-ink-black placeholder:text-ink-black"
           />
           <Button type="submit" variant="accent" loading={sending} disabled={draft.trim() === ""}>
             Kirim

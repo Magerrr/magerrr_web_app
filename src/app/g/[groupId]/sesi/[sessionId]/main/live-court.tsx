@@ -376,7 +376,7 @@ export function LiveCourt({
             type="button"
             disabled={winner !== null || live.completeQueued}
             onClick={() => score(addPoint(live.games, side, match.rules, format), side)}
-            className={`flex flex-col items-center justify-between gap-2 rounded-2xl border-2 bg-pure-ink p-3 disabled:cursor-default ${focus ? "min-h-[45dvh]" : "min-h-40"} ${
+            className={`flex flex-col items-center justify-between gap-2 rounded-2xl border-1 bg-pure-ink p-3 disabled:cursor-default ${focus ? "min-h-[45dvh]" : "min-h-40"} ${
               leading === side ? "border-fresh-grass" : "border-pure-ink"
             }`}
           >

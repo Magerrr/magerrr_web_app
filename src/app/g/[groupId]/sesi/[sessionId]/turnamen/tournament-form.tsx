@@ -74,7 +74,7 @@ export function TournamentForm({ url, players, defaultName }: { url: string; pla
       aria-label={`Pasangan ${pi + 1} pemain ${side + 1}`}
       value={pairs[pi][side]}
       onChange={(e) => setPairs((ps) => ps.map((p, i) => (i === pi ? ((side === 0 ? [e.target.value, p[1]] : [p[0], e.target.value]) as Pair) : p)))}
-      className="h-11 min-w-0 flex-1 rounded-lg border-2 border-ink-black bg-pure-white px-2 text-ui"
+      className="h-11 min-w-0 flex-1 rounded-lg border-1 border-ink-black bg-pure-white px-2 text-ui"
     >
       {selected.map((id) => (
         <option key={id} value={id}>

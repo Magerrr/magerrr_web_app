@@ -168,7 +168,7 @@ export function MemberList({
                       value={m.grade ?? ""}
                       disabled={busy === m.id}
                       onChange={(e) => update(m.id, { grade: (e.target.value || null) as Member["grade"] })}
-                      className="h-11 rounded-lg border-2 border-ink-black bg-pure-white px-3 text-ui"
+                      className="h-11 rounded-lg border-1 border-ink-black bg-pure-white px-3 text-ui"
                     >
                       <option value="">Tanpa grade</option>
                       {GRADES.map((g) => (
@@ -185,7 +185,7 @@ export function MemberList({
                         value={m.role}
                         disabled={busy === m.id}
                         onChange={(e) => update(m.id, { role: e.target.value as Member["role"] })}
-                        className="h-11 rounded-lg border-2 border-ink-black bg-pure-white px-3 text-ui"
+                        className="h-11 rounded-lg border-1 border-ink-black bg-pure-white px-3 text-ui"
                       >
                         {ROLES.map((r) => (
                           <option key={r.value} value={r.value}>

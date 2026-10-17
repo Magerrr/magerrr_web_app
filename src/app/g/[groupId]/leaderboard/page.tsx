@@ -145,7 +145,7 @@ export default async function LeaderboardPage({ params, searchParams }: PageProp
       )}
 
       {view.periode === "musim" && board && season?.closedAt && (
-        <p className="rounded-2xl border-2 border-ink-black bg-fresh-grass px-4 py-3 text-ui" data-testid="season-champion">
+        <p className="rounded-2xl border-1 border-ink-black bg-fresh-grass px-4 py-3 text-ui" data-testid="season-champion">
           {season.name} sudah selesai.{" "}
           {champions(board).length > 0 ? `Juara: ${champions(board).map((r) => names[r.memberId] ?? "?").join(" & ")}.` : "Tanpa juara."}
         </p>
@@ -261,7 +261,7 @@ function Avatar({ name, size }: { name: string; size: "sm" | "lg" }) {
     <span
       aria-hidden="true"
       className={
-        "flex shrink-0 items-center justify-center rounded-full border-2 border-cream-paper bg-pure-ink text-cream-paper " +
+        "flex shrink-0 items-center justify-center rounded-full border-1 border-cream-paper bg-pure-ink text-cream-paper " +
         (size === "lg" ? "size-14 text-ui" : "size-12 text-small")
       }
     >
@@ -479,7 +479,7 @@ function Pairs({ board, names, me, groupId }: { board: Leaderboard; names: Names
                   key={pair.members.join("-")}
                   className={
                     "flex items-center gap-3 rounded-2xl px-4 py-3 " +
-                    (mine ? "border-2 border-ink-black bg-fresh-grass" : "border border-ink-black bg-pure-white")
+                    (mine ? "border-1 border-ink-black bg-fresh-grass" : "border border-ink-black bg-pure-white")
                   }
                   data-testid="pair-row"
                 >
@@ -542,7 +542,7 @@ function FormTable({ rows, matches, names, me, groupId }: { rows: StandingRow[];
           return (
             <li
               key={row.memberId}
-              className={`flex items-center gap-3 rounded-2xl px-4 py-2 ${mine ? "border-2 border-ink-black bg-fresh-grass" : "border border-ink-black bg-pure-white"}`}
+              className={`flex items-center gap-3 rounded-2xl px-4 py-2 ${mine ? "border-1 border-ink-black bg-fresh-grass" : "border border-ink-black bg-pure-white"}`}
               data-testid="form-row"
               data-member={row.memberId}
             >

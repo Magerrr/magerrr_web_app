@@ -92,7 +92,7 @@ export function TransferList({
             key={s.id}
             className={
               "flex flex-col gap-3 rounded-2xl px-4 py-3 " +
-              (mine ? "border-2 border-ink-black bg-fresh-grass" : "border border-ink-black bg-pure-white")
+              (mine ? "border-1 border-ink-black bg-fresh-grass" : "border border-ink-black bg-pure-white")
             }
             data-testid="transfer-row"
             data-from={s.from}

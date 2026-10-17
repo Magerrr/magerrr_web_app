@@ -26,7 +26,7 @@ export function DeleteGroup({ groupId, groupName }: { groupId: string; groupName
   }
 
   return (
-    <Card className="flex flex-col gap-4 border-2 border-coral-pop" aria-labelledby="hapus-grup">
+    <Card className="flex flex-col gap-4 border-1 border-coral-pop" aria-labelledby="hapus-grup">
       <div className="flex flex-col gap-1">
         <h2 id="hapus-grup" className="text-sub">
           Hapus grup

@@ -79,7 +79,7 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
             logoUrl={group.logoUrl}
             theme={group.theme}
             size="lg"
-            className="relative -mt-8 border-2 ring-4 ring-cream-paper sm:-mt-10 sm:size-20"
+            className="relative -mt-8 border-1 ring-4 ring-cream-paper sm:-mt-10 sm:size-20"
           />
           <div className="flex min-w-0 flex-1 flex-col gap-1 pt-2">
             <h1 className="text-sub break-words">{group.name}</h1>
