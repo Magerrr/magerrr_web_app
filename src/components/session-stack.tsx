@@ -95,7 +95,8 @@ export function SessionStack({ cards, label = "Sesi terdekat" }: { cards: ReactN
               inert={!isTop}
               aria-hidden={!isTop}
               data-depth={depth}
-              className="col-start-1 row-start-1 motion-safe:transition-[transform,opacity] motion-safe:duration-300"
+              // Garis cream-paper memisahkan tepi kartu dari kartu gelap di belakangnya (MAGERRR-23).
+              className="col-start-1 row-start-1 rounded-2xl ring-1 ring-cream-paper motion-safe:transition-[transform,opacity] motion-safe:duration-300"
               style={{
                 zIndex: count - depth,
                 opacity: hidden ? 0 : 1,

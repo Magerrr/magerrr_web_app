@@ -65,6 +65,10 @@ test("beranda akun: sapaan + profil, sesi terdekat dari semua grup, lalu semua s
   const stack = page.getByTestId("session-stack");
   await expect(stack.getByTestId("featured-session")).toHaveText([/Beranda A.*GOR Berlangsung/, /Beranda B.*GOR Besok/, /Beranda A.*GOR Minggu Depan/]);
   await expect(stack.locator('[data-depth="0"]')).toContainText("Berlangsung");
+  // Garis cream-paper memisahkan kartu depan dari kartu gelap di belakangnya (MAGERRR-23).
+  for (const depth of [0, 1]) {
+    expect(await stack.locator(`[data-depth="${depth}"]`).evaluate((e) => getComputedStyle(e).boxShadow)).toContain("rgb(245, 241, 228)");
+  }
   await expect(page.getByTestId("stack-position")).toHaveText("Sesi 1 dari 3");
   await expect(page.getByRole("button", { name: "Sesi berikutnya" })).toHaveCount(0);
   // Geser kiri → kartu berikutnya.
