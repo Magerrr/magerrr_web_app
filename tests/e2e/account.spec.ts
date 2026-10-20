@@ -14,21 +14,26 @@ test("edit profil: nama ikut ke grup, foto profil, ganti email dengan konfirmasi
   expect((await page.request.post(`/api/groups/${groupB.id}/members`, { data: { displayName: newName } })).status()).toBe(201);
 
   await page.goto("/profil");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(oldEmail.split("@")[0]);
+  await expect(page.getByLabel("Nama tampilan")).toHaveValue(oldEmail.split("@")[0]);
   await expect(page.getByTestId("account-email")).toContainText(oldEmail);
 
   // Nama
   await page.getByLabel("Nama tampilan").fill(newName);
   await page.getByRole("button", { name: "Simpan nama" }).click();
   await expect(page.getByText(`Di Grup Akun B`)).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(newName);
+  await expect(page.getByLabel("Nama tampilan")).toHaveValue(newName);
   const { data: rows } = await admin().from("members").select("group_id, display_name").in("group_id", [groupA.id, groupB.id]).not("user_id", "is", null);
   expect(rows?.find((r) => r.group_id === groupA.id)?.display_name).toBe(newName);
   expect(rows?.find((r) => r.group_id === groupB.id)?.display_name).toBe(oldEmail.split("@")[0]);
   expect((await page.request.patch("/api/profil", { data: { displayName: " ", applyToGroups: false } })).status()).toBe(400);
 
   // Foto profil
-  await page.getByLabel("Pilih foto").setInputFiles({ name: "saya.png", mimeType: "image/png", buffer: PNG });
+  await page.locator('input[type="file"]').setInputFiles({ name: "saya.png", mimeType: "image/png", buffer: PNG });
+  // Langkah potong manual 1:1 sebelum disimpan.
+  const crop = page.getByTestId("photo-crop");
+  await expect(crop.getByRole("heading", { name: "Atur foto profil" })).toBeVisible();
+  await crop.getByRole("button", { name: "Simpan foto" }).click();
+  await expect(crop).toBeHidden();
   await expect(page.getByRole("button", { name: "Hapus foto" })).toBeVisible();
   await expect(page.getByTestId("user-avatar").first().locator("img")).toBeVisible();
   const own = await page.request.get("/api/profil/foto");
@@ -59,14 +64,12 @@ test("edit profil: nama ikut ke grup, foto profil, ganti email dengan konfirmasi
   // Tautan konfirmasi di email lama; bila server masih menunggu konfirmasi kedua (double_confirm_changes),
   // halaman memintanya dan tautan di email baru menyelesaikannya.
   await page.goto(await magicLinkFromMailpit(page.request, oldEmail, "new email address"));
-  await expect(page).toHaveURL(/\/profil\?email=/);
   const waiting = page.getByText("Buka juga tautan konfirmasi di email satunya");
   const done = page.getByText("Email akunmu sudah diganti.");
   await expect(waiting.or(done)).toBeVisible();
   if (await waiting.isVisible()) {
     await expect(page.getByTestId("account-email")).toContainText(oldEmail);
     await page.goto(await magicLinkFromMailpit(page.request, newEmail, "new email address"));
-    await expect(page).toHaveURL(/\/profil\?email=/);
   }
   await expect(page.getByText("Email akunmu sudah diganti.")).toBeVisible();
   await expect(page.getByTestId("account-email")).toContainText(newEmail);

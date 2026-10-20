@@ -45,3 +45,52 @@ export async function resizeImage(file: File, options: ResizeOptions): Promise<B
   const blob = options.kind === "photo" ? await toBlob(canvas, "image/jpeg", 0.85) : await toBlob(canvas, "image/webp", 0.9);
   return blob && blob.size < file.size ? blob : file;
 }
+
+/** Potongan persegi manual: titik pusat (px gambar) + perbesaran; zoom 1 = sisi terpendek gambar penuh. */
+export interface SquareCrop {
+  cx: number;
+  cy: number;
+  zoom: number;
+}
+
+export const MAX_CROP_ZOOM = 4;
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+/** Kotak sumber persegi untuk `crop`, selalu di dalam gambar (murni; diuji di image-resize.test.ts). */
+export function cropRect(width: number, height: number, { cx, cy, zoom }: SquareCrop) {
+  const side = Math.min(width, height) / clamp(zoom, 1, MAX_CROP_ZOOM);
+  return { x: clamp(cx - side / 2, 0, width - side), y: clamp(cy - side / 2, 0, height - side), side };
+}
+
+/** Rapikan `crop` agar potongan tidak keluar gambar; geseran melewati tepi tidak menumpuk. */
+export function clampCrop(width: number, height: number, crop: SquareCrop): SquareCrop {
+  const { x, y, side } = cropRect(width, height, crop);
+  return { cx: x + side / 2, cy: y + side / 2, zoom: clamp(crop.zoom, 1, MAX_CROP_ZOOM) };
+}
+
+/**
+ * Potong `file` sesuai kotak `rect` (dalam ukuran gambar `sourceWidth` px yang dilihat pengguna) lalu perkecil ke
+ * maksimal `max` px persegi, JPEG. Latar putih agar PNG transparan tidak jadi hitam.
+ */
+export async function cropSquareImage(
+  file: File,
+  rect: { x: number; y: number; side: number },
+  { sourceWidth, max }: { sourceWidth: number; max: number },
+): Promise<Blob> {
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+  const scale = bitmap.width / sourceWidth;
+  const size = Math.max(1, Math.round(Math.min(max, rect.side * scale)));
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Kanvas tidak tersedia.");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, size, size);
+  ctx.drawImage(bitmap, rect.x * scale, rect.y * scale, rect.side * scale, rect.side * scale, 0, 0, size, size);
+  bitmap.close();
+  const blob = await toBlob(canvas, "image/jpeg", 0.85);
+  if (!blob) throw new Error("Foto tidak bisa diproses.");
+  return blob;
+}

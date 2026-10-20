@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { GroupAvatar } from "@/components/group-avatar";
-import { Card, Notice, Page, TopBar } from "@/components/ui";
-import { UserAvatar } from "@/components/user-avatar";
+import { FlashToast } from "@/components/toast";
+import { Card, Page, TopBar } from "@/components/ui";
 import { getAccount } from "@/lib/db/account";
 import { getUser } from "@/lib/db/authz";
 import { listMyGroups } from "@/lib/db/groups";
@@ -40,15 +40,8 @@ export default async function ProfilPage({ searchParams }: PageProps<"/profil">)
   return (
     <Page width="narrow">
       <TopBar back="/" title="Profil" />
-      <div className="flex items-center gap-4">
-        <UserAvatar name={account.displayName} url={account.avatarUrl} size="lg" className="border-4 border-fresh-grass" />
-        <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-title break-words">{account.displayName}</h1>
-          {email && <p className="text-small break-all">{email}</p>}
-        </div>
-      </div>
 
-      {notice && <Notice>{notice}</Notice>}
+      {notice && <FlashToast text={notice} param="email" />}
 
       <AvatarField name={account.displayName} url={account.avatarUrl} />
       <NameForm name={account.displayName} />
@@ -71,8 +64,12 @@ export default async function ProfilPage({ searchParams }: PageProps<"/profil">)
         </Card>
       )}
 
-      <form action="/auth/keluar" method="post">
-        <button type="submit" className="min-h-11 cursor-pointer rounded-lg px-2 text-ui underline underline-offset-4 transition-colors hover:bg-fresh-grass/25">
+      <form action="/auth/keluar" method="post" className="flex justify-center">
+        {/* Garis tepi coral-pop, teks ink-black; coral-pop tidak dipakai sebagai warna teks. Hover = isi coral muda. */}
+        <button
+          type="submit"
+          className="w-full min-h-11 cursor-pointer rounded-full border-1 border-coral-pop bg-transparent px-8 text-ui font-medium text-ink-black transition-[background-color] hover:bg-coral-pop/20"
+        >
           Keluar
         </button>
       </form>
