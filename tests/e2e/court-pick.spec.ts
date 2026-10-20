@@ -48,8 +48,11 @@ test("pilih lapangan sebelum kocok, seret susunan ke lapangan lain, seret nama u
   const first = court.getByRole("button").first();
   const resting = page.getByRole("button", { name: /^1 / });
   const before = [(await first.textContent())!.trim(), (await resting.textContent())!.replace(/^1/, "").trim()];
-  await drag(page, first, resting);
-  await expect(court.getByRole("button").first()).toHaveText(before[1]);
+  // Seret bisa meleset bila handler belum terpasang (hidrasi); ulangi hanya selama belum bertukar.
+  await expect(async () => {
+    await drag(page, first, resting);
+    await expect(court.getByRole("button").first()).toHaveText(before[1], { timeout: 1500 });
+  }).toPass({ timeout: 15_000 });
   await expect(page.getByRole("button", { name: /^1 / })).toContainText(before[0]);
 
   // Alternatif tanpa seret: pilihan lapangan.
