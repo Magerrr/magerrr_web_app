@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { NoAccess } from "@/components/no-access";
-import { Page, TopBar, textLinkClass } from "@/components/ui";
+import { Page, TopBar } from "@/components/ui";
 import { getGroup } from "@/lib/db/groups";
 import { pageAccess } from "../access";
 import { DeleteGroup } from "./delete-group";
@@ -23,9 +22,6 @@ export default async function SettingsPage({ params }: PageProps<"/g/[groupId]/p
         <h1 className="text-title">Pengaturan grup</h1>
         <p className="text-ui">Mengubah aturan tidak mengubah skor yang sudah tercatat. Klasemen dihitung ulang otomatis.</p>
       </div>
-      <Link href={`/g/${groupId}/jadwal`} className={textLinkClass}>
-        Jadwal mingguan otomatis
-      </Link>
       <SettingsForm group={group} />
       <GroupImages groupId={groupId} logoUrl={group.logoUrl} coverUrl={group.coverUrl} />
       <DeleteGroup groupId={groupId} groupName={group.name} />

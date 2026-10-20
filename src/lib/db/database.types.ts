@@ -417,14 +417,14 @@ isOneToOne: false
                   ]
                 },"session_templates": {
                   Row: {
-                    "court_count": number,"court_per_hour": number | null,"created_at": string,"created_by": string,"end_time": string,"group_id": string,"id": string,"lead_days": number,"paused": boolean,"play_mode": Database["public"]['Enums']["play_mode"],"shuttle_cost": number | null,"start_time": string,"venue": string | null,"weekday": number
+                    "ahead": number,"anchor_date": string,"court_per_hour": number | null,"created_at": string,"created_by": string,"frequency": string,"group_id": string,"id": string,"last_date": string,"monthly_by": string | null,"paused": boolean,"shuttle_cost": number | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "court_count"?: number,"court_per_hour"?: number | null,"created_at"?: string,"created_by": string,"end_time": string,"group_id": string,"id"?: string,"lead_days"?: number,"paused"?: boolean,"play_mode"?: Database["public"]['Enums']["play_mode"],"shuttle_cost"?: number | null,"start_time": string,"venue"?: string | null,"weekday": number
+                    "ahead"?: number,"anchor_date": string,"court_per_hour"?: number | null,"created_at"?: string,"created_by": string,"frequency": string,"group_id": string,"id"?: string,"last_date": string,"monthly_by"?: string | null,"paused"?: boolean,"shuttle_cost"?: number | null
                   }
                   Update: {
-                    "court_count"?: number,"court_per_hour"?: number | null,"created_at"?: string,"created_by"?: string,"end_time"?: string,"group_id"?: string,"id"?: string,"lead_days"?: number,"paused"?: boolean,"play_mode"?: Database["public"]['Enums']["play_mode"],"shuttle_cost"?: number | null,"start_time"?: string,"venue"?: string | null,"weekday"?: number
+                    "ahead"?: number,"anchor_date"?: string,"court_per_hour"?: number | null,"created_at"?: string,"created_by"?: string,"frequency"?: string,"group_id"?: string,"id"?: string,"last_date"?: string,"monthly_by"?: string | null,"paused"?: boolean,"shuttle_cost"?: number | null
                   }
                   Relationships: [
                     {
@@ -590,8 +590,11 @@ isOneToOne: true
 "create_session":
 { Args: { "p_attendees": (string)[],"p_creator": string,"p_expenses": Json,"p_group": string,"p_session": Json }; Returns: string
                            },
-"create_template_session":
-{ Args: { "p_date": string,"p_expenses": Json,"p_session": Json,"p_template": string }; Returns: string
+"create_series_session":
+{ Args: { "p_date": string,"p_expenses": Json,"p_series": string,"p_source": string }; Returns: string
+                           },
+"create_session_series":
+{ Args: { "p_creator": string,"p_series": Json,"p_session": string }; Returns: string
                            },
 "create_tournament":
 { Args: { "p_advance_count": number,"p_created_by": string,"p_entries": Json,"p_format": string,"p_group_count": number,"p_kind": Database["public"]['Enums']["match_kind"],"p_name": string,"p_seeding": string,"p_session": string }; Returns: string

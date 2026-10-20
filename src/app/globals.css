@@ -87,6 +87,18 @@
   }
 }
 
+/* Toast masuk dari bawah (src/components/toast.tsx). */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Animasi maskot Kiko (src/components/kiko.tsx). Variabel --kiko-* diatur per suasana di komponen. */
 @keyframes kiko-bounce {
   0%,

@@ -9,15 +9,18 @@ import { mapsUrl } from "@/lib/venue";
 import { canPlay, playersOf } from "@/lib/core/roles";
 import { getGroup } from "@/lib/db/groups";
 import { listMembers } from "@/lib/db/members";
+import { getSeries } from "@/lib/db/session-series";
 import { getSession } from "@/lib/db/sessions";
 import { getTournament } from "@/lib/db/tournaments";
 import { publicEnv } from "@/lib/env";
 import { describeRules, formatDateId, formatTimeRangeId } from "@/lib/format";
+import { toJakartaParts } from "@/lib/time";
 import { isUuid } from "@/lib/validation";
 import { pageAccess } from "../../access";
 import { PLAY_MODE_LABEL, STATUS_LABEL, STATUS_TONE } from "../status";
 import { RsvpSummary } from "@/components/rsvp-summary";
 import { ApplyRsvp, RsvpPicker } from "./rsvp";
+import { SeriesPanel } from "./series-panel";
 import { AttendanceEditor, DeleteSession, StatusActions } from "./session-admin";
 
 export const metadata: Metadata = { title: "Sesi" };
@@ -47,7 +50,7 @@ export default async function SessionPage({ params }: PageProps<"/g/[groupId]/se
     );
   }
 
-  const tournament = await getTournament(session.id);
+  const [tournament, series] = await Promise.all([getTournament(session.id), session.seriesId ? getSeries(groupId, session.seriesId) : null]);
   const rules = session.rules ?? group.rules;
   const games = session.matchGames ?? group.matchGames;
   const editable = isAdmin && session.status !== "finished";
@@ -186,6 +189,25 @@ export default async function SessionPage({ params }: PageProps<"/g/[groupId]/se
                 )}
               </dl>
             </Card>
+
+            <SeriesPanel
+              groupId={groupId}
+              sessionId={session.id}
+              sessionDate={toJakartaParts(session.startsAt).date}
+              series={
+                series && {
+                  id: series.id,
+                  repeat: series.repeat,
+                  anchorDate: series.anchorDate,
+                  ahead: series.ahead,
+                  courtPerHour: series.courtPerHour,
+                  shuttleCost: series.shuttleCost,
+                  paused: series.paused,
+                }
+              }
+              isAdmin={isAdmin}
+              canStart={session.status !== "finished"}
+            />
 
             {isAdmin && (
               <DeleteSession

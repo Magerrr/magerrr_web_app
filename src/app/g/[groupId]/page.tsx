@@ -16,6 +16,8 @@ import { loadKiko } from "@/lib/db/kiko";
 import { loadGroupMatches } from "@/lib/db/matches";
 import { listMoments } from "@/lib/db/moments";
 import { unpaidGroupSettlements } from "@/lib/db/profile";
+import { ensureSeriesSessions } from "@/lib/db/session-series";
+import { toJakartaParts } from "@/lib/time";
 import { listSessions } from "@/lib/db/sessions";
 import { formatRupiah } from "@/lib/format";
 import { THEME_BG } from "@/lib/group-theme";
@@ -38,6 +40,8 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
   const q = (await searchParams).q;
   const query = typeof q === "string" ? q.trim() : "";
   const { member, via } = access.membership;
+  // Sesi berulang (S5) disiapkan saat grup dibuka, tanpa cron.
+  await ensureSeriesSessions([groupId], toJakartaParts(new Date()).date);
   const [group, sessions, unread, unpaid, moments] = await Promise.all([
     getGroup(groupId),
     listSessions(groupId, query),

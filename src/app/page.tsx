@@ -9,9 +9,10 @@ import { UserAvatar } from "@/components/user-avatar";
 import { getAccount } from "@/lib/db/account";
 import { getUser } from "@/lib/db/authz";
 import { listMyGroups, type GroupSummary } from "@/lib/db/groups";
+import { ensureSeriesSessions } from "@/lib/db/session-series";
 import { listSessionsOfGroups } from "@/lib/db/sessions";
 import { activeSessions } from "@/lib/session-order";
-import { greeting } from "@/lib/time";
+import { greeting, toJakartaParts } from "@/lib/time";
 
 /** Kartu sesi di tumpukan beranda: sesi berlangsung / terdekat dari semua grup (MAGERRR-15). */
 const SHOWN_SESSIONS = 5;
@@ -26,6 +27,8 @@ export default async function Home() {
   if (!user && groups.length === 0) return <Welcome />;
 
   const now = new Date();
+  // Sesi berulang (S5) disiapkan saat beranda dibuka, tanpa cron.
+  await ensureSeriesSessions(groups.map((g) => g.id), toJakartaParts(now).date);
   const [account, sessions] = await Promise.all([user ? getAccount(user.id) : null, listSessionsOfGroups(groups.map((g) => g.id))]);
   const name = account?.displayName ?? groups[0]?.memberName ?? null;
   const groupName = new Map(groups.map((g) => [g.id, g.name]));
