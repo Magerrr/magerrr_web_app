@@ -24,6 +24,7 @@ test("next eksternal diabaikan (anti open redirect), lalu keluar", async ({ page
   );
   await expect(page).toHaveURL(`${baseURL}/`);
   await page.getByRole("button", { name: "Keluar" }).click();
+  await page.goto("/profil");
   await expect(page.getByRole("link", { name: "Masuk", exact: true })).toBeVisible();
 });
 

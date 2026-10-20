@@ -6,6 +6,8 @@ import { useRef, useState, type PointerEvent, type ReactNode } from "react";
 const SWIPE_PX = 60;
 /** Kartu di belakang yang masih mengintip. */
 const PEEK = 2;
+/** Selisih vertikal (px) antar kartu di tumpukan: tinggi tepi kartu belakang yang terlihat. */
+const STEP = 8;
 
 /**
  * Tumpukan kartu sesi di beranda (MAGERRR-15): kartu teratas utuh, dua kartu berikutnya mengintip di bawahnya.
@@ -70,7 +72,7 @@ export function SessionStack({ cards, label = "Sesi terdekat" }: { cards: ReactN
     >
       <div
         className="grid touch-pan-y select-none"
-        style={{ paddingBottom: Math.min(count - 1, PEEK) * 12 }}
+        style={{ paddingBottom: Math.min(count - 1, PEEK) * STEP }}
         onPointerDown={down}
         onPointerMove={move}
         onPointerUp={up}
@@ -100,12 +102,13 @@ export function SessionStack({ cards, label = "Sesi terdekat" }: { cards: ReactN
               style={{
                 zIndex: count - depth,
                 opacity: hidden ? 0 : 1,
-                transformOrigin: "top center",
+                // Skala dari tepi bawah: tepi bawah kartu belakang turun tepat STEP px, jadi selalu terlihat di bawah kartu depan.
+                transformOrigin: "bottom center",
                 transform: isTop
                   ? `translateX(${dx}px) rotate(${dx / 40}deg)`
-                  : `translateY(${depth * 12}px) scale(${1 - depth * 0.05})`,
+                  : `translateY(${depth * STEP}px) scale(${1 - depth * 0.04})`,
                 transition: isTop && dx !== 0 ? "none" : undefined,
-                filter: isTop ? undefined : `brightness(${1 - depth * 0.15})`,
+                filter: isTop ? undefined : `brightness(${1 - depth * 0.08})`,
               }}
             >
               {card}
@@ -113,11 +116,22 @@ export function SessionStack({ cards, label = "Sesi terdekat" }: { cards: ReactN
           );
         })}
       </div>
-      {/* Tanpa tombol navigasi (permintaan pengguna): posisi hanya diumumkan ke pembaca layar. */}
+      {/* Tanpa tombol navigasi (permintaan pengguna): titik hanya penanda jumlah & posisi; pembaca layar memakai teks di bawahnya. */}
       {count > 1 && (
-        <p className="sr-only" aria-live="polite" data-testid="stack-position">
-          Sesi {top + 1} dari {count}
-        </p>
+        <>
+          <div className="flex justify-center gap-1.5" aria-hidden="true" data-testid="stack-dots">
+            {cards.map((_, i) => (
+              <span
+                key={i}
+                data-active={i === top}
+                className={`h-2 rounded-full bg-ink-black motion-safe:transition-[width,opacity] ${i === top ? "w-5" : "w-2 opacity-30"}`}
+              />
+            ))}
+          </div>
+          <p className="sr-only" aria-live="polite" data-testid="stack-position">
+            Sesi {top + 1} dari {count}
+          </p>
+        </>
       )}
     </div>
   );

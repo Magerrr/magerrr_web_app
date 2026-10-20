@@ -6,7 +6,7 @@ test("beranda tampil dalam bahasa Indonesia dengan gaya Meadow", async ({ page }
 
   await expect(page.locator("html")).toHaveAttribute("lang", "id");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Masuk untuk buat grup" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Masuk", exact: true })).toBeVisible();
 
   const body = await page.evaluate(() => {
     const s = getComputedStyle(document.body);

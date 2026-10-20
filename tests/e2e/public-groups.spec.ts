@@ -25,7 +25,7 @@ test("grup publik tampil di Jelajahi dan bisa digabung tanpa tautan; grup privat
 
   // Pengguna lain menemukan grup di Jelajahi lalu bergabung dengan akun.
   await user.goto("/");
-  await user.getByRole("link", { name: "Jelajahi grup publik" }).click();
+  await user.getByRole("link", { name: "Gabung grup" }).click();
   await user.getByLabel("Cari nama grup").fill(name);
   await user.getByLabel("Cari nama grup").press("Enter");
   const card = user.getByTestId("public-groups").getByRole("link", { name: new RegExp(name) });

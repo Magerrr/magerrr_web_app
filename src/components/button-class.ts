@@ -1,7 +1,7 @@
 // Kelas tombol Meadow, aman dipakai di server maupun klien. Warna hanya dari token (globals.css).
 export const cx = (...classes: (string | false | null | undefined)[]) => classes.filter(Boolean).join(" ");
 
-export type Variant = "primary" | "accent" | "secondary";
+export type Variant = "primary" | "accent" | "secondary" | "outline";
 export type Size = "md" | "lg";
 
 const BUTTON_BASE =
@@ -22,6 +22,8 @@ const BUTTON_VARIANT: Record<Variant, string> = {
     "hover:shadow-[0_3px_0_0_var(--color-ink-black)]",
   // Isi hijau muda agar terlihat sebagai tombol, bukan kotak putih; hover = hijau penuh.
   secondary: "border-ink-black bg-fresh-grass/25 text-ink-black hover:bg-fresh-grass hover:shadow-[0_3px_0_0_var(--color-ink-black)]",
+  // Garis tepi saja, tanpa isi; hover = hijau muda.
+  outline: "border-ink-black bg-transparent text-ink-black hover:bg-fresh-grass/25 hover:shadow-[0_3px_0_0_var(--color-ink-black)]",
 };
 const BUTTON_SIZE: Record<Size, string> = { md: "min-h-11", lg: "min-h-13 w-full" };
 
