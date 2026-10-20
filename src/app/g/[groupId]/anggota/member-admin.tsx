@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useBusy } from "@/components/busy";
-import { Badge, Button, Card, Field, Notice, buttonClass, inputBase, inputClass } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Badge, Button, Card, Field, buttonClass, inputBase, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import type { Member } from "@/lib/db/authz";
 
@@ -17,16 +18,15 @@ const ROLES: { value: Member["role"]; label: string }[] = [
 
 export function InviteCard({ groupId, groupName, inviteUrl, isPublic }: { groupId: string; groupName: string; inviteUrl: string; isPublic: boolean }) {
   const router = useRouter();
-  const [message, setMessage] = useState<{ tone: "info" | "error"; text: string } | null>(null);
   const [pending, setPending] = useState(false);
   const shareText = `Gabung grup ${groupName} di Magerrr: ${inviteUrl}`;
 
   async function copy() {
     try {
       await navigator.clipboard.writeText(inviteUrl);
-      setMessage({ tone: "info", text: "Tautan disalin." });
+      toast("Tautan disalin.");
     } catch {
-      setMessage({ tone: "error", text: "Tidak bisa menyalin otomatis. Salin tautan secara manual." });
+      toast.error("Tidak bisa menyalin otomatis. Salin tautan secara manual.");
     }
   }
 
@@ -35,8 +35,9 @@ export function InviteCard({ groupId, groupName, inviteUrl, isPublic }: { groupI
     setPending(true);
     const result = await sendJson(`/api/groups/${groupId}/invite`, "POST");
     setPending(false);
-    setMessage(result.ok ? { tone: "info", text: "Tautan baru dibuat. Tautan lama tidak berlaku lagi." } : { tone: "error", text: result.error });
-    if (result.ok) router.refresh();
+    if (!result.ok) return toast.error(result.error);
+    toast("Tautan baru dibuat. Tautan lama tidak berlaku lagi.");
+    router.refresh();
   }
 
   return (
@@ -67,7 +68,6 @@ export function InviteCard({ groupId, groupName, inviteUrl, isPublic }: { groupI
           Buat tautan baru
         </Button>
       </div>
-      {message && <Notice tone={message.tone}>{message.text}</Notice>}
     </Card>
   );
 }
@@ -75,15 +75,14 @@ export function InviteCard({ groupId, groupName, inviteUrl, isPublic }: { groupI
 export function AddGuestForm({ groupId }: { groupId: string }) {
   const router = useRouter();
   const [name, setName] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   async function submit() {
     setPending(true);
-    setError(null);
     const result = await sendJson(`/api/groups/${groupId}/members`, "POST", { displayName: name });
     setPending(false);
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
+    toast(`${name.trim()} ditambahkan sebagai tamu.`);
     setName("");
     router.refresh();
   }
@@ -106,7 +105,6 @@ export function AddGuestForm({ groupId }: { groupId: string }) {
           </Button>
         </div>
       </Field>
-      {error && <Notice tone="error">{error}</Notice>}
     </form>
   );
 }
@@ -125,16 +123,15 @@ export function MemberList({
   editable: boolean;
 }) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   useBusy(busy !== null);
 
   async function update(memberId: string, patch: Partial<Pick<Member, "grade" | "role">>) {
     setBusy(memberId);
-    setError(null);
     const result = await sendJson(`/api/groups/${groupId}/members/${memberId}`, "PATCH", patch);
     setBusy(null);
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
+    toast("Anggota diperbarui.");
     router.refresh();
   }
 
@@ -143,7 +140,6 @@ export function MemberList({
       <h2 id="daftar-anggota" className="text-sub">
         {members.length} anggota
       </h2>
-      {error && <Notice tone="error">{error}</Notice>}
       <ul className="flex flex-col divide-y divide-hairline-mist rounded-2xl border border-ink-black bg-pure-white">
         {members.map((m) => {
           const isOwner = m.user_id !== null && m.user_id === ownerUserId;

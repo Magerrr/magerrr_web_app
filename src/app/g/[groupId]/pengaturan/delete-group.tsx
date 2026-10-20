@@ -2,25 +2,25 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button, Card, Field, Notice, inputClass } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button, Card, Field, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 
 /** Hapus grup permanen: tombol aktif hanya setelah nama grup diketik ulang persis. */
 export function DeleteGroup({ groupId, groupName }: { groupId: string; groupName: string }) {
   const router = useRouter();
   const [confirmName, setConfirmName] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const matches = confirmName.trim() === groupName.trim();
 
   async function remove() {
     setPending(true);
-    setError(null);
     const result = await sendJson(`/api/groups/${groupId}`, "DELETE", { confirmName: confirmName.trim() });
     if (!result.ok) {
       setPending(false);
-      return setError(result.error);
+      return toast.error(result.error);
     }
+    toast(`Grup ${groupName} dihapus.`);
     router.push("/");
     router.refresh();
   }
@@ -46,7 +46,6 @@ export function DeleteGroup({ groupId, groupName }: { groupId: string; groupName
             className={inputClass}
           />
         </Field>
-        {error && <Notice tone="error">{error}</Notice>}
         <Button type="submit" variant="secondary" disabled={!matches} loading={pending}>
           {pending ? "Menghapus…" : "Hapus grup ini"}
         </Button>

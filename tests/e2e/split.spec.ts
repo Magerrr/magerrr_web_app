@@ -221,7 +221,7 @@ test("vector §5 #3–#5 lewat form: sisa pembagian, beberapa penalang, custom t
   await page.getByLabel("Nominal C", { exact: true }).fill("5000");
   await expect(form).toContainText("Terisi Rp35.000 dari Rp100.000 · kurang Rp65.000");
   await page.getByRole("button", { name: "Simpan biaya" }).click();
-  await expect(form.getByRole("alert")).toHaveText("Jumlah bagian (Rp35.000) harus sama dengan nominal biaya (Rp100.000).");
+  await expect(page.getByTestId("toast").filter({ hasText: "Jumlah bagian" })).toHaveText("Jumlah bagian (Rp35.000) harus sama dengan nominal biaya (Rp100.000).");
   const unbalanced = await page.request.post(`${s.api}/expenses`, {
     data: { name: "Snack", amount: 100000, paidBy: A, preset: null, split: { mode: "custom", shares: { [s.ids.B]: 30000, [s.ids.C]: 5000 } } },
   });

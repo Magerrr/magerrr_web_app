@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
-import { Button, Card, Field, Notice, Segmented, inputClass } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button, Card, Field, Segmented, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import { shareExpense, type Expense, type SettlementState } from "@/lib/core/split";
 import { formatRupiah } from "@/lib/format";
@@ -80,28 +81,24 @@ export function ExpensesPanel({
   flat?: boolean;
 }) {
   const [editing, setEditing] = useState<string | "new" | null>(null);
-  const [notice, setNotice] = useState<{ tone: "info" | "error"; text: string } | null>(null);
   const router = useRouter();
 
   function done(reset: SettlementState[], text: string) {
     setEditing(null);
-    setNotice(
-      reset.length > 0
-        ? {
-            tone: "error",
-            text: `${text} Status bayar direset karena nominal transfer berubah: ${reset
-              .map((r) => `${nameOf(names, r.from)} ke ${nameOf(names, r.to)} (${formatRupiah(r.amount)})`)
-              .join(", ")}. Tandai ulang setelah dicek.`,
-          }
-        : { tone: "info", text },
-    );
+    if (reset.length > 0) {
+      toast.error(
+        `${text} Status bayar direset karena nominal transfer berubah: ${reset
+          .map((r) => `${nameOf(names, r.from)} ke ${nameOf(names, r.to)} (${formatRupiah(r.amount)})`)
+          .join(", ")}. Tandai ulang setelah dicek.`,
+      );
+    } else toast(text);
     router.refresh();
   }
 
   async function remove(e: ExpenseView) {
     if (!window.confirm(`Hapus biaya "${e.name}" (${formatRupiah(e.amount)})?`)) return;
     const result = await sendJson<{ reset: SettlementState[] }>(`/api/groups/${groupId}/sessions/${sessionId}/expenses/${e.id}`, "DELETE");
-    if (!result.ok) return setNotice({ tone: "error", text: result.error });
+    if (!result.ok) return toast.error(result.error);
     done(result.data.reset, `Biaya "${e.name}" dihapus.`);
   }
 
@@ -110,7 +107,6 @@ export function ExpensesPanel({
 
   return (
     <div className="flex flex-col gap-3">
-      {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}
       {expenses.length === 0 ? (
         <Card>
           <p className="text-ui">Belum ada biaya.{isAdmin && " Tambahkan sewa lapangan, kok, atau biaya lain."}</p>
@@ -225,7 +221,6 @@ function ExpenseForm({
   const [weights, setWeights] = useState<Record<string, string>>(
     initial?.weights ? Object.fromEntries(Object.entries(initial.weights).map(([k, v]) => [k, String(v)])) : {},
   );
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   function pickPreset(value: ExpensePreset | null) {
@@ -277,13 +272,12 @@ function ExpenseForm({
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
-    if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? "Data belum lengkap.");
+    if (!parsed.success) return toast.error(parsed.error.issues[0]?.message ?? "Data belum lengkap.");
     setPending(true);
     const url = `/api/groups/${groupId}/sessions/${sessionId}/expenses${initial ? `/${initial.id}` : ""}`;
     const result = await sendJson<{ reset: SettlementState[] }>(url, initial ? "PATCH" : "POST", parsed.data);
     setPending(false);
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
     onDone(result.data.reset, initial ? `Biaya "${parsed.data.name}" diubah.` : `Biaya "${parsed.data.name}" ditambahkan.`);
   }
 
@@ -391,7 +385,6 @@ function ExpenseForm({
         </div>
       )}
 
-      {error && <Notice tone="error">{error}</Notice>}
       <div className="flex gap-2">
         <Button type="submit" size="lg" loading={pending}>
           {pending ? "Menyimpan…" : "Simpan biaya"}

@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button, Notice } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 
 /** Mulai satu match turnamen (slot bagan / pasangan grup): pilih lapangan kosong, lalu skor dicatat di papan skor. */
@@ -22,16 +23,15 @@ export function StartSlot({
   const router = useRouter();
   const [court, setCourt] = useState(emptyCourts[0] ?? null);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   if (emptyCourts.length === 0) return <p className="text-small">Semua lapangan sedang dipakai. Mulai setelah ada lapangan kosong.</p>;
 
   async function start() {
     if (court === null) return;
     setPending(true);
-    setError(null);
     const result = await sendJson(url, "POST", { ...target, courtNo: court });
     setPending(false);
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
+    toast(`Match dimulai di Lapangan ${court}.`);
     router.push(boardHref);
   }
 
@@ -57,7 +57,6 @@ export function StartSlot({
           Mulai match
         </Button>
       </div>
-      {error && <Notice tone="error">{error}</Notice>}
     </div>
   );
 }
@@ -65,7 +64,6 @@ export function StartSlot({
 export function DeleteTournament({ url }: { url: string }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   return (
     <div className="flex flex-col gap-2">
       <Button
@@ -77,13 +75,13 @@ export function DeleteTournament({ url }: { url: string }) {
           setPending(true);
           const result = await sendJson(url, "DELETE");
           setPending(false);
-          if (!result.ok) return setError(result.error);
+          if (!result.ok) return toast.error(result.error);
+          toast("Turnamen dihapus.");
           router.refresh();
         }}
       >
         Hapus turnamen
       </Button>
-      {error && <Notice tone="error">{error}</Notice>}
     </div>
   );
 }

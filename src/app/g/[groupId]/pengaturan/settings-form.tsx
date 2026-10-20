@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { NumberField, RulesPicker, draftFromRules, rulesFromDraft, toInt } from "@/components/rules-picker";
-import { Button, Card, Field, Notice, Segmented, inputBase, inputClass } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button, Card, Field, Segmented, inputBase, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import { GROUP_THEMES, THEME_BG, THEME_LABEL } from "@/lib/group-theme";
 import { PLAY_MODE_OPTIONS, toOfferedMode } from "../sesi/status";
@@ -25,12 +26,10 @@ export function SettingsForm({ group }: { group: GroupSettings }) {
   const [playMode, setPlayMode] = useState(toOfferedMode(group.defaultPlayMode));
   const [visibility, setVisibility] = useState<"private" | "public">(group.isPublic ? "public" : "private");
   const [theme, setTheme] = useState(group.theme);
-  const [status, setStatus] = useState<{ tone: "info" | "error"; text: string } | null>(null);
   const [pending, setPending] = useState(false);
 
   async function save() {
     setPending(true);
-    setStatus(null);
     const result = await sendJson(`/api/groups/${group.id}`, "PATCH", {
       name,
       emoji,
@@ -48,8 +47,9 @@ export function SettingsForm({ group }: { group: GroupSettings }) {
       theme,
     });
     setPending(false);
-    setStatus(result.ok ? { tone: "info", text: "Pengaturan disimpan." } : { tone: "error", text: result.error });
-    if (result.ok) router.refresh();
+    if (!result.ok) return toast.error(result.error);
+    toast("Pengaturan disimpan.");
+    router.refresh();
   }
 
   return (
@@ -142,7 +142,6 @@ export function SettingsForm({ group }: { group: GroupSettings }) {
         <p className="text-small">Tagihan tiap orang dibulatkan ke atas; kelebihannya dikreditkan ke host.</p>
       </Card>
 
-      {status && <Notice tone={status.tone}>{status.text}</Notice>}
       <Button type="submit" size="lg" loading={pending}>
         {pending ? "Menyimpan…" : "Simpan pengaturan"}
       </Button>

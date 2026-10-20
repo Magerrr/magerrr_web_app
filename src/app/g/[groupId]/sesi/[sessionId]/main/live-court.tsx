@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type Re
 import { PointBadge } from "@/components/point-badge";
 import { SERVICE_COURT_LABEL, ShuttleIcon } from "@/components/shuttle-icon";
 import { useBusy } from "@/components/busy";
+import { toast } from "@/components/toast";
 import { Button, Notice, Spinner, textButtonClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import { acknowledge, enqueue, flushQueue, pendingFor, type KeyValueStore } from "@/lib/offline-queue";
@@ -279,7 +280,6 @@ export function LiveCourt({
   const base = `/api/groups/${groupId}/sessions/${sessionId}/matches/${match.id}`;
   const refresh = useCallback(() => router.refresh(), [router]);
   const live = useLiveScore(match.id, base, { games: match.games, serving: match.serving }, refresh);
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   useBusy(pending);
   /** Ganti sisi (SC5) akibat perubahan skor terakhir; hilang di perubahan berikutnya. */
@@ -315,11 +315,11 @@ export function LiveCourt({
   async function voidMatch() {
     if (!window.confirm("Batalkan match ini? Match tidak dihitung di klasemen.")) return;
     setPending(true);
-    setError(null);
     await live.discard();
     const result = await sendJson(`${base}/void`, "POST", {});
     setPending(false);
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
+    toast("Match dibatalkan.");
     router.refresh();
   }
 
@@ -488,7 +488,6 @@ export function LiveCourt({
         )}
       </div>
       {focus && focusExtra}
-      {error && <Notice tone="error">{error}</Notice>}
     </section>
   );
 }

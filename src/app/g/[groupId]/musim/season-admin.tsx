@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
-import { Button, Field, Notice, dateInputClass, inputClass } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button, Field, dateInputClass, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import { seasonSchema } from "@/lib/validation";
 
@@ -12,18 +13,17 @@ export function NewSeasonForm({ groupId, defaultName, today }: { groupId: string
   const [name, setName] = useState(defaultName);
   const [startsOn, setStartsOn] = useState(today);
   const [endsOn, setEndsOn] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     const parsed = seasonSchema.safeParse({ name, startsOn, endsOn: endsOn || null });
-    if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? "Data belum lengkap.");
+    if (!parsed.success) return toast.error(parsed.error.issues[0]?.message ?? "Data belum lengkap.");
     setPending(true);
-    setError(null);
     const result = await sendJson(`/api/groups/${groupId}/seasons`, "POST", parsed.data);
     setPending(false);
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
+    toast(`${parsed.data.name} dimulai.`);
     router.refresh();
   }
 
@@ -39,7 +39,6 @@ export function NewSeasonForm({ groupId, defaultName, today }: { groupId: string
       <Field label="Selesai (opsional)" htmlFor={`${id}-end`} hint="Kosongkan bila musim berjalan sampai ditutup manual.">
         <input id={`${id}-end`} type="date" value={endsOn} onChange={(e) => setEndsOn(e.target.value)} className={dateInputClass} />
       </Field>
-      {error && <Notice tone="error">{error}</Notice>}
       <Button type="submit" size="lg" loading={pending}>
         {pending ? "Menyimpan…" : "Mulai musim"}
       </Button>
@@ -49,14 +48,14 @@ export function NewSeasonForm({ groupId, defaultName, today }: { groupId: string
 
 export function CloseSeasonButton({ groupId, seasonId, name }: { groupId: string; seasonId: string; name: string }) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   async function close() {
     if (!window.confirm(`Tutup ${name}? Juara musim ditetapkan dari klasemen saat ini dan musim masuk arsip.`)) return;
     setPending(true);
     const result = await sendJson(`/api/groups/${groupId}/seasons/${seasonId}`, "PATCH", { action: "close" });
     setPending(false);
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
+    toast(`${name} ditutup dan masuk arsip.`);
     router.refresh();
   }
   return (
@@ -64,7 +63,6 @@ export function CloseSeasonButton({ groupId, seasonId, name }: { groupId: string
       <Button variant="secondary" onClick={close} loading={pending}>
         Tutup musim
       </Button>
-      {error && <Notice tone="error">{error}</Notice>}
     </div>
   );
 }

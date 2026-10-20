@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
-import { Button, Card, Field, Notice, Segmented, inputClass } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button, Card, Field, Segmented, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import type { SettlementState } from "@/lib/core/split";
 import { formatRupiah } from "@/lib/format";
@@ -38,7 +39,6 @@ export function FlatFeeForm({
   const [kind, setKind] = useState<Kind>(flatFee === null ? "split" : "flat");
   const [fee, setFee] = useState(flatFee === null ? "" : String(flatFee));
   const [pending, setPending] = useState(false);
-  const [notice, setNotice] = useState<{ tone: "info" | "error"; text: string } | null>(null);
 
   const description =
     flatFee === null
@@ -59,23 +59,19 @@ export function FlatFeeForm({
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    setNotice(null);
-    if (kind === "flat" && !value) return setNotice({ tone: "error", text: "Isi iuran per orang." });
+    if (kind === "flat" && !value) return toast.error("Isi iuran per orang.");
     setPending(true);
     const result = await sendJson<{ reset: SettlementState[] }>(url, "PATCH", { flatFee: value });
     setPending(false);
-    if (!result.ok) return setNotice({ tone: "error", text: result.error });
+    if (!result.ok) return toast.error(result.error);
     const reset = result.data.reset;
-    setNotice(
-      reset.length > 0
-        ? {
-            tone: "error",
-            text: `Cara patungan disimpan. Status bayar direset karena nominal transfer berubah: ${reset
-              .map((r) => `${names[r.from] ?? "?"} ke ${names[r.to] ?? "?"} (${formatRupiah(r.amount)})`)
-              .join(", ")}. Tandai ulang setelah dicek.`,
-          }
-        : { tone: "info", text: "Cara patungan disimpan." },
-    );
+    if (reset.length > 0) {
+      toast.error(
+        `Cara patungan disimpan. Status bayar direset karena nominal transfer berubah: ${reset
+          .map((r) => `${names[r.from] ?? "?"} ke ${names[r.to] ?? "?"} (${formatRupiah(r.amount)})`)
+          .join(", ")}. Tandai ulang setelah dicek.`,
+      );
+    } else toast("Cara patungan disimpan.");
     router.refresh();
   }
 
@@ -105,7 +101,6 @@ export function FlatFeeForm({
         <Button type="submit" variant="secondary" loading={pending} disabled={pending || unchanged}>
           Simpan cara patungan
         </Button>
-        {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}
       </form>
     </Card>
   );

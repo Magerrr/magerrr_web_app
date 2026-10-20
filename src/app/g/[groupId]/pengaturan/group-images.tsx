@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useId, useRef, useState } from "react";
-import { Button, Card, Notice } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button, Card } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import { resizeImage } from "@/lib/image-resize";
 
@@ -30,21 +31,22 @@ function ImageField({ groupId, kind, url }: { groupId: string; kind: Kind; url: 
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<"upload" | "remove" | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const copy = COPY[kind];
   const endpoint = `/api/groups/${groupId}/media/${kind}`;
 
   async function upload(file: File) {
     setPending("upload");
-    setError(null);
     const form = new FormData();
     form.set("file", await resizeImage(file, copy.resize), file.name);
     try {
       const response = await fetch(endpoint, { method: "POST", body: form });
-      if (!response.ok) setError((await response.json().catch(() => ({}))).error ?? "Gagal mengunggah. Coba lagi.");
-      else router.refresh();
+      if (!response.ok) toast.error((await response.json().catch(() => ({}))).error ?? "Gagal mengunggah. Coba lagi.");
+      else {
+        toast(`${copy.title} grup diperbarui.`);
+        router.refresh();
+      }
     } catch {
-      setError("Tidak ada koneksi. Periksa internet lalu coba lagi.");
+      toast.error("Tidak ada koneksi. Periksa internet lalu coba lagi.");
     }
     setPending(null);
     if (input.current) input.current.value = "";
@@ -52,10 +54,10 @@ function ImageField({ groupId, kind, url }: { groupId: string; kind: Kind; url: 
 
   async function remove() {
     setPending("remove");
-    setError(null);
     const result = await sendJson(endpoint, "DELETE");
     setPending(null);
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
+    toast(`${copy.title} grup dihapus.`);
     router.refresh();
   }
 
@@ -90,7 +92,6 @@ function ImageField({ groupId, kind, url }: { groupId: string; kind: Kind; url: 
         )}
       </div>
       {pending === "upload" && <p className="text-small">Mengunggah…</p>}
-      {error && <Notice tone="error">{error}</Notice>}
     </div>
   );
 }

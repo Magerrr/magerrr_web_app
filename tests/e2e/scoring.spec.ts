@@ -137,7 +137,7 @@ test("kocok 3 ronde: deuce 20–20 → 22–20, 30–29 menutup game, undo, edit
 
   // Void match → tidak dihitung, tercatat.
   await page.getByTestId("match-history").getByRole("button", { name: "Batalkan" }).first().click();
-  await expect(page.getByText("Dibatalkan")).toBeVisible();
+  await expect(page.getByTestId("match-history").getByText("Dibatalkan")).toBeVisible();
   const { count } = await admin().from("audit_log").select("id", { count: "exact", head: true }).eq("entity", "match").eq("action", "void");
   expect(count).toBeGreaterThanOrEqual(1);
 });
