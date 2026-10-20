@@ -20,6 +20,7 @@ import { HttpError } from "@/lib/http-error";
 import type { ExpenseInput } from "@/lib/validation";
 import type { Json } from "./database.types";
 import type { GroupSettings } from "./groups";
+import { recordMetric } from "./metrics";
 import { memberNames } from "./members";
 import { listPaymentInfos, type PaymentInfo } from "./payments";
 import { assertMembersOf, type SessionDetail } from "./sessions";
@@ -185,7 +186,7 @@ function dbError(error: { message: string }): never {
 
 async function persist(
   state: BillState,
-  sessionId: string,
+  session: Pick<SessionDetail, "id" | "groupId">,
   actorId: string | null,
   op: "create" | "update" | "delete" | "recompute",
   expense: StoredExpense | { id: string } | null,
@@ -206,7 +207,7 @@ async function persist(
         }
       : expense;
   const { error } = await serviceClient(actorId ?? undefined).rpc("save_bill", {
-    p_session: sessionId,
+    p_session: session.id,
     p_op: op,
     p_expense: row as Json,
     p_shares: computed.shares as unknown as Json,
@@ -223,6 +224,7 @@ async function persist(
     p_version: state.version,
   });
   if (error) dbError(error);
+  if (computed.settlements.length > 0) await recordMetric(session.groupId, session.id, "bill_created");
   return { reset: computed.reset };
 }
 
@@ -264,7 +266,7 @@ export async function saveExpense(
   };
   const expenses = existing ? state.expenses.map((e) => (e.id === existing.id ? expense : e)) : [...state.expenses, expense];
   const computed = computeBill(state, expenses, state.participants, group.roundTo);
-  const { reset } = await persist(state, session.id, actorId, existing ? "update" : "create", expense, computed, null);
+  const { reset } = await persist(state, session, actorId, existing ? "update" : "create", expense, computed, null);
   return { id: expense.id, reset };
 }
 
@@ -278,7 +280,7 @@ export async function deleteExpense(
   if (!state.expenses.some((e) => e.id === expenseId)) throw new HttpError(404, "Biaya tidak ditemukan.");
   const expenses = state.expenses.filter((e) => e.id !== expenseId);
   const computed = computeBill(state, expenses, state.participants, group.roundTo);
-  return persist(state, session.id, actorId, "delete", { id: expenseId }, computed, null);
+  return persist(state, session, actorId, "delete", { id: expenseId }, computed, null);
 }
 
 /**
@@ -294,7 +296,7 @@ export async function recomputeBill(
   const state = await loadBill(session);
   const participants = present ? [...new Set(present)].sort(compareId) : state.participants;
   const computed = computeBill(state, state.expenses, participants, group.roundTo);
-  return persist(state, session.id, actorId, "recompute", null, computed, present ? participants : null);
+  return persist(state, session, actorId, "recompute", null, computed, present ? participants : null);
 }
 
 /**
@@ -313,7 +315,7 @@ export async function setFlatFee(
     const { error } = await serviceClient(actorId).from("sessions").update({ flat_fee: flatFee }).eq("id", session.id);
     if (error) throw error;
   }
-  return persist(state, session.id, actorId, "recompute", null, computed, null);
+  return persist(state, session, actorId, "recompute", null, computed, null);
 }
 
 export type PaymentAction = "paid" | "unpaid" | "reject" | "self_report";

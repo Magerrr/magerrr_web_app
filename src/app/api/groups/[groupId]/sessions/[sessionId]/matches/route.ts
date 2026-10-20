@@ -1,3 +1,4 @@
+import { recordMetric } from "@/lib/db/metrics";
 import { track } from "@/lib/analytics";
 import { readJson, route } from "@/lib/api";
 import { saveResult } from "@/lib/db/play";
@@ -9,6 +10,7 @@ export const POST = route<RouteContext<"/api/groups/[groupId]/sessions/[sessionI
   const { groupId, sessionId } = await params;
   const { ctx, actorId } = await officialPlay(groupId, sessionId);
   const id = await saveResult(ctx, actorId, await readJson(request, matchResultSchema));
+  await recordMetric(groupId, sessionId, "score_recorded");
   track("match_completed", actorId, { group_id: groupId, session_id: sessionId, match_id: id, source: "manual" });
   return Response.json({ id }, { status: 201 });
 });

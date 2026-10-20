@@ -1,3 +1,4 @@
+import { recordMetric } from "@/lib/db/metrics";
 import { track } from "@/lib/analytics";
 import { readJson, route } from "@/lib/api";
 import { completeMatch } from "@/lib/db/play";
@@ -11,6 +12,7 @@ export const POST = route<RouteContext<"/api/groups/[groupId]/sessions/[sessionI
     const { ctx, actorId } = await scorerPlay(groupId, sessionId, matchId);
     const { games } = await readJson(request, liveScoreSchema);
     await completeMatch(ctx, actorId, matchId, games);
+    await recordMetric(groupId, sessionId, "score_recorded");
     track("match_completed", actorId, { group_id: groupId, session_id: sessionId, match_id: matchId, source: "live" });
     return Response.json({ id: matchId });
   },
