@@ -36,6 +36,19 @@ describe("cropRect", () => {
   });
 });
 
+describe("cropRect berrasio 3:1", () => {
+  it("zoom 1 memakai lebar gambar penuh, tinggi = lebar / 3", () => {
+    expect(cropRect(1200, 800, { cx: 600, cy: 400, zoom: 1 }, 3)).toEqual({ x: 0, y: 200, side: 1200 });
+  });
+  it("gambar sangat lebar dibatasi tingginya", () => {
+    expect(cropRect(3000, 500, { cx: 1500, cy: 250, zoom: 1 }, 3)).toEqual({ x: 750, y: 0, side: 1500 });
+  });
+  it("tidak keluar gambar saat digeser", () => {
+    expect(cropRect(1200, 800, { cx: 600, cy: 9999, zoom: 2 }, 3)).toEqual({ x: 300, y: 600, side: 600 });
+    expect(clampCrop(1200, 800, { cx: 600, cy: -50, zoom: 1 }, 3)).toEqual({ cx: 600, cy: 200, zoom: 1 });
+  });
+});
+
 describe("clampCrop", () => {
   it("pusat dikembalikan ke dalam batas agar geseran melewati tepi tidak menumpuk", () => {
     expect(clampCrop(1200, 800, { cx: -500, cy: 400, zoom: 1 })).toEqual({ cx: 400, cy: 400, zoom: 1 });

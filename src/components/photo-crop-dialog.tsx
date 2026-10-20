@@ -1,21 +1,24 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { MAX_CROP_ZOOM, clampCrop, cropRect, cropSquareImage, type SquareCrop } from "@/lib/image-resize";
+import { MAX_CROP_ZOOM, clampCrop, cropImage, cropRect, type SquareCrop } from "@/lib/image-resize";
 import { Button } from "./button";
 
-const OUTPUT_PX = 512;
 const KEY_STEP_PX = 12;
 
 /**
- * Langkah potong manual sebelum foto disimpan: bingkai persegi 1:1 tetap, gambar digeser (seret) dan diperbesar
- * (penggeser, cubit dua jari, roda tetikus, atau tombol panah/+/−). Panduan bulat menunjukkan tampilan avatar.
+ * Langkah potong manual sebelum foto disimpan: bingkai tetap berrasio `aspect` (bawaan persegi 1:1), gambar digeser
+ * (seret) dan diperbesar (penggeser, cubit dua jari, roda tetikus, atau tombol panah/+/−). Panduan bulat (hanya
+ * rasio 1:1) menunjukkan tampilan avatar.
  * `src` = object URL dari `file` (dibuat & dicabut pemanggil).
  */
 export function PhotoCropDialog({
   file,
   src,
   title,
+  aspect = 1,
+  outputPx = 512,
+  hint = "Seret untuk menggeser, perbesar untuk memotong. Hasilnya persegi 1:1.",
   onCancel,
   onConfirm,
   onError,
@@ -23,6 +26,11 @@ export function PhotoCropDialog({
   file: File;
   src: string;
   title: string;
+  /** lebar / tinggi bingkai potong */
+  aspect?: number;
+  /** lebar maksimal hasil (px) */
+  outputPx?: number;
+  hint?: string;
   onCancel: () => void;
   onConfirm: (blob: Blob) => void;
   onError: (message: string) => void;
@@ -39,11 +47,11 @@ export function PhotoCropDialog({
     if (el && !el.open) el.showModal();
   }, []);
 
-  const rect = size && crop ? cropRect(size.w, size.h, crop) : null;
+  const rect = size && crop ? cropRect(size.w, size.h, crop, aspect) : null;
 
   function update(next: (c: SquareCrop) => SquareCrop) {
     if (!size) return;
-    setCrop((c) => (c ? clampCrop(size.w, size.h, next(c)) : c));
+    setCrop((c) => (c ? clampCrop(size.w, size.h, next(c), aspect) : c));
   }
 
   /** Geser gambar sejauh (dx, dy) piksel layar: titik pusat potongan bergerak berlawanan arah. */
@@ -51,7 +59,7 @@ export function PhotoCropDialog({
     const box = viewport.current?.clientWidth;
     if (!size || !box) return;
     update((c) => {
-      const perPx = Math.min(size.w, size.h) / c.zoom / box;
+      const perPx = cropRect(size.w, size.h, c, aspect).side / box;
       return { ...c, cx: c.cx - dx * perPx, cy: c.cy - dy * perPx };
     });
   }
@@ -104,7 +112,7 @@ export function PhotoCropDialog({
     if (!size || !rect) return;
     setSaving(true);
     try {
-      onConfirm(await cropSquareImage(file, rect, { sourceWidth: size.w, max: OUTPUT_PX }));
+      onConfirm(await cropImage(file, rect, { sourceWidth: size.w, max: outputPx, aspect }));
     } catch {
       onError("Foto tidak bisa diproses. Coba foto lain.");
     }
@@ -126,7 +134,7 @@ export function PhotoCropDialog({
           <h2 id="crop-title" className="text-sub">
             {title}
           </h2>
-          <p className="text-small">Seret untuk menggeser, perbesar untuk memotong. Hasilnya persegi 1:1.</p>
+          <p className="text-small">{hint}</p>
         </div>
 
         <div
@@ -140,7 +148,8 @@ export function PhotoCropDialog({
           onPointerCancel={onPointerEnd}
           onWheel={(e) => zoomBy(Math.exp(-e.deltaY * 0.002))}
           onKeyDown={onKeyDown}
-          className="relative aspect-square w-full cursor-grab touch-none overflow-hidden rounded-xl bg-sandstone select-none active:cursor-grabbing"
+          style={{ aspectRatio: aspect }}
+          className="relative w-full cursor-grab touch-none overflow-hidden rounded-xl bg-sandstone select-none active:cursor-grabbing"
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- object URL lokal, posisi diatur manual */}
           <img
@@ -156,15 +165,17 @@ export function PhotoCropDialog({
             className="pointer-events-none absolute max-w-none"
             style={
               size && rect
-                ? { width: `${(size.w / rect.side) * 100}%`, left: `${(-rect.x / rect.side) * 100}%`, top: `${(-rect.y / rect.side) * 100}%` }
+                ? { width: `${(size.w / rect.side) * 100}%`, left: `${(-rect.x / rect.side) * 100}%`, top: `${((-rect.y * aspect) / rect.side) * 100}%` }
                 : { visibility: "hidden" }
             }
           />
           {/* Panduan avatar bulat; area di luar lingkaran tetap ikut tersimpan (persegi). */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-0 rounded-[50%] border border-pure-white shadow-[0_0_0_9999px_color-mix(in_srgb,var(--color-ink-black)_40%,transparent)]"
-          />
+          {aspect === 1 && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 rounded-[50%] border border-pure-white shadow-[0_0_0_9999px_color-mix(in_srgb,var(--color-ink-black)_40%,transparent)]"
+            />
+          )}
         </div>
 
         <label className="flex items-center gap-3 text-small">

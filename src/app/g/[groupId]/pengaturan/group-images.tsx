@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useId, useRef, useState } from "react";
+import { PhotoCropDialog } from "@/components/photo-crop-dialog";
 import { toast } from "@/components/toast";
 import { Button, Card } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
@@ -34,10 +35,21 @@ function ImageField({ groupId, kind, url }: { groupId: string; kind: Kind; url: 
   const copy = COPY[kind];
   const endpoint = `/api/groups/${groupId}/media/${kind}`;
 
-  async function upload(file: File) {
+  /** foto sampul yang sedang dipotong (object URL dicabut saat dialog ditutup) */
+  const [picked, setPicked] = useState<{ file: File; src: string } | null>(null);
+
+  function closeCrop() {
+    if (picked) URL.revokeObjectURL(picked.src);
+    setPicked(null);
+    if (input.current) input.current.value = "";
+  }
+
+  /** `cropped` = hasil potong manual (sampul); tanpa itu foto diperkecil/dipotong tengah otomatis (logo). */
+  async function upload(file: File, cropped?: Blob) {
     setPending("upload");
     const form = new FormData();
-    form.set("file", await resizeImage(file, copy.resize), file.name);
+    if (cropped) form.set("file", cropped, "sampul.jpg");
+    else form.set("file", await resizeImage(file, copy.resize), file.name);
     try {
       const response = await fetch(endpoint, { method: "POST", body: form });
       if (!response.ok) toast.error((await response.json().catch(() => ({}))).error ?? "Gagal mengunggah. Coba lagi.");
@@ -81,7 +93,9 @@ function ImageField({ groupId, kind, url }: { groupId: string; kind: Kind; url: 
           disabled={pending !== null}
           onChange={(e) => {
             const file = e.target.files?.[0];
-            if (file) void upload(file);
+            if (!file) return;
+            if (kind === "cover") setPicked({ file, src: URL.createObjectURL(file) });
+            else void upload(file);
           }}
           className="min-h-11 max-w-full text-ui file:mr-3 file:min-h-11 file:cursor-pointer file:rounded-full file:border file:border-ink-black file:bg-fresh-grass/25 file:px-4 file:text-ui"
         />
@@ -92,6 +106,26 @@ function ImageField({ groupId, kind, url }: { groupId: string; kind: Kind; url: 
         )}
       </div>
       {pending === "upload" && <p className="text-small">Mengunggah…</p>}
+      {picked && (
+        <PhotoCropDialog
+          file={picked.file}
+          src={picked.src}
+          title="Atur gambar sampul"
+          aspect={3}
+          outputPx={copy.resize.max}
+          hint="Seret untuk menggeser, perbesar untuk memotong. Hasilnya lebar 3:1, seperti di beranda grup."
+          onCancel={closeCrop}
+          onConfirm={(photo) => {
+            const { file } = picked;
+            closeCrop();
+            void upload(file, photo);
+          }}
+          onError={(message) => {
+            closeCrop();
+            toast.error(message);
+          }}
+        />
+      )}
     </div>
   );
 }
