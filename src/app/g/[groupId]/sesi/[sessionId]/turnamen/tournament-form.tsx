@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button, Card, Field, Notice, Segmented, inputClass } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button, Card, Field, Segmented, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import { bracketSize, roundName } from "@/lib/core/bracket";
 import { fixtureCount, roundCount } from "@/lib/core/roundrobin";
@@ -39,7 +40,6 @@ export function TournamentForm({ url, players, defaultName }: { url: string; pla
   const [selected, setSelected] = useState(players.map((p) => p.id));
   const [pairs, setPairs] = useState<Pair[]>(() => pairUp(players.map((p) => p.id)));
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const nameOf = (id: string) => players.find((p) => p.id === id)?.name ?? "?";
   const manual = format === "doubles" && pairing === "manual";
 
@@ -60,12 +60,12 @@ export function TournamentForm({ url, players, defaultName }: { url: string; pla
 
   async function submit() {
     setPending(true);
-    setError(null);
     const entries =
       format === "singles" ? { mode: "singles", memberIds: selected } : manual ? { mode: "pairs", pairs } : { mode: "pairs_auto", memberIds: selected };
     const result = await sendJson(url, "POST", { name, seeding, format: system, groups: system === "groups_knockout" ? groups : null, entries });
     setPending(false);
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
+    toast("Turnamen dibuat.");
     router.refresh();
   }
 
@@ -210,7 +210,6 @@ export function TournamentForm({ url, players, defaultName }: { url: string; pla
         {system === "round_robin" && "Round robin: semua peserta saling bertemu sekali. Peringkat: jumlah menang, lalu adu langsung, selisih gim, selisih poin."}{" "}
         Peserta tidak bisa diubah setelah turnamen dibuat.
       </p>
-      {error && <Notice tone="error">{error}</Notice>}
       <Button size="lg" variant="accent" onClick={submit} loading={pending} disabled={problem !== null || name.trim() === ""}>
         Buat turnamen
       </Button>

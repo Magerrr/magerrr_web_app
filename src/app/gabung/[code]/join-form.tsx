@@ -2,26 +2,26 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button, Field, Notice, inputClass } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button, Field, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 
 /** `url`: `/api/join/<kode undangan>` atau `/api/groups/<id>/join` (grup publik). */
 export function JoinForm({ url, defaultName, withAccount }: { url: string; defaultName: string; withAccount: boolean }) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   async function submit(form: FormData) {
     setPending(true);
-    setError(null);
     const result = await sendJson<{ groupId: string }>(url, "POST", {
       displayName: String(form.get("displayName") ?? ""),
     });
     if (result.ok) {
+      toast("Berhasil gabung grup.");
       router.push(`/g/${result.data.groupId}`);
       router.refresh();
     } else {
-      setError(result.error);
+      toast.error(result.error);
       setPending(false);
     }
   }
@@ -43,7 +43,6 @@ export function JoinForm({ url, defaultName, withAccount }: { url: string; defau
           className={inputClass}
         />
       </Field>
-      {error && <Notice tone="error">{error}</Notice>}
       <Button type="submit" size="lg" loading={pending}>
         {pending ? "Bergabung…" : "Gabung grup"}
       </Button>

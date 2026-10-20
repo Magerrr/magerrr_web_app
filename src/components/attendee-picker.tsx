@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Badge, Button, Notice, inputBase } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Badge, Button, inputBase } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 
 export interface PickerMember {
@@ -25,7 +26,6 @@ export function AttendeePicker({
   onMemberAdded: (member: PickerMember) => void;
 }) {
   const [guestName, setGuestName] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
   function toggle(id: string, on: boolean) {
@@ -38,10 +38,10 @@ export function AttendeePicker({
   async function addGuest() {
     if (!guestName.trim()) return;
     setAdding(true);
-    setError(null);
     const result = await sendJson<PickerMember>(`/api/groups/${groupId}/members`, "POST", { displayName: guestName });
     setAdding(false);
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
+    toast(`${result.data.display_name} ditambahkan sebagai tamu.`);
     onMemberAdded(result.data);
     onChange(new Set(selected).add(result.data.id));
     setGuestName("");
@@ -96,7 +96,6 @@ export function AttendeePicker({
           Tambah tamu
         </Button>
       </div>
-      {error && <Notice tone="error">{error}</Notice>}
     </fieldset>
   );
 }

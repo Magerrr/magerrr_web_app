@@ -2,20 +2,21 @@
 
 import { useRouter } from "next/navigation";
 import { useId, useRef, useState } from "react";
-import { Button, Field, Notice, Segmented, inputClass } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button, Field, Segmented, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import { paymentInfoSchema } from "@/lib/validation";
 
 export function DeletePaymentInfo({ groupId, id, label }: { groupId: string; id: string; label: string }) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   async function remove() {
     if (!window.confirm(`Hapus ${label}?`)) return;
     setPending(true);
     const result = await sendJson(`/api/groups/${groupId}/payment-infos/${id}`, "DELETE");
     setPending(false);
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
+    toast(`${label} dihapus.`);
     router.refresh();
   }
   return (
@@ -23,7 +24,6 @@ export function DeletePaymentInfo({ groupId, id, label }: { groupId: string; id:
       <Button variant="secondary" onClick={remove} loading={pending} className="self-start">
         Hapus {label}
       </Button>
-      {error && <Notice tone="error">{error}</Notice>}
     </div>
   );
 }
@@ -38,19 +38,17 @@ export function AddPaymentInfo({ groupId }: { groupId: string }) {
   const [label, setLabel] = useState("");
   const [accountNo, setAccountNo] = useState("");
   const [accountName, setAccountName] = useState("");
-  const [status, setStatus] = useState<{ tone: "info" | "error"; text: string } | null>(null);
   const [pending, setPending] = useState(false);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    setStatus(null);
     let error: string | null = null;
     setPending(true);
     if (kind === "qris") {
       const file = fileRef.current?.files?.[0];
       if (!file) {
         setPending(false);
-        return setStatus({ tone: "error", text: "Pilih gambar QRIS." });
+        return toast.error("Pilih gambar QRIS.");
       }
       const form = new FormData();
       form.set("label", label);
@@ -70,12 +68,12 @@ export function AddPaymentInfo({ groupId }: { groupId: string }) {
       }
     }
     setPending(false);
-    if (error) return setStatus({ tone: "error", text: error });
+    if (error) return toast.error(error);
     setLabel("");
     setAccountNo("");
     setAccountName("");
     if (fileRef.current) fileRef.current.value = "";
-    setStatus({ tone: "info", text: "Info pembayaran disimpan." });
+    toast("Info pembayaran disimpan.");
     router.refresh();
   }
 
@@ -117,7 +115,6 @@ export function AddPaymentInfo({ groupId }: { groupId: string }) {
           </Field>
         </>
       )}
-      {status && <Notice tone={status.tone}>{status.text}</Notice>}
       <Button type="submit" size="lg" loading={pending}>
         {pending ? "Menyimpan…" : "Simpan"}
       </Button>

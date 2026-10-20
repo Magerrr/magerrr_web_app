@@ -5,6 +5,7 @@ import type * as Leaflet from "leaflet";
 import { useEffect, useId, useRef, useState } from "react";
 import { roundCoord } from "@/lib/venue";
 import { Button } from "./button";
+import { toast } from "./toast";
 import { inputBase } from "./ui";
 
 export interface Point {
@@ -50,8 +51,8 @@ export function VenuePicker({ value, onChange, onPickName }: { value: Point | nu
   const [ready, setReady] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[] | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
+  const [locating, setLocating] = useState(false);
 
   useEffect(() => {
     change.current = onChange;
@@ -71,7 +72,6 @@ export function VenuePicker({ value, onChange, onPickName }: { value: Point | nu
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       }).addTo(m);
       m.on("click", (e: Leaflet.LeafletMouseEvent) => {
-        setStatus(null);
         change.current({ lat: roundCoord(e.latlng.lat), lng: roundCoord(e.latlng.lng) });
       });
       map.current = m;
@@ -105,7 +105,6 @@ export function VenuePicker({ value, onChange, onPickName }: { value: Point | nu
       marker.current = L.marker([value.lat, value.lng], { icon, draggable: true, keyboard: false, title: "Titik lokasi" }).addTo(m);
       marker.current.on("dragend", () => {
         const at = marker.current!.getLatLng();
-        setStatus(null);
         change.current({ lat: roundCoord(at.lat), lng: roundCoord(at.lng) });
       });
     } else {
@@ -119,15 +118,14 @@ export function VenuePicker({ value, onChange, onPickName }: { value: Point | nu
 
   async function search() {
     const q = query.trim();
-    if (q.length < 3) return setStatus("Ketik minimal 3 huruf.");
+    if (q.length < 3) return toast.error("Ketik minimal 3 huruf.");
     setSearching(true);
-    setStatus(null);
     try {
       const found = await searchPlaces(q);
       setResults(found);
-      if (found.length === 0) setStatus("Tidak ditemukan. Coba nama lain, atau ketuk langsung di peta.");
+      if (found.length === 0) toast.error("Tidak ditemukan. Coba nama lain, atau ketuk langsung di peta.");
     } catch {
-      setStatus("Pencarian gagal. Periksa internet lalu coba lagi, atau ketuk langsung di peta.");
+      toast.error("Pencarian gagal. Periksa internet lalu coba lagi, atau ketuk langsung di peta.");
     }
     setSearching(false);
   }
@@ -137,20 +135,24 @@ export function VenuePicker({ value, onChange, onPickName }: { value: Point | nu
     onPickName?.(result.name);
     flyTo(result.point);
     setResults(null);
-    setStatus(`Dipilih: ${result.label}`);
+    toast(`Dipilih: ${result.label}`);
   }
 
   function locate() {
-    if (!("geolocation" in navigator)) return setStatus("Perangkat ini tidak mendukung lokasi.");
-    setStatus("Mencari lokasimu…");
+    if (!("geolocation" in navigator)) return toast.error("Perangkat ini tidak mendukung lokasi.");
+    setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const point = { lat: roundCoord(pos.coords.latitude), lng: roundCoord(pos.coords.longitude) };
         onChange(point);
         flyTo(point);
-        setStatus("Titik diatur ke lokasimu sekarang.");
+        setLocating(false);
+        toast("Titik diatur ke lokasimu sekarang.");
       },
-      () => setStatus("Lokasi tidak bisa dibaca. Izinkan akses lokasi atau ketuk di peta."),
+      () => {
+        setLocating(false);
+        toast.error("Lokasi tidak bisa dibaca. Izinkan akses lokasi atau ketuk di peta.");
+      },
       { enableHighAccuracy: true, timeout: 10_000 },
     );
   }
@@ -201,7 +203,7 @@ export function VenuePicker({ value, onChange, onPickName }: { value: Point | nu
         className="isolate h-64 w-full overflow-hidden rounded-2xl border border-ink-black bg-sandstone sm:h-80"
       />
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="secondary" onClick={locate}>
+        <Button variant="secondary" onClick={locate} loading={locating}>
           Pakai lokasiku
         </Button>
         {value && (
@@ -210,9 +212,6 @@ export function VenuePicker({ value, onChange, onPickName }: { value: Point | nu
           </Button>
         )}
       </div>
-      <p className="text-small" aria-live="polite">
-        {status}
-      </p>
       <p className="text-small" data-testid="venue-point">
         {value ? `Pin: ${value.lat}, ${value.lng}` : "Belum ada pin. Cari, ketuk peta, atau pakai lokasimu."}
       </p>

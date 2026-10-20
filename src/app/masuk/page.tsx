@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Card, Notice, Page, SubmitButton, TopBar } from "@/components/ui";
+import { FlashToast } from "@/components/toast";
+import { Card, Page, SubmitButton, TopBar } from "@/components/ui";
 import { getUser } from "@/lib/db/authz";
 import { safeNextPath } from "@/lib/validation";
 import { signInWithGoogle } from "./actions";
@@ -30,7 +31,7 @@ export default async function MasukPage({ searchParams }: PageProps<"/masuk">) {
         <HighFive />
       </div>
 
-      {error && <Notice tone="error">{error}</Notice>}
+      {error && <FlashToast text={error} tone="error" param="error" />}
       <EmailForm next={next} />
 
       <div className="flex items-center gap-3 text-small" aria-hidden="true">

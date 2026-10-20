@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, use, useId, useRef, useState, type ReactNode } from "react";
+import { toast } from "@/components/toast";
 import { Button, Card, Field, Notice, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import { shuttleCost } from "@/lib/core/split";
@@ -19,7 +20,6 @@ type Status = "saved" | "saving" | "error";
 interface ShuttleState {
   counter: Counter;
   status: Status;
-  error: string | null;
   update: (next: Counter) => void;
 }
 
@@ -38,7 +38,6 @@ function useShuttle(): ShuttleState {
 export function ShuttleProvider({ url, initial, defaultPrice, children }: { url: string; initial: Counter; defaultPrice: number | null; children: ReactNode }) {
   const [counter, setCounter] = useState<Counter>({ ...initial, pricePerSlop: initial.pricePerSlop ?? defaultPrice });
   const [status, setStatus] = useState<Status>("saved");
-  const [error, setError] = useState<string | null>(null);
   const latest = useRef(counter);
   const inFlight = useRef(false);
 
@@ -53,13 +52,12 @@ export function ShuttleProvider({ url, initial, defaultPrice, children }: { url:
       if (!result.ok) {
         inFlight.current = false;
         setStatus("error");
-        setError(result.error);
+        toast.error(result.error);
         return;
       }
     } while (sent !== latest.current);
     inFlight.current = false;
     setStatus("saved");
-    setError(null);
   }
 
   function update(next: Counter) {
@@ -68,14 +66,14 @@ export function ShuttleProvider({ url, initial, defaultPrice, children }: { url:
     void flush();
   }
 
-  return <ShuttleContext value={{ counter, status, error, update }}>{children}</ShuttleContext>;
+  return <ShuttleContext value={{ counter, status, update }}>{children}</ShuttleContext>;
 }
 
 const statusLabel = (status: Status) => (status === "saving" ? "Menyimpan…" : status === "error" ? "Belum tersimpan" : "Tersimpan");
 
 /** Penghitung kok ringkas untuk mode fokus skor (admin saja; tidak tampil di skor langsung). */
 export function ShuttleQuick() {
-  const { counter, status, error, update } = useShuttle();
+  const { counter, status, update } = useShuttle();
   return (
     <div className="flex flex-col gap-2 rounded-2xl border border-cream-paper/40 p-3" data-testid="shuttle-quick">
       <div className="flex items-center gap-3">
@@ -92,7 +90,6 @@ export function ShuttleQuick() {
           + Kok
         </Button>
       </div>
-      {error && <Notice tone="error">{error}</Notice>}
     </div>
   );
 }
@@ -100,7 +97,7 @@ export function ShuttleQuick() {
 /** Penghitung kok per slop (§5.5, desain Session "Kok terpakai X dari 12"). */
 export function ShuttleCounter({ flatShuttle }: { flatShuttle: number | null }) {
   const id = useId();
-  const { counter, status, error, update } = useShuttle();
+  const { counter, status, update } = useShuttle();
   const [price, setPrice] = useState(String(counter.pricePerSlop ?? ""));
 
   const cost = counter.pricePerSlop ? shuttleCost({ pricePerSlop: counter.pricePerSlop, used: counter.used, perSlop: counter.perSlop }) : null;
@@ -173,7 +170,6 @@ export function ShuttleCounter({ flatShuttle }: { flatShuttle: number | null }) 
       {flatShuttle !== null && (
         <Notice>Patungan sudah punya biaya kok {formatRupiah(flatShuttle)}. Biaya dari penghitung ini akan ditambahkan terpisah; hapus salah satunya bila dobel.</Notice>
       )}
-      {error && <Notice tone="error">{error}</Notice>}
     </Card>
   );
 }

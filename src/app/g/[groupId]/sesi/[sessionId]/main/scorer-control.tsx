@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { useBusy } from "@/components/busy";
-import { Button, Notice, inputBase } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button, inputBase } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import type { Names } from "./types";
 
@@ -35,21 +36,20 @@ export function ScorerControl({
   const router = useRouter();
   const selectId = useId();
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   useBusy(pending);
   const mine = scorer === viewerId;
   const holder = scorer === null ? "Admin" : mine ? "Kamu" : (names[scorer] ?? "?");
 
   async function assign(memberId: string | null) {
     setPending(true);
-    setError(null);
     const result = await sendJson(url, "PUT", { memberId });
     setPending(false);
     if (!result.ok) {
-      setError(result.error);
+      toast.error(result.error);
       if (result.status === 409) router.refresh();
       return;
     }
+    toast(memberId ? `Pencatat skor: ${names[memberId] ?? "?"}.` : "Pencatat skor kembali ke admin.");
     router.refresh();
   }
 
@@ -98,7 +98,6 @@ export function ScorerControl({
           )}
         </div>
       )}
-      {error && <Notice tone="error">{error}</Notice>}
     </div>
   );
 }

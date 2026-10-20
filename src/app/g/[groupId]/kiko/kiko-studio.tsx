@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { KIKO_FUR_COLORS, KIKO_JERSEY_COLORS, Kiko } from "@/components/kiko";
-import { Button, Card, Notice } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button, Card } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import { KIKO_ACC, KIKO_FUR, KIKO_HAT, KIKO_JERSEY, KIKO_UNLOCK, defaultOutfit, type KikoLevel, type KikoMood, type KikoOutfit, type OutfitPart } from "@/lib/core/mascot";
 
@@ -40,7 +41,6 @@ export function KikoStudio({
   const [pets, setPets] = useState(0);
   const [jumping, setJumping] = useState(false);
   const [pending, setPending] = useState<"save" | "auto" | null>(null);
-  const [message, setMessage] = useState<{ tone: "info" | "error"; text: string } | null>(null);
   const timer = useRef<number | null>(null);
   useEffect(() => () => void (timer.current && window.clearTimeout(timer.current)), []);
 
@@ -56,12 +56,11 @@ export function KikoStudio({
 
   async function save(next: KikoOutfit | null) {
     setPending(next ? "save" : "auto");
-    setMessage(null);
     const result = await sendJson(`/api/groups/${groupId}/kiko`, "PUT", { outfit: next });
     setPending(null);
-    if (!result.ok) return setMessage({ tone: "error", text: result.error });
+    if (!result.ok) return toast.error(result.error);
     if (next === null) setDraft(defaultOutfit(level));
-    setMessage({ tone: "info", text: next ? "Kostum Kiko disimpan." : "Kostum kembali otomatis sesuai level." });
+    toast(next ? "Kostum Kiko disimpan." : "Kostum kembali otomatis sesuai level.");
     router.refresh();
   }
 
@@ -75,7 +74,8 @@ export function KikoStudio({
         <p className="absolute top-4 right-4 left-4 max-w-64 rounded-2xl rounded-bl-sm border border-ink-black bg-pure-white px-3 py-2 text-small" aria-live="polite" data-testid="kiko-bubble">
           {lines[pets % lines.length]}
         </p>
-        <button type="button" onClick={pet} aria-label="Elus Kiko" className="relative mb-2 rounded-full">
+        <button type="button" onClick={pet} className="relative mb-2 rounded-full">
+          <span className="sr-only">Elus Kiko</span>
           <Kiko level={level} mood={mood} outfit={draft} size={220} jumping={jumping} label={`Kiko, Lv ${level} ${levelName}`} />
         </button>
       </div>
@@ -131,7 +131,6 @@ export function KikoStudio({
             </Button>
           )}
         </div>
-        {message && <Notice tone={message.tone}>{message.text}</Notice>}
       </Card>
     </>
   );

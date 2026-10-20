@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
-import { Button, Notice, bleedX } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button, bleedX } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import { chatItems, mergeMessages, type ChatMessage } from "@/lib/chat-view";
 import { CHAT_MAX_LENGTH } from "@/lib/validation";
@@ -33,7 +34,6 @@ export function ChatRoom({
   const [now, setNow] = useState(serverNow);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const state = useRef({ lastId: initial.at(-1)?.id ?? 0, since: serverNow, inflight: false, stickToBottom: true });
@@ -83,10 +83,9 @@ export function ChatRoom({
     const body = draft.trim();
     if (!body || sending) return;
     setSending(true);
-    setError(null);
     const result = await sendJson<ChatMessage>(url, "POST", { body });
     setSending(false);
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
     setDraft("");
     state.current.stickToBottom = true;
     state.current.lastId = Math.max(state.current.lastId, result.data.id);
@@ -94,9 +93,9 @@ export function ChatRoom({
   }
 
   async function remove(id: number) {
-    setError(null);
     const result = await sendJson(`${url}/${id}`, "DELETE");
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
+    toast("Pesan dihapus.");
     setSelected(null);
     state.current.stickToBottom = false;
     setMessages((m) => mergeMessages(m, [], [id]));
@@ -114,7 +113,7 @@ export function ChatRoom({
       setMessages((m) => mergeMessages(m, data.messages));
       setHasMore(data.hasMore);
     } catch {
-      setError("Gagal memuat pesan lama. Coba lagi.");
+      toast.error("Gagal memuat pesan lama. Coba lagi.");
     } finally {
       setLoadingOlder(false);
     }
@@ -183,7 +182,6 @@ export function ChatRoom({
           void send();
         }}
       >
-        {error && <Notice tone="error">{error}</Notice>}
         <div className="flex items-end gap-2">
           <label htmlFor="chat-input" className="sr-only">
             Tulis pesan

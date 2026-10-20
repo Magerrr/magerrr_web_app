@@ -4,14 +4,15 @@ import { admin, uniqueEmail } from "./support";
 test("Google belum diaktifkan → pesan jelas, bukan error mentah", async ({ page }) => {
   await page.goto("/masuk");
   await page.getByRole("button", { name: "Lanjut dengan Google" }).click();
-  await expect(page).toHaveURL(/\/masuk\?error=google/);
-  await expect(page.getByText("Masuk dengan Google belum bisa dipakai. Pakai email dulu.")).toBeVisible();
+  // Pesan tampil sebagai toast, lalu `?error=` dihapus dari URL agar tidak muncul lagi saat dimuat ulang.
+  await expect(page.getByTestId("toast")).toHaveText("Masuk dengan Google belum bisa dipakai. Pakai email dulu.");
+  await expect(page).toHaveURL(/\/masuk\?next=%2F$/);
 });
 
 test("tautan masuk rusak → kembali ke /masuk dengan pesan", async ({ page }) => {
   await page.goto("/auth/callback?code=bukan-kode-valid&next=/grup/baru");
-  await expect(page).toHaveURL(/\/masuk\?error=tautan&next=%2Fgrup%2Fbaru/);
-  await expect(page.getByText("Tautan masuk tidak berlaku atau sudah kedaluwarsa")).toBeVisible();
+  await expect(page.getByTestId("toast")).toContainText("Tautan masuk tidak berlaku atau sudah kedaluwarsa");
+  await expect(page).toHaveURL(/\/masuk\?next=%2Fgrup%2Fbaru$/);
 });
 
 test("next eksternal diabaikan (anti open redirect), lalu keluar", async ({ page, baseURL }) => {

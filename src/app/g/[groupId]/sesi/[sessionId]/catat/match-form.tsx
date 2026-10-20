@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button, Card, Field, Notice, Segmented, inputBase, inputClass } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button, Card, Field, Segmented, inputBase, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import { checkGames, type GameRules } from "@/lib/core/rules";
 import type { GameScore, MatchKind } from "@/lib/core/types";
@@ -49,7 +50,6 @@ export function MatchForm({
       b: initial?.games[i] ? String(initial.games[i].b) : "",
     })),
   );
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   const size = kind === "doubles" ? 2 : 1;
@@ -70,7 +70,6 @@ export function MatchForm({
 
   async function submit() {
     setPending(true);
-    setError(null);
     const body = {
       kind,
       courtNo: courtNo ? Number(courtNo) : null,
@@ -83,10 +82,11 @@ export function MatchForm({
       ? await sendJson(`${base}/${initial.matchId}`, "PATCH", body)
       : await sendJson(base, "POST", body);
     if (!result.ok) {
-      setError(result.error);
+      toast.error(result.error);
       setPending(false);
       return;
     }
+    toast(initial ? "Skor diubah." : "Skor disimpan.");
     router.push(`/g/${groupId}/sesi/${sessionId}/main`);
     router.refresh();
   }
@@ -171,7 +171,6 @@ export function MatchForm({
         </p>
       </Card>
 
-      {error && <Notice tone="error">{error}</Notice>}
       <Button type="submit" size="lg" loading={pending}>
         {pending ? "Menyimpan…" : initial ? "Simpan perubahan" : "Simpan match"}
       </Button>

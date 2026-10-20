@@ -44,7 +44,7 @@ test("Kiko: XP & level dari match, streak mingguan, kostum terkunci per level, t
   await expect(wardrobe.getByRole("radio", { name: /Ikat kepala/ })).toBeDisabled();
   await wardrobe.getByText("Hitam", { exact: true }).first().click();
   await wardrobe.getByRole("button", { name: "Simpan kostum" }).click();
-  await expect(wardrobe.getByText("Kostum Kiko disimpan.")).toBeVisible();
+  await expect(page.getByTestId("toaster").getByText("Kostum Kiko disimpan.")).toBeVisible();
   const saved = async () => (await admin().from("members").select("kiko").eq("id", ids.p1).single()).data!.kiko;
   expect(await saved()).toEqual({ fur: "hitam", hat: "none", acc: "none", jersey: "none" });
 

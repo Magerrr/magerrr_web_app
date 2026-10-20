@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useBusy } from "@/components/busy";
-import { Button, Notice, Spinner } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button, Spinner } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 
 type Rsvp = "going" | "maybe" | "not_going";
@@ -18,16 +19,15 @@ const OPTIONS: { value: Rsvp; label: string }[] = [
 export function RsvpPicker({ url, value }: { url: string; value: Rsvp | null }) {
   const router = useRouter();
   const [current, setCurrent] = useState(value);
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<Rsvp | null>(null);
   useBusy(pending !== null);
 
   async function pick(rsvp: Rsvp) {
     setPending(rsvp);
-    setError(null);
     const result = await sendJson(url, "PUT", { rsvp });
     setPending(null);
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
+    toast("Jawabanmu disimpan.");
     setCurrent(rsvp);
     router.refresh();
   }
@@ -52,7 +52,6 @@ export function RsvpPicker({ url, value }: { url: string; value: Rsvp | null }) 
           </button>
         ))}
       </div>
-      {error && <Notice tone="error">{error}</Notice>}
     </div>
   );
 }
@@ -60,14 +59,14 @@ export function RsvpPicker({ url, value }: { url: string; value: Rsvp | null }) 
 /** Admin: jadikan semua yang menjawab "Ikut" sebagai peserta hadir (tagihan dihitung ulang). */
 export function ApplyRsvp({ url, goingIds }: { url: string; goingIds: string[] }) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   async function apply() {
     if (!window.confirm(`Jadikan ${goingIds.length} orang yang menjawab "Ikut" sebagai peserta hadir? Peserta lain dihapus centangnya.`)) return;
     setPending(true);
     const result = await sendJson(url, "PUT", { memberIds: goingIds });
     setPending(false);
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
+    toast(`${goingIds.length} peserta hadir disimpan.`);
     router.refresh();
   }
   return (
@@ -75,7 +74,6 @@ export function ApplyRsvp({ url, goingIds }: { url: string; goingIds: string[] }
       <Button variant="secondary" onClick={apply} loading={pending} disabled={goingIds.length === 0}>
         Jadikan yang ikut sebagai peserta
       </Button>
-      {error && <Notice tone="error">{error}</Notice>}
     </div>
   );
 }

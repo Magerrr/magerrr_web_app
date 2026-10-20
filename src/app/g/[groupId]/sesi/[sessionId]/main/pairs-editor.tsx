@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Button, Card, Notice } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button, Card } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import type { Names } from "./types";
 
@@ -12,7 +13,6 @@ type Pair = [string, string];
 export function PairsEditor({ url, pairs, present, names, editable }: { url: string; pairs: Pair[]; present: string[]; names: Names; editable: boolean }) {
   const router = useRouter();
   const [draft, setDraft] = useState<Pair[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const name = (id: string) => names[id] ?? "?";
   const paired = new Set((draft ?? pairs).flat());
@@ -20,10 +20,10 @@ export function PairsEditor({ url, pairs, present, names, editable }: { url: str
 
   async function save(body: { auto: true } | { pairs: Pair[] }) {
     setPending(true);
-    setError(null);
     const result = await sendJson(url, "PUT", body);
     setPending(false);
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
+    toast("Pasangan disimpan.");
     setDraft(null);
     router.refresh();
   }
@@ -100,7 +100,6 @@ export function PairsEditor({ url, pairs, present, names, editable }: { url: str
           )}
         </>
       )}
-      {error && <Notice tone="error">{error}</Notice>}
     </Card>
   );
 }

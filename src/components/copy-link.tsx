@@ -1,17 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { Button, Notice } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button } from "@/components/ui";
 
 /** Tombol salin tautan (mis. papan skor langsung untuk grup WhatsApp). */
 export function CopyLink({ url, label, done }: { url: string; label: string; done: string }) {
-  const [message, setMessage] = useState<string | null>(null);
   async function copy() {
     try {
       await navigator.clipboard.writeText(url);
-      setMessage(done);
+      toast(done);
     } catch {
-      setMessage(`Salin manual: ${url}`);
+      toast.error(`Tidak bisa menyalin otomatis. Salin manual: ${url}`);
     }
   }
   return (
@@ -19,7 +18,6 @@ export function CopyLink({ url, label, done }: { url: string; label: string; don
       <Button variant="secondary" onClick={copy} className="self-start">
         {label}
       </Button>
-      {message && <Notice>{message}</Notice>}
     </div>
   );
 }

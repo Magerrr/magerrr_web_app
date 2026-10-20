@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useDragSwap } from "@/components/drag-swap";
 import { Icon } from "@/components/icons";
+import { toast } from "@/components/toast";
 import { Button, Notice, Segmented } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import type { MatchKind } from "@/lib/core/types";
@@ -59,7 +60,6 @@ export function RoundPlanner({
   const [selected, setSelected] = useState<Slot | null>(null);
   /** lapangan kosong yang tidak ikut diisi ronde ini; default semua diisi */
   const [skipped, setSkipped] = useState<number[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<"plan" | "start" | null>(null);
   const base = `/api/groups/${groupId}/sessions/${sessionId}`;
   const chosen = emptyCourts.filter((c) => !skipped.includes(c));
@@ -81,7 +81,6 @@ export function RoundPlanner({
 
   async function plan(nextKind: MatchKind = kind) {
     setPending("plan");
-    setError(null);
     setSelected(null);
     const result = await sendJson<Proposal>(`${base}/plan`, "POST", {
       kind: nextKind,
@@ -89,21 +88,21 @@ export function RoundPlanner({
       ...(skipped.length > 0 ? { courts: chosen } : {}),
     });
     setPending(null);
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
     setProposal(result.data);
   }
 
   async function start() {
     if (!proposal) return;
     setPending("start");
-    setError(null);
     const result = await sendJson(`${base}/matches/start`, "POST", {
       matches: proposal.courts.map(({ courtNo, kind: k, A, B }) => ({ courtNo, kind: k, A, B })),
       seed: proposal.seed,
       queue: rotation ? proposal.waiting : null,
     });
     setPending(null);
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
+    toast(proposal.courts.length > 1 ? `${proposal.courts.length} match dimulai.` : "Match dimulai.");
     setProposal(null);
     router.refresh();
   }
@@ -290,7 +289,6 @@ export function RoundPlanner({
           </div>
         </div>
       )}
-      {error && <Notice tone="error">{error}</Notice>}
     </section>
   );
 }

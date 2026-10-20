@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { useBusy } from "@/components/busy";
 import { textButtonClass } from "@/components/button-class";
-import { Button, Card, Field, Notice, inputClass } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button, Card, Field, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import { resizeImage } from "@/lib/image-resize";
 
@@ -25,14 +26,12 @@ export function MomentUpload({ groupId, sessions }: { groupId: string; sessions:
   const fileRef = useRef<HTMLInputElement>(null);
   const [caption, setCaption] = useState("");
   const [sessionId, setSessionId] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   async function submit() {
     const file = fileRef.current?.files?.[0];
-    if (!file) return setError("Pilih foto dulu.");
+    if (!file) return toast.error("Pilih foto dulu.");
     setPending(true);
-    setError(null);
     const form = new FormData();
     form.set("file", await resizeImage(file, { max: 1600, kind: "photo" }), file.name);
     form.set("caption", caption);
@@ -40,14 +39,15 @@ export function MomentUpload({ groupId, sessions }: { groupId: string; sessions:
     try {
       const response = await fetch(`/api/groups/${groupId}/moments`, { method: "POST", body: form });
       if (!response.ok) {
-        setError((await response.json().catch(() => ({}))).error ?? "Gagal mengunggah. Coba lagi.");
+        toast.error((await response.json().catch(() => ({}))).error ?? "Gagal mengunggah. Coba lagi.");
       } else {
+        toast("Foto diunggah.");
         setCaption("");
         if (fileRef.current) fileRef.current.value = "";
         router.refresh();
       }
     } catch {
-      setError("Tidak ada koneksi. Periksa internet lalu coba lagi.");
+      toast.error("Tidak ada koneksi. Periksa internet lalu coba lagi.");
     }
     setPending(false);
   }
@@ -81,7 +81,6 @@ export function MomentUpload({ groupId, sessions }: { groupId: string; sessions:
             </select>
           </Field>
         )}
-        {error && <Notice tone="error">{error}</Notice>}
         <Button type="submit" loading={pending} className="sm:self-start">
           {pending ? "Mengunggah…" : "Unggah foto"}
         </Button>
@@ -92,17 +91,16 @@ export function MomentUpload({ groupId, sessions }: { groupId: string; sessions:
 
 export function MomentGallery({ groupId, moments }: { groupId: string; moments: MomentView[] }) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   useBusy(busy !== null);
 
   async function remove(id: string) {
     if (!window.confirm("Hapus foto ini?")) return;
     setBusy(id);
-    setError(null);
     const result = await sendJson(`/api/groups/${groupId}/moments/${id}`, "DELETE");
     setBusy(null);
-    if (!result.ok) return setError(result.error);
+    if (!result.ok) return toast.error(result.error);
+    toast("Foto dihapus.");
     router.refresh();
   }
 
@@ -118,7 +116,6 @@ export function MomentGallery({ groupId, moments }: { groupId: string; moments: 
       <h2 id="galeri" className="text-sub">
         {moments.length} foto
       </h2>
-      {error && <Notice tone="error">{error}</Notice>}
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" data-testid="moment-list">
         {moments.map((m) => (
           <li key={m.id} className="min-w-0">
