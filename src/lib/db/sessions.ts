@@ -1,5 +1,6 @@
 import "server-only";
 import type { GameRules } from "@/lib/core/rules";
+import { summarizeRsvp, type RsvpCounts } from "@/lib/core/rsvp";
 import { checkTransition, type SessionStatus } from "@/lib/core/session";
 import { courtCost, type Expense, type SettlementState } from "@/lib/core/split";
 import { HttpError } from "@/lib/http-error";
@@ -7,6 +8,7 @@ import { fromJakartaParts } from "@/lib/time";
 import type { VenueLocation } from "@/lib/venue";
 import { isToken, type SessionCreateInput, type SessionUpdateInput } from "@/lib/validation";
 import { recomputeBill } from "./bill";
+import { recordMetric } from "./metrics";
 import { assignSeasons } from "./seasons";
 import type { Json } from "./database.types";
 import type { GroupSettings } from "./groups";
@@ -20,6 +22,8 @@ export interface SessionSummary {
   courtCount: number;
   status: SessionStatus;
   presentCount: number;
+  /** ringkasan RSVP (S3) */
+  rsvpCounts: RsvpCounts;
 }
 
 export type RsvpStatus = "going" | "not_going" | "maybe";
@@ -60,6 +64,27 @@ export interface SessionDetail extends SessionSummary {
 
 const SUMMARY_COLUMNS = "id, starts_at, duration_min, venue, court_count, status, attendees(count)" as const;
 
+
+/** Ringkasan RSVP tiap sesi: jawaban dari tabel attendees, "belum jawab" = anggota aktif grup dikurangi yang menjawab. */
+async function rsvpCounts(rows: { id: string; group_id: string }[]): Promise<Map<string, RsvpCounts>> {
+  const out = new Map<string, RsvpCounts>();
+  if (rows.length === 0) return out;
+  const db = serviceClient();
+  const groupIds = [...new Set(rows.map((r) => r.group_id))];
+  const [answers, members] = await Promise.all([
+    db.from("attendees").select("session_id, rsvp").in("session_id", rows.map((r) => r.id)).not("rsvp", "is", null),
+    db.from("members").select("group_id").in("group_id", groupIds).eq("is_active", true),
+  ]);
+  if (answers.error) throw answers.error;
+  if (members.error) throw members.error;
+  const memberCount = new Map<string, number>();
+  for (const m of members.data) memberCount.set(m.group_id, (memberCount.get(m.group_id) ?? 0) + 1);
+  const bySession = new Map<string, RsvpStatus[]>();
+  for (const a of answers.data) bySession.set(a.session_id, [...(bySession.get(a.session_id) ?? []), a.rsvp!]);
+  for (const r of rows) out.set(r.id, summarizeRsvp(bySession.get(r.id) ?? [], memberCount.get(r.group_id) ?? 0));
+  return out;
+}
+
 /** Karakter yang bermakna khusus di filter PostgREST `or(...)` / pola ilike dibuang. */
 const searchTerm = (q: string) => q.replace(/[%_,()*\\"'.:]/g, " ").trim().slice(0, 50);
 
@@ -76,8 +101,10 @@ export async function listSessions(groupId: string, q = ""): Promise<SessionSumm
   if (term) query = query.or(`venue.ilike.%${term}%,note.ilike.%${term}%`);
   const { data, error } = await query;
   if (error) throw error;
+  const rsvp = await rsvpCounts(data.map((s) => ({ id: s.id, group_id: groupId })));
   return data.map((s) => ({
     id: s.id,
+    rsvpCounts: rsvp.get(s.id)!,
     startsAt: new Date(s.starts_at),
     durationMin: s.duration_min,
     venue: s.venue,
@@ -105,8 +132,10 @@ export async function listSessionsOfGroups(groupIds: string[], limit = 100): Pro
     .order("starts_at", { ascending: false })
     .limit(limit);
   if (error) throw error;
+  const rsvp = await rsvpCounts(data);
   return data.map((s) => ({
     id: s.id,
+    rsvpCounts: rsvp.get(s.id)!,
     groupId: s.group_id,
     startsAt: new Date(s.starts_at),
     durationMin: s.duration_min,
@@ -130,6 +159,12 @@ export async function getSession(groupId: string, sessionId: string): Promise<Se
     .maybeSingle();
   if (error) throw error;
   if (!s) return null;
+  const { count: memberCount, error: memberError } = await db
+    .from("members")
+    .select("id", { count: "exact", head: true })
+    .eq("group_id", groupId)
+    .eq("is_active", true);
+  if (memberError) throw memberError;
   const presentIds = s.attendees.filter((a) => a.present).map((a) => a.member_id);
   return {
     id: s.id,
@@ -140,6 +175,10 @@ export async function getSession(groupId: string, sessionId: string): Promise<Se
     courtCount: s.court_count,
     status: s.status,
     presentCount: presentIds.length,
+    rsvpCounts: summarizeRsvp(
+      s.attendees.flatMap((a) => (a.rsvp ? [a.rsvp] : [])),
+      memberCount ?? 0,
+    ),
     playMode: s.play_mode,
     rules: s.rules as unknown as GameRules | null,
     matchGames: s.match_games as SessionDetail["matchGames"],
@@ -278,6 +317,7 @@ export async function createSession(group: GroupSettings, actorMemberId: string,
   if (error) throw error;
   // Bagian per orang & transfer untuk biaya awal. Gagal di sini tidak membatalkan sesi:
   // halaman Patungan menawarkan "Hitung ulang" bila tagihan belum sesuai.
+  await recordMetric(group.id, data, "session_created");
   const session = await getSession(group.id, data);
   if (session) await recomputeBill(group, session, actorMemberId).catch((e) => console.error(e));
   await assignSeasons(group.id);
@@ -386,4 +426,5 @@ export async function setStatus(session: SessionDetail, to: SessionStatus): Prom
     .select("id");
   if (error) throw error;
   if (data.length === 0) throw new HttpError(409, "Status sesi sudah berubah. Muat ulang halaman.");
+  if (to === "finished") await recordMetric(session.groupId, session.id, "session_finished");
 }

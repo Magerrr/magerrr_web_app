@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icon } from "@/components/icons";
+import { RsvpSummary } from "@/components/rsvp-summary";
 import { Badge } from "@/components/ui";
 import type { SessionSummary } from "@/lib/db/sessions";
 import { formatShortDateId, formatTimeRangeId } from "@/lib/format";
@@ -50,6 +51,7 @@ export function SessionLink({
         <span className="text-small">
           {s.presentCount} hadir · {s.courtCount} lapangan
         </span>
+        {!compact && s.status !== "finished" && <RsvpSummary counts={s.rsvpCounts} courtCount={s.courtCount} />}
       </span>
       <Badge tone={STATUS_TONE[s.status]}>{STATUS_LABEL[s.status]}</Badge>
     </Link>

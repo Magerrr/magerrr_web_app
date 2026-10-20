@@ -16,6 +16,7 @@ import { describeRules, formatDateId, formatTimeRangeId } from "@/lib/format";
 import { isUuid } from "@/lib/validation";
 import { pageAccess } from "../../access";
 import { PLAY_MODE_LABEL, STATUS_LABEL, STATUS_TONE } from "../status";
+import { RsvpSummary } from "@/components/rsvp-summary";
 import { ApplyRsvp, RsvpPicker } from "./rsvp";
 import { AttendanceEditor, DeleteSession, StatusActions } from "./session-admin";
 
@@ -125,6 +126,7 @@ export default async function SessionPage({ params }: PageProps<"/g/[groupId]/se
                   Kamu ikut?
                 </h2>
                 <RsvpPicker url={`/api/groups/${groupId}/sessions/${session.id}/rsvp`} value={session.rsvp[member.id] ?? null} />
+                <RsvpSummary counts={session.rsvpCounts} courtCount={session.courtCount} />
                 <dl className="flex flex-col gap-2 text-small" data-testid="rsvp-summary">
                   {(
                     [
@@ -143,6 +145,10 @@ export default async function SessionPage({ params }: PageProps<"/g/[groupId]/se
                       </div>
                     );
                   })}
+                  <div className="flex gap-2">
+                    <dt className="w-24 shrink-0">Belum jawab ({session.rsvpCounts.noAnswer})</dt>
+                    <dd className="min-w-0 flex-1">{members.filter((m) => !session.rsvp[m.id]).map((m) => m.display_name).join(", ") || "–"}</dd>
+                  </div>
                 </dl>
                 {editable && (
                   <ApplyRsvp
