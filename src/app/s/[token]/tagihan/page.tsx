@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TrackOpen } from "@/components/track-open";
 import { notFound } from "next/navigation";
 import { BillProgressCard, PaymentInfoList, PeopleTable, TransferList } from "@/components/bill";
 import { SelfReportButton } from "@/components/bill-actions";
@@ -27,6 +28,7 @@ export default async function PublicBillPage({ params }: PageProps<"/s/[token]/t
 
   return (
     <Page width={hasBill ? "wide" : "regular"}>
+      <TrackOpen token={token} />
       <div className="flex flex-col gap-2">
         <p className="text-small">{group.name}</p>
         <h1 className="text-title">Tagihan patungan</h1>

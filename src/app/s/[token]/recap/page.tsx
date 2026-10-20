@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TrackOpen } from "@/components/track-open";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -79,6 +80,7 @@ export default async function RecapPage({ params }: Props) {
 
   return (
     <Page width={showCard ? "wide" : "regular"}>
+      <TrackOpen token={token} />
       {header}
 
       {/* Desktop: kartu recap di kolom kanan (setinggi 4 baris kiri); bagian lain di kiri sesuai urutan DOM. */}

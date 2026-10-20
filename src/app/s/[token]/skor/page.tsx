@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TrackOpen } from "@/components/track-open";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AutoRefresh } from "@/components/auto-refresh";
@@ -61,6 +62,7 @@ export default async function LiveScorePage({ params }: PageProps<"/s/[token]/sk
 
   return (
     <Page width="wide">
+      <TrackOpen token={token} />
       <div className="flex flex-col gap-2">
         <p className="text-small">{group.name}</p>
         <h1 className="text-title">Skor langsung</h1>

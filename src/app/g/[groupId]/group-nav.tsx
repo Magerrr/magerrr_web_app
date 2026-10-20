@@ -36,6 +36,7 @@ export function GroupNav({ groupId, isAdmin, unread }: { groupId: string; isAdmi
     { href: `${base}/anggota`, label: "Anggota", nested: [`${base}/anggota`] },
     { href: `${base}/saldo`, label: "Saldo patungan" },
     { href: `${base}/pembayaran`, label: "Info pembayaran" },
+    ...(isAdmin ? [{ href: `${base}/metrik`, label: "Metrik pemakaian" }] : []),
     ...(isAdmin ? [{ href: `${base}/pengaturan`, label: "Pengaturan grup" }] : []),
   ];
 
