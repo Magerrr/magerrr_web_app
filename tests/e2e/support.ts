@@ -40,7 +40,7 @@ export async function signInViaEmail(page: Page, email: string) {
   await page.getByRole("button", { name: "Kirim tautan masuk" }).click();
   await expect(page.getByText(`Tautan masuk sudah dikirim ke ${email}`)).toBeVisible();
   await page.goto(await magicLinkFromMailpit(page.request, email));
-  await expect(page.getByRole("button", { name: "Keluar" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Profil kamu" })).toBeVisible();
 }
 
 /** Masuk cepat tanpa email: user dibuat via admin API, lalu token_hash diverifikasi di /auth/callback. */
@@ -55,7 +55,7 @@ export async function signInExisting(page: Page, email: string) {
   const { data, error } = await admin().auth.admin.generateLink({ type: "magiclink", email });
   expect(error).toBeNull();
   await page.goto(`/auth/callback?token_hash=${data.properties!.hashed_token}&type=magiclink&next=/`);
-  await expect(page.getByRole("button", { name: "Keluar" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Profil kamu" })).toBeVisible();
 }
 
 /** Buat grup lewat API sebagai pengguna login di `page`; kembalikan id dan kode undangan. */

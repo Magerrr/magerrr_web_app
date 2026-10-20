@@ -16,6 +16,8 @@ import { loadKiko } from "@/lib/db/kiko";
 import { loadGroupMatches } from "@/lib/db/matches";
 import { listMoments } from "@/lib/db/moments";
 import { unpaidGroupSettlements } from "@/lib/db/profile";
+import { ensureSeriesSessions } from "@/lib/db/session-series";
+import { toJakartaParts } from "@/lib/time";
 import { listSessions } from "@/lib/db/sessions";
 import { formatRupiah } from "@/lib/format";
 import { THEME_BG } from "@/lib/group-theme";
@@ -38,6 +40,8 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
   const q = (await searchParams).q;
   const query = typeof q === "string" ? q.trim() : "";
   const { member, via } = access.membership;
+  // Sesi berulang (S5) disiapkan saat grup dibuka, tanpa cron.
+  await ensureSeriesSessions([groupId], toJakartaParts(new Date()).date);
   const [group, sessions, unread, unpaid, moments] = await Promise.all([
     getGroup(groupId),
     listSessions(groupId, query),
@@ -58,28 +62,28 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
   return (
     <Page width="wide">
       {/* Kembali ke beranda pengguna lewat panah di atas (MAGERRR-19), bukan tombol ikon grup. */}
-      <TopBar back="/" backLabel="Kembali ke beranda" />
+      <TopBar back="/" backLabel="Kembali ke beranda" title="Grup" />
       {/*
-        Sampul & logo grup (MAGERRR-8): sampul berasio 3:1, tanpa sampul = pita warna tema; hanya logo yang menumpang di tepi bawah.
+        Sampul & logo grup (MAGERRR-8): sampul berasio 3:1 dan logo menumpang di tepi bawahnya; tanpa sampul = tidak ada latar sampul, logo & nama saja.
         Kepala hanya identitas grup (MAGERRR-20): tanpa sapaan & nama pengguna.
       */}
-      <div className="-mt-2 flex flex-col">
-        <div
-          className={`relative overflow-hidden rounded-2xl border border-ink-black ${THEME_BG[group.theme]} ${group.coverUrl ? "aspect-[3/1] max-h-56 w-full" : "h-14"}`}
-          data-testid="group-cover"
-        >
-          {group.coverUrl && (
+      <div className={`flex flex-col ${group.coverUrl ? "-mt-2" : ""}`}>
+        {group.coverUrl && (
+          <div
+            className={`relative aspect-[3/1] max-h-56 w-full overflow-hidden rounded-2xl border border-ink-black ${THEME_BG[group.theme]}`}
+            data-testid="group-cover"
+          >
             <Image src={group.coverUrl} alt="" fill unoptimized priority sizes="(min-width: 1152px) 1152px, 100vw" className="object-cover" />
-          )}
-        </div>
-        <header className="flex items-start gap-3 px-3">
+          </div>
+        )}
+        <header className={`flex items-start gap-3 ${group.coverUrl ? "px-3" : ""}`}>
           <GroupAvatar
             name={group.name}
             emoji={group.emoji}
             logoUrl={group.logoUrl}
             theme={group.theme}
             size="lg"
-            className="relative -mt-8 border-1 ring-4 ring-cream-paper sm:-mt-10 sm:size-20"
+            className={`relative border-1 sm:size-20 ${group.coverUrl ? "-mt-8 ring-4 ring-cream-paper sm:-mt-10" : ""}`}
           />
           <div className="flex min-w-0 flex-1 flex-col gap-1 pt-2">
             <h1 className="text-sub break-words">{group.name}</h1>

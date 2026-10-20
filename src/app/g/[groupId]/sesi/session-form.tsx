@@ -7,11 +7,13 @@ import { AttendeePicker, type PickerMember } from "@/components/attendee-picker"
 import { CostEstimate } from "@/components/cost-estimate";
 import type { Point } from "@/components/venue-picker";
 import { NumberField, RulesPicker, draftFromRules, rulesFromDraft, toInt } from "@/components/rules-picker";
-import { Button, Card, Field, Notice, Segmented, dateInputClass, inputClass } from "@/components/ui";
+import { toast } from "@/components/toast";
+import { Button, Card, Field, Segmented, dateInputClass, inputClass } from "@/components/ui";
 import { sendJson } from "@/lib/api-client";
 import type { GameRules } from "@/lib/core/rules";
 import { courtCost } from "@/lib/core/split";
 import { formatDurationId } from "@/lib/format";
+import { NO_REPEAT, RepeatFields, repeatBody } from "./repeat-fields";
 import { PLAY_MODE_OPTIONS, type OfferedPlayMode } from "./status";
 
 export interface SessionDefaults {
@@ -84,7 +86,7 @@ export function SessionForm({
   const [selected, setSelected] = useState(new Set(create?.initialSelected ?? []));
   const [courtPerHour, setCourtPerHour] = useState(String(create?.initialCosts?.courtPerHour ?? ""));
   const [shuttle, setShuttle] = useState(String(create?.initialCosts?.shuttle ?? ""));
-  const [error, setError] = useState<string | null>(null);
+  const [repeat, setRepeat] = useState(NO_REPEAT);
   const [pending, setPending] = useState(false);
 
   const perHour = toInt(courtPerHour);
@@ -94,7 +96,6 @@ export function SessionForm({
 
   async function submit() {
     setPending(true);
-    setError(null);
     const details = {
       date,
       time,
@@ -117,12 +118,14 @@ export function SessionForm({
             courtPerHour: courtPerHour.trim() ? perHour : null,
             shuttle: shuttle.trim() ? toInt(shuttle) : null,
           },
+          repeat: repeatBody(repeat),
         });
     if (!result.ok) {
-      setError(result.error);
+      toast.error(result.error);
       setPending(false);
       return;
     }
+    toast(sessionId ? "Sesi diperbarui." : repeat.frequency !== "none" ? "Sesi berulang dibuat." : "Sesi dibuat.");
     router.push(`/g/${groupId}/sesi/${result.data.id}`);
     router.refresh();
   }
@@ -199,6 +202,13 @@ export function SessionForm({
 
       {create && (
         <Card className="flex flex-col gap-4">
+          <h2 className="text-sub">Pengulangan</h2>
+          <RepeatFields id="repeat" anchor={date} value={repeat} onChange={setRepeat} />
+        </Card>
+      )}
+
+      {create && (
+        <Card className="flex flex-col gap-4">
           <h2 className="text-sub">Peserta hadir</h2>
           <AttendeePicker
             groupId={groupId}
@@ -234,7 +244,6 @@ export function SessionForm({
         <textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={3} className="w-full rounded-lg border-1 border-ink-black bg-pure-white px-4 py-3 text-ui" />
       </Field>
 
-      {error && <Notice tone="error">{error}</Notice>}
       {/* CTA lengket di bawah layar (desain "Buat Mabar"); fresh-grass dengan teks ink-black. */}
       <div className="sticky bottom-0 z-10 -mx-5 -mb-16 bg-cream-paper px-5 pt-3 pb-6 sm:-mx-8 sm:px-8 lg:-mb-20">
         <Button type="submit" variant="accent" size="lg" loading={pending}>

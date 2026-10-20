@@ -335,6 +335,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"metric_events": {
+                  Row: {
+                    "created_at": string,"dedupe": string,"event": string,"group_id": string,"id": number,"session_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"dedupe"?: string,"event": string,"group_id": string,"id"?: never,"session_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"dedupe"?: string,"event"?: string,"group_id"?: string,"id"?: never,"session_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "metric_events_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "metric_events_session_id_fkey"
+      columns: ["session_id"]
+isOneToOne: false
+      referencedRelation: "sessions"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"payment_infos": {
                   Row: {
                     "account_name": string | null,"account_no": string | null,"created_at": string,"id": string,"kind": string,"label": string,"member_id": string,"qr_image_path": string | null
@@ -389,16 +415,42 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"sessions": {
+                },"session_templates": {
                   Row: {
-                    "bill_version": number,"court_count": number,"created_at": string,"created_by": string | null,"duration_min": number | null,"fixed_pairs": Json | null,"flat_fee": number | null,"group_id": string,"id": string,"kocok_seed": number | null,"match_games": number | null,"note": string | null,"play_mode": Database["public"]['Enums']["play_mode"],"recap_public": boolean,"rotation_queue": (string)[] | null,"rules": Json | null,"season_id": string | null,"share_token": string,"shuttle_per_slop": number,"shuttle_price_per_slop": number | null,"shuttles_used": number,"starts_at": string,"status": Database["public"]['Enums']["session_status"],"venue": string | null,"venue_lat": number | null,"venue_lng": number | null,"venue_url": string | null
+                    "ahead": number,"anchor_date": string,"court_per_hour": number | null,"created_at": string,"created_by": string,"frequency": string,"group_id": string,"id": string,"last_date": string,"monthly_by": string | null,"paused": boolean,"shuttle_cost": number | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "bill_version"?: number,"court_count"?: number,"created_at"?: string,"created_by"?: string | null,"duration_min"?: number | null,"fixed_pairs"?: Json | null,"flat_fee"?: number | null,"group_id": string,"id"?: string,"kocok_seed"?: number | null,"match_games"?: number | null,"note"?: string | null,"play_mode"?: Database["public"]['Enums']["play_mode"],"recap_public"?: boolean,"rotation_queue"?: (string)[] | null,"rules"?: Json | null,"season_id"?: string | null,"share_token"?: string,"shuttle_per_slop"?: number,"shuttle_price_per_slop"?: number | null,"shuttles_used"?: number,"starts_at": string,"status"?: Database["public"]['Enums']["session_status"],"venue"?: string | null,"venue_lat"?: number | null,"venue_lng"?: number | null,"venue_url"?: string | null
+                    "ahead"?: number,"anchor_date": string,"court_per_hour"?: number | null,"created_at"?: string,"created_by": string,"frequency": string,"group_id": string,"id"?: string,"last_date": string,"monthly_by"?: string | null,"paused"?: boolean,"shuttle_cost"?: number | null
                   }
                   Update: {
-                    "bill_version"?: number,"court_count"?: number,"created_at"?: string,"created_by"?: string | null,"duration_min"?: number | null,"fixed_pairs"?: Json | null,"flat_fee"?: number | null,"group_id"?: string,"id"?: string,"kocok_seed"?: number | null,"match_games"?: number | null,"note"?: string | null,"play_mode"?: Database["public"]['Enums']["play_mode"],"recap_public"?: boolean,"rotation_queue"?: (string)[] | null,"rules"?: Json | null,"season_id"?: string | null,"share_token"?: string,"shuttle_per_slop"?: number,"shuttle_price_per_slop"?: number | null,"shuttles_used"?: number,"starts_at"?: string,"status"?: Database["public"]['Enums']["session_status"],"venue"?: string | null,"venue_lat"?: number | null,"venue_lng"?: number | null,"venue_url"?: string | null
+                    "ahead"?: number,"anchor_date"?: string,"court_per_hour"?: number | null,"created_at"?: string,"created_by"?: string,"frequency"?: string,"group_id"?: string,"id"?: string,"last_date"?: string,"monthly_by"?: string | null,"paused"?: boolean,"shuttle_cost"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "session_templates_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "members"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "session_templates_group_id_fkey"
+      columns: ["group_id"]
+isOneToOne: false
+      referencedRelation: "groups"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"sessions": {
+                  Row: {
+                    "bill_version": number,"court_count": number,"created_at": string,"created_by": string | null,"duration_min": number | null,"fixed_pairs": Json | null,"flat_fee": number | null,"group_id": string,"id": string,"kocok_seed": number | null,"match_games": number | null,"note": string | null,"play_mode": Database["public"]['Enums']["play_mode"],"recap_public": boolean,"rotation_queue": (string)[] | null,"rules": Json | null,"season_id": string | null,"share_token": string,"shuttle_per_slop": number,"shuttle_price_per_slop": number | null,"shuttles_used": number,"starts_at": string,"status": Database["public"]['Enums']["session_status"],"template_date": string | null,"template_id": string | null,"venue": string | null,"venue_lat": number | null,"venue_lng": number | null,"venue_url": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "bill_version"?: number,"court_count"?: number,"created_at"?: string,"created_by"?: string | null,"duration_min"?: number | null,"fixed_pairs"?: Json | null,"flat_fee"?: number | null,"group_id": string,"id"?: string,"kocok_seed"?: number | null,"match_games"?: number | null,"note"?: string | null,"play_mode"?: Database["public"]['Enums']["play_mode"],"recap_public"?: boolean,"rotation_queue"?: (string)[] | null,"rules"?: Json | null,"season_id"?: string | null,"share_token"?: string,"shuttle_per_slop"?: number,"shuttle_price_per_slop"?: number | null,"shuttles_used"?: number,"starts_at": string,"status"?: Database["public"]['Enums']["session_status"],"template_date"?: string | null,"template_id"?: string | null,"venue"?: string | null,"venue_lat"?: number | null,"venue_lng"?: number | null,"venue_url"?: string | null
+                  }
+                  Update: {
+                    "bill_version"?: number,"court_count"?: number,"created_at"?: string,"created_by"?: string | null,"duration_min"?: number | null,"fixed_pairs"?: Json | null,"flat_fee"?: number | null,"group_id"?: string,"id"?: string,"kocok_seed"?: number | null,"match_games"?: number | null,"note"?: string | null,"play_mode"?: Database["public"]['Enums']["play_mode"],"recap_public"?: boolean,"rotation_queue"?: (string)[] | null,"rules"?: Json | null,"season_id"?: string | null,"share_token"?: string,"shuttle_per_slop"?: number,"shuttle_price_per_slop"?: number | null,"shuttles_used"?: number,"starts_at"?: string,"status"?: Database["public"]['Enums']["session_status"],"template_date"?: string | null,"template_id"?: string | null,"venue"?: string | null,"venue_lat"?: number | null,"venue_lng"?: number | null,"venue_url"?: string | null
                   }
                   Relationships: [
                     {
@@ -418,6 +470,12 @@ isOneToOne: false
       columns: ["season_id"]
 isOneToOne: false
       referencedRelation: "seasons"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "sessions_template_id_fkey"
+      columns: ["template_id"]
+isOneToOne: false
+      referencedRelation: "session_templates"
       referencedColumns: ["id"]
     }
                   ]
@@ -531,6 +589,12 @@ isOneToOne: true
                            },
 "create_session":
 { Args: { "p_attendees": (string)[],"p_creator": string,"p_expenses": Json,"p_group": string,"p_session": Json }; Returns: string
+                           },
+"create_series_session":
+{ Args: { "p_date": string,"p_expenses": Json,"p_series": string,"p_source": string }; Returns: string
+                           },
+"create_session_series":
+{ Args: { "p_creator": string,"p_series": Json,"p_session": string }; Returns: string
                            },
 "create_tournament":
 { Args: { "p_advance_count": number,"p_created_by": string,"p_entries": Json,"p_format": string,"p_group_count": number,"p_kind": Database["public"]['Enums']["match_kind"],"p_name": string,"p_seeding": string,"p_session": string }; Returns: string

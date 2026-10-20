@@ -3,6 +3,7 @@ import { z } from "zod";
 import { MAX_ENTRIES } from "@/lib/core/bracket";
 import { TOURNAMENT_FORMATS } from "@/lib/core/tournament";
 import { KIKO_ACC, KIKO_FUR, KIKO_HAT, KIKO_JERSEY } from "@/lib/core/mascot";
+import { MAX_AHEAD } from "@/lib/core/recurrence";
 import { assertValidRules } from "@/lib/core/rules";
 import { formatRupiah } from "@/lib/format";
 import { GROUP_THEMES } from "@/lib/group-theme";
@@ -145,6 +146,18 @@ const sessionDetailsShape = {
   note: optionalText(500, "Catatan maksimal 500 karakter."),
 };
 
+/** Sesi berulang (PRD S5): mingguan, atau bulanan pada tanggal sama / hari sama di minggu ke-N. */
+const repeatShape = {
+  frequency: z.enum(["weekly", "monthly"]),
+  monthlyBy: z.enum(["date", "weekday"]).nullable(),
+  /** jumlah sesi mendatang yang selalu disiapkan */
+  ahead: z.int("Jumlah sesi harus bilangan bulat.").min(1, "Minimal 1 sesi.").max(MAX_AHEAD, `Maksimal ${MAX_AHEAD} sesi.`),
+};
+const monthlyByMatches = (r: { frequency: string; monthlyBy: string | null }) => (r.frequency === "monthly") === (r.monthlyBy !== null);
+const MONTHLY_BY_ISSUE = { path: ["monthlyBy"], message: "Pilih cara ulang bulanan." };
+export const repeatSchema = z.object(repeatShape).strict().refine(monthlyByMatches, MONTHLY_BY_ISSUE);
+export type RepeatInput = z.infer<typeof repeatSchema>;
+
 export const sessionCreateSchema = z
   .object({
     ...sessionDetailsShape,
@@ -156,6 +169,8 @@ export const sessionCreateSchema = z
         shuttle: rupiahSchema.nullable(),
       })
       .strict(),
+    /** null/kosong = tidak berulang */
+    repeat: repeatSchema.nullish(),
   })
   .strict();
 export type SessionCreateInput = z.infer<typeof sessionCreateSchema>;
@@ -298,6 +313,8 @@ export type SeasonInput = z.infer<typeof seasonSchema>;
 export const recapSettingsSchema = z.object({ public: z.boolean() }).strict();
 
 /** Event bagikan dari klien; sesi dikenali lewat token halaman publiknya. */
+export const openEventSchema = z.object({ token: z.string().regex(TOKEN, "Token tidak valid.") }).strict();
+
 export const shareEventSchema = z
   .object({
     event: z.enum(["bill_shared", "recap_shared"]),
@@ -410,3 +427,17 @@ export const flatFeeSchema = z
     flatFee: z.int("Iuran harus bilangan bulat.").min(1, "Iuran minimal Rp1.").max(10_000_000, "Iuran terlalu besar.").nullable(),
   })
   .strict();
+
+/** Ubah seri sesi berulang: jeda/lanjutkan, atau pengulangan + biaya default. */
+export const seriesPatchSchema = z.union([
+  z.object({ paused: z.boolean() }).strict(),
+  z
+    .object({
+      ...repeatShape,
+      courtPerHour: rupiahSchema.nullable(),
+      shuttleCost: rupiahSchema.nullable(),
+    })
+    .strict()
+    .refine(monthlyByMatches, MONTHLY_BY_ISSUE),
+]);
+export type SeriesPatchInput = z.infer<typeof seriesPatchSchema>;

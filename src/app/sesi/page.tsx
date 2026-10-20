@@ -3,7 +3,9 @@ import Link from "next/link";
 import { Card, Page, TopBar, textLinkClass } from "@/components/ui";
 import { getUser } from "@/lib/db/authz";
 import { listMyGroups } from "@/lib/db/groups";
+import { ensureSeriesSessions } from "@/lib/db/session-series";
 import { listSessionsOfGroups, type GroupSessionSummary } from "@/lib/db/sessions";
+import { toJakartaParts } from "@/lib/time";
 import { activeSessions } from "@/lib/session-order";
 import { SessionLink } from "../g/[groupId]/session-link";
 
@@ -12,6 +14,7 @@ export const metadata: Metadata = { title: "Semua sesi" };
 /** Semua sesi dari grup pengunjung (akun & tamu), tujuan "Lihat semua sesi" di beranda (MAGERRR-13). */
 export default async function AllSessionsPage() {
   const groups = await listMyGroups(await getUser());
+  await ensureSeriesSessions(groups.map((g) => g.id), toJakartaParts(new Date()).date);
   const sessions = await listSessionsOfGroups(groups.map((g) => g.id));
   const groupName = new Map(groups.map((g) => [g.id, g.name]));
   const now = new Date();
