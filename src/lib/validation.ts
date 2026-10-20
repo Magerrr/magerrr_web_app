@@ -298,6 +298,8 @@ export type SeasonInput = z.infer<typeof seasonSchema>;
 export const recapSettingsSchema = z.object({ public: z.boolean() }).strict();
 
 /** Event bagikan dari klien; sesi dikenali lewat token halaman publiknya. */
+export const openEventSchema = z.object({ token: z.string().regex(TOKEN, "Token tidak valid.") }).strict();
+
 export const shareEventSchema = z
   .object({
     event: z.enum(["bill_shared", "recap_shared"]),
@@ -410,3 +412,22 @@ export const flatFeeSchema = z
     flatFee: z.int("Iuran harus bilangan bulat.").min(1, "Iuran minimal Rp1.").max(10_000_000, "Iuran terlalu besar.").nullable(),
   })
   .strict();
+
+/** Template sesi mingguan (PRD S5). Hari 0 = Minggu … 6 = Sabtu; jam dinding WIB. */
+export const sessionTemplateSchema = z
+  .object({
+    weekday: z.int("Hari tidak valid.").min(0, "Hari tidak valid.").max(6, "Hari tidak valid."),
+    startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Jam mulai tidak valid."),
+    endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Jam selesai tidak valid."),
+    venue: optionalText(80, "Nama tempat maksimal 80 karakter."),
+    courtCount: z.int().min(1, "Minimal 1 lapangan.").max(12, "Maksimal 12 lapangan."),
+    playMode: z.enum(PLAY_MODES),
+    courtPerHour: rupiahSchema.nullable(),
+    shuttleCost: rupiahSchema.nullable(),
+    leadDays: z.int("Hari sebelum harus bilangan bulat.").min(1, "Minimal 1 hari sebelum.").max(14, "Maksimal 14 hari sebelum."),
+  })
+  .strict()
+  .refine((t) => t.endTime > t.startTime, { path: ["endTime"], message: "Jam selesai harus setelah jam mulai." });
+export type SessionTemplateInput = z.infer<typeof sessionTemplateSchema>;
+
+export const sessionTemplatePatchSchema = z.union([z.object({ paused: z.boolean() }).strict(), sessionTemplateSchema]);

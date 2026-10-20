@@ -28,7 +28,7 @@ export default defineConfig({
     command: `npm run build && npm run start -- --port ${PORT}`,
     url: baseURL,
     // Tautan undangan & magic link harus menunjuk ke server test ini.
-    env: { NEXT_PUBLIC_SITE_URL: baseURL },
+    env: { NEXT_PUBLIC_SITE_URL: baseURL, CRON_SECRET: "e2e-cron-secret" },
     reuseExistingServer: !process.env.CI,
     timeout: 300_000,
   },
