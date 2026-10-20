@@ -93,7 +93,7 @@ export function Kiko({ level, mood, outfit, size = 200, jumping = false, silhoue
               <path d="M63 140 Q100 120 137 140 L135 172 Q100 185 65 172 Z" fill={silhouette ? INK : jersey.fill} />
               <path d="M90 127 L100 137 L110 127" stroke="#ffffff" strokeOpacity="0.7" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
               {!silhouette && (
-                <text x="100" y="167" textAnchor="middle" fontFamily="Inter, sans-serif" fontWeight="500" fontSize="22" fill={jersey.number}>
+                <text aria-hidden="true" x="100" y="167" textAnchor="middle" fontFamily="Inter, sans-serif" fontWeight="500" fontSize="22" fill={jersey.number}>
                   {level}
                 </text>
               )}
@@ -148,10 +148,10 @@ export function Kiko({ level, mood, outfit, size = 200, jumping = false, silhoue
             (mood === "sleepy" && !jumping ? (
               <g>
                 <path d="M71 79 q9 6 18 0M111 79 q9 6 18 0" stroke={INK} strokeWidth="3.5" strokeLinecap="round" />
-                <text className="kiko-zzz" x="150" y="44" fontFamily="Inter, sans-serif" fontWeight="500" fontSize="16" fill={INK}>
+                <text aria-hidden="true" className="kiko-zzz" x="150" y="44" fontFamily="Inter, sans-serif" fontWeight="500" fontSize="16" fill={INK}>
                   z
                 </text>
-                <text className="kiko-zzz kiko-zzz-late" x="162" y="30" fontFamily="Inter, sans-serif" fontWeight="500" fontSize="12" fill={INK}>
+                <text aria-hidden="true" className="kiko-zzz kiko-zzz-late" x="162" y="30" fontFamily="Inter, sans-serif" fontWeight="500" fontSize="12" fill={INK}>
                   z
                 </text>
               </g>
