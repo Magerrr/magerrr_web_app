@@ -1,6 +1,6 @@
 // Antrian tulis skor offline (BUILD_PLAN Fase 9): skor live & "Simpan hasil" disimpan di perangkat
 // (localStorage) sampai server menerimanya, sehingga tidak hilang walau halaman dimuat ulang saat offline.
-// Murni terhadap `Storage` yang diberikan, agar bisa diuji tanpa peramban.
+// Murni terhadap `Storage` yang diberikan, agar bisa diuji tanpa Perangkat.
 
 export type PendingKind = "score" | "complete";
 

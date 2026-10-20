@@ -1,5 +1,5 @@
-// Perkecil foto di peramban sebelum diunggah (logo, sampul, momen grup): hemat kuota data & Storage.
-// Foto HP bisa 5–12 MB; hasil kanvas JPEG/WebP ±100–500 KB. Bila peramban tidak mendukung, berkas asli dikirim
+// Perkecil foto di Perangkat sebelum diunggah (logo, sampul, momen grup): hemat kuota data & Storage.
+// Foto HP bisa 5–12 MB; hasil kanvas JPEG/WebP ±100–500 KB. Bila Perangkat tidak mendukung, berkas asli dikirim
 // (server tetap memeriksa ukuran & jenis).
 
 export interface ResizeOptions {
@@ -31,7 +31,7 @@ export async function resizeImage(file: File, options: ResizeOptions): Promise<B
   try {
     bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
   } catch {
-    return file; // bukan gambar yang bisa dibaca peramban → biar server yang menolak
+    return file; // bukan gambar yang bisa dibaca Perangkat → biar server yang menolak
   }
   const { src, dst } = fitBox(bitmap.width, bitmap.height, options);
   const canvas = document.createElement("canvas");

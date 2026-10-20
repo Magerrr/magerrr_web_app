@@ -10,7 +10,7 @@ const subscribe = (onChange: () => void) => {
 
 /** Tombol layar penuh (Fullscreen API bila tersedia) + layar tetap menyala untuk papan di samping lapangan. */
 export function DisplayTools() {
-  // Server: tanpa tombol (dukungan baru diketahui di peramban) agar tidak ada tombol mati.
+  // Server: tanpa tombol (dukungan baru diketahui di Perangkat) agar tidak ada tombol mati.
   const supported = useSyncExternalStore(subscribe, () => document.fullscreenEnabled, () => false);
   const full = useSyncExternalStore(subscribe, () => document.fullscreenElement !== null, () => false);
 
@@ -19,7 +19,7 @@ export function DisplayTools() {
       if (document.fullscreenElement) await document.exitFullscreen();
       else await document.documentElement.requestFullscreen();
     } catch {
-      // Ditolak peramban (mis. iframe): biarkan, pengguna masih bisa memakai F11 / menu peramban.
+      // Ditolak Perangkat (mis. iframe): biarkan, pengguna masih bisa memakai F11 / menu Perangkat.
     }
   }
 

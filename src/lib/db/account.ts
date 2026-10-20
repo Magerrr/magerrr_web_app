@@ -5,7 +5,7 @@ import { serviceClient } from "./supabase";
 
 /** Bucket privat foto profil akun (migrasi 0020); dibaca lewat route server. */
 const AVATAR_BUCKET = "profile-media";
-/** Batas setelah diperkecil di peramban (512px persegi); server tetap memeriksa. */
+/** Batas setelah diperkecil di Perangkat (512px persegi); server tetap memeriksa. */
 export const MAX_AVATAR_BYTES = 1024 * 1024;
 
 export interface Account {
@@ -17,7 +17,7 @@ export interface Account {
 
 const version = (path: string) => path.split("/").pop()?.split(".")[0] ?? "";
 
-/** URL foto profil sendiri; `v` berubah tiap unggahan agar cache peramban tidak usang. */
+/** URL foto profil sendiri; `v` berubah tiap unggahan agar cache Perangkat tidak usang. */
 export const ownAvatarUrl = (path: string | null) => (path ? `/api/profil/foto?v=${version(path)}` : null);
 
 /** URL foto anggota grup yang terhubung ke akun (dibuka sesama anggota). */

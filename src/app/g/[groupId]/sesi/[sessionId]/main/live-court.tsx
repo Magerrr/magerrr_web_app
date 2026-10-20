@@ -189,7 +189,7 @@ const subscribeFocus = (l: () => void) => {
 
 /**
  * Mode fokus: kartu skor menutupi seluruh layar (dan memakai Fullscreen API bila tersedia) agar pencatat hanya
- * melihat kontrol skor. Esc atau keluar dari layar penuh peramban juga menutup mode fokus.
+ * melihat kontrol skor. Esc atau keluar dari layar penuh Perangkat juga menutup mode fokus.
  */
 function useFocusMode(court: string) {
   const focus = useSyncExternalStore(subscribeFocus, () => readFocused() === court, () => false);
@@ -229,7 +229,7 @@ function useFocusMode(court: string) {
       await document.documentElement.requestFullscreen();
       usedFullscreen.current = true;
     } catch {
-      // Ditolak peramban: mode fokus tetap menutupi halaman tanpa layar penuh.
+      // Ditolak Perangkat: mode fokus tetap menutupi halaman tanpa layar penuh.
     }
   }
 

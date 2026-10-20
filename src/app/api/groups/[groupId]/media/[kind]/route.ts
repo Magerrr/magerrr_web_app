@@ -17,7 +17,7 @@ export const GET = route<RouteContext<"/api/groups/[groupId]/media/[kind]">>(asy
   return imageResponse(await readGroupImage(groupId, k));
 });
 
-/** Unggah logo / sampul (admin; multipart `file`). Gambar sudah diperkecil di peramban. */
+/** Unggah logo / sampul (admin; multipart `file`). Gambar sudah diperkecil di Perangkat. */
 export const POST = route<RouteContext<"/api/groups/[groupId]/media/[kind]">>(async (request, { params }) => {
   const { groupId, kind } = await params;
   const k = imageKind(kind);

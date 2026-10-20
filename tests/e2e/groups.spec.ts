@@ -15,7 +15,7 @@ test("host daftar via email, buat grup, tamu gabung lewat tautan undangan", asyn
   const inviteUrl = await page.getByTestId("invite-url").inputValue();
   expect(inviteUrl).toMatch(/\/gabung\/[0-9a-f]{32}$/);
 
-  // Tamu: konteks peramban lain, tanpa akun.
+  // Tamu: konteks Perangkat lain, tanpa akun.
   const guestContext = await browser.newContext();
   const guest = await guestContext.newPage();
   await guest.goto(inviteUrl);
