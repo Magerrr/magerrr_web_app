@@ -10,12 +10,12 @@ export const MEDIA_BUCKET = "group-media";
 export type GroupImageKind = "logo" | "cover";
 export const GROUP_IMAGE_KINDS: readonly GroupImageKind[] = ["logo", "cover"];
 
-/** Batas setelah diperkecil di peramban (logo 512px, sampul 1600px); server tetap memeriksa. */
+/** Batas setelah diperkecil di Perangkat (logo 512px, sampul 1600px); server tetap memeriksa. */
 export const MAX_IMAGE_BYTES: Record<GroupImageKind, number> = { logo: 1024 * 1024, cover: 3 * 1024 * 1024 };
 const LABEL: Record<GroupImageKind, string> = { logo: "Logo", cover: "Gambar sampul" };
 const COLUMN = { logo: "logo_path", cover: "cover_path" } as const;
 
-/** URL gambar grup lewat route server; `v` berubah tiap unggahan agar cache peramban tidak usang. */
+/** URL gambar grup lewat route server; `v` berubah tiap unggahan agar cache Perangkat tidak usang. */
 export function groupImageUrl(groupId: string, kind: GroupImageKind, path: string | null): string | null {
   if (!path) return null;
   const version = path.split("/").pop()?.split(".")[0] ?? "";

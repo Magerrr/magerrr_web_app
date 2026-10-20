@@ -178,7 +178,7 @@ export default async function GroupPage({ params, searchParams }: PageProps<"/g/
             {via === "guest" && guestToken && (
               <Card className="flex flex-col gap-3" data-testid="claim-card">
                 <h2 className="text-lead">Simpan riwayatmu ke akun</h2>
-                <p className="text-small">Kamu bergabung sebagai tamu di peramban ini. Masuk dengan akun agar statistik dan tagihanmu bisa dibuka dari perangkat lain.</p>
+                <p className="text-small">Kamu bergabung sebagai tamu di Perangkat ini. Masuk dengan akun agar statistik dan tagihanmu bisa dibuka dari perangkat lain.</p>
                 <ButtonLink href={`/klaim/${guestToken}`} variant="secondary">
                   Klaim profil
                 </ButtonLink>

@@ -6,7 +6,7 @@ import { isGroupAdmin } from "./authz";
 import { MEDIA_BUCKET, readImageFile, readMedia } from "./group-media";
 import { serviceClient } from "./supabase";
 
-/** Foto momen setelah diperkecil di peramban (1600px JPEG ± 300 KB); server tetap membatasi. */
+/** Foto momen setelah diperkecil di Perangkat (1600px JPEG ± 300 KB); server tetap membatasi. */
 export const MAX_MOMENT_BYTES = 3 * 1024 * 1024;
 /** Batas unggah per anggota agar kuota Storage grup tidak habis oleh satu orang. */
 const DAILY_LIMIT = 20;

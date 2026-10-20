@@ -14,7 +14,7 @@ const COPY: Record<Kind, { title: string; hint: string; resize: Parameters<typeo
   cover: { title: "Gambar sampul", hint: "Tampil lebar di atas beranda grup (rasio 3:1).", resize: { max: 1600, kind: "photo" } },
 };
 
-/** Unggah / ganti / hapus logo & gambar sampul grup (MAGERRR-8). Foto diperkecil di peramban dulu. */
+/** Unggah / ganti / hapus logo & gambar sampul grup (MAGERRR-8). Foto diperkecil di Perangkat dulu. */
 export function GroupImages({ groupId, logoUrl, coverUrl }: { groupId: string; logoUrl: string | null; coverUrl: string | null }) {
   return (
     <Card className="flex flex-col gap-5">

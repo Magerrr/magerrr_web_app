@@ -10,7 +10,7 @@ export const GET = route(async () => {
   return imageResponse(await readAvatar(user.id));
 });
 
-/** Unggah foto profil (multipart `file`). Foto sudah dipotong persegi & diperkecil di peramban. */
+/** Unggah foto profil (multipart `file`). Foto sudah dipotong persegi & diperkecil di Perangkat. */
 export const POST = route(async (request) => {
   const user = await requireUser();
   if (!request.headers.get("content-type")?.toLowerCase().startsWith("multipart/form-data")) {

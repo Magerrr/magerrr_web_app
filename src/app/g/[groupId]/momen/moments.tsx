@@ -19,7 +19,7 @@ export interface MomentView {
   canDelete: boolean;
 }
 
-/** Form unggah foto momen: foto diperkecil di peramban (sisi terpanjang 1600px, JPEG) sebelum dikirim. */
+/** Form unggah foto momen: foto diperkecil di Perangkat (sisi terpanjang 1600px, JPEG) sebelum dikirim. */
 export function MomentUpload({ groupId, sessions }: { groupId: string; sessions: { id: string; label: string }[] }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);

@@ -34,7 +34,7 @@ export function route<C>(handler: Handler<C>): Handler<C> {
   };
 }
 
-/** Peramban selalu mengirim Origin pada POST/PATCH/DELETE; klien non-peramban tidak membawa cookie korban. */
+/** Perangkat selalu mengirim Origin pada POST/PATCH/DELETE; klien non-Perangkat tidak membawa cookie korban. */
 function assertSameOrigin(request: Request): void {
   const origin = request.headers.get("origin");
   if (!origin) return;

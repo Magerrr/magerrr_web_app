@@ -31,7 +31,7 @@ export function JoinForm({ url, defaultName, withAccount }: { url: string; defau
       <Field
         label="Nama panggilan"
         htmlFor="displayName"
-        hint={withAccount ? "Nama yang tampil di skor dan klasemen grup." : "Tanpa akun. Peramban ini akan mengingatmu selama setahun."}
+        hint={withAccount ? "Nama yang tampil di skor dan klasemen grup." : "Tanpa akun. Perangkat ini akan mengingatmu selama setahun."}
       >
         <input
           id="displayName"

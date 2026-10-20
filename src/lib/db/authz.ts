@@ -43,7 +43,7 @@ export async function clearGuestCookie(groupId: string): Promise<void> {
   (await cookies()).delete(guestCookieName(groupId));
 }
 
-/** Pasangan (groupId, claimToken) dari semua cookie tamu di peramban ini. */
+/** Pasangan (groupId, claimToken) dari semua cookie tamu di Perangkat ini. */
 export async function guestCookies(): Promise<{ groupId: string; token: string }[]> {
   return (await cookies())
     .getAll()
