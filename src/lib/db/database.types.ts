@@ -443,14 +443,14 @@ isOneToOne: false
                   ]
                 },"sessions": {
                   Row: {
-                    "bill_version": number,"court_count": number,"created_at": string,"created_by": string | null,"duration_min": number | null,"fixed_pairs": Json | null,"flat_fee": number | null,"group_id": string,"id": string,"kocok_seed": number | null,"match_games": number | null,"note": string | null,"play_mode": Database["public"]['Enums']["play_mode"],"recap_public": boolean,"rotation_queue": (string)[] | null,"rules": Json | null,"season_id": string | null,"share_token": string,"shuttle_per_slop": number,"shuttle_price_per_slop": number | null,"shuttles_used": number,"starts_at": string,"status": Database["public"]['Enums']["session_status"],"template_date": string | null,"template_id": string | null,"venue": string | null,"venue_lat": number | null,"venue_lng": number | null,"venue_url": string | null
+                    "bill_version": number,"court_count": number,"created_at": string,"created_by": string | null,"duration_min": number | null,"fixed_pairs": Json | null,"flat_fee": number | null,"group_id": string,"id": string,"is_listed": boolean,"kocok_seed": number | null,"match_games": number | null,"note": string | null,"play_mode": Database["public"]['Enums']["play_mode"],"recap_public": boolean,"rotation_queue": (string)[] | null,"rules": Json | null,"season_id": string | null,"share_token": string,"shuttle_per_slop": number,"shuttle_price_per_slop": number | null,"shuttles_used": number,"starts_at": string,"status": Database["public"]['Enums']["session_status"],"template_date": string | null,"template_id": string | null,"venue": string | null,"venue_lat": number | null,"venue_lng": number | null,"venue_url": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "bill_version"?: number,"court_count"?: number,"created_at"?: string,"created_by"?: string | null,"duration_min"?: number | null,"fixed_pairs"?: Json | null,"flat_fee"?: number | null,"group_id": string,"id"?: string,"kocok_seed"?: number | null,"match_games"?: number | null,"note"?: string | null,"play_mode"?: Database["public"]['Enums']["play_mode"],"recap_public"?: boolean,"rotation_queue"?: (string)[] | null,"rules"?: Json | null,"season_id"?: string | null,"share_token"?: string,"shuttle_per_slop"?: number,"shuttle_price_per_slop"?: number | null,"shuttles_used"?: number,"starts_at": string,"status"?: Database["public"]['Enums']["session_status"],"template_date"?: string | null,"template_id"?: string | null,"venue"?: string | null,"venue_lat"?: number | null,"venue_lng"?: number | null,"venue_url"?: string | null
+                    "bill_version"?: number,"court_count"?: number,"created_at"?: string,"created_by"?: string | null,"duration_min"?: number | null,"fixed_pairs"?: Json | null,"flat_fee"?: number | null,"group_id": string,"id"?: string,"is_listed"?: boolean,"kocok_seed"?: number | null,"match_games"?: number | null,"note"?: string | null,"play_mode"?: Database["public"]['Enums']["play_mode"],"recap_public"?: boolean,"rotation_queue"?: (string)[] | null,"rules"?: Json | null,"season_id"?: string | null,"share_token"?: string,"shuttle_per_slop"?: number,"shuttle_price_per_slop"?: number | null,"shuttles_used"?: number,"starts_at": string,"status"?: Database["public"]['Enums']["session_status"],"template_date"?: string | null,"template_id"?: string | null,"venue"?: string | null,"venue_lat"?: number | null,"venue_lng"?: number | null,"venue_url"?: string | null
                   }
                   Update: {
-                    "bill_version"?: number,"court_count"?: number,"created_at"?: string,"created_by"?: string | null,"duration_min"?: number | null,"fixed_pairs"?: Json | null,"flat_fee"?: number | null,"group_id"?: string,"id"?: string,"kocok_seed"?: number | null,"match_games"?: number | null,"note"?: string | null,"play_mode"?: Database["public"]['Enums']["play_mode"],"recap_public"?: boolean,"rotation_queue"?: (string)[] | null,"rules"?: Json | null,"season_id"?: string | null,"share_token"?: string,"shuttle_per_slop"?: number,"shuttle_price_per_slop"?: number | null,"shuttles_used"?: number,"starts_at"?: string,"status"?: Database["public"]['Enums']["session_status"],"template_date"?: string | null,"template_id"?: string | null,"venue"?: string | null,"venue_lat"?: number | null,"venue_lng"?: number | null,"venue_url"?: string | null
+                    "bill_version"?: number,"court_count"?: number,"created_at"?: string,"created_by"?: string | null,"duration_min"?: number | null,"fixed_pairs"?: Json | null,"flat_fee"?: number | null,"group_id"?: string,"id"?: string,"is_listed"?: boolean,"kocok_seed"?: number | null,"match_games"?: number | null,"note"?: string | null,"play_mode"?: Database["public"]['Enums']["play_mode"],"recap_public"?: boolean,"rotation_queue"?: (string)[] | null,"rules"?: Json | null,"season_id"?: string | null,"share_token"?: string,"shuttle_per_slop"?: number,"shuttle_price_per_slop"?: number | null,"shuttles_used"?: number,"starts_at"?: string,"status"?: Database["public"]['Enums']["session_status"],"template_date"?: string | null,"template_id"?: string | null,"venue"?: string | null,"venue_lat"?: number | null,"venue_lng"?: number | null,"venue_url"?: string | null
                   }
                   Relationships: [
                     {
@@ -605,6 +605,9 @@ isOneToOne: true
 "delete_session":
 { Args: { "p_session": string }; Returns: undefined
                            },
+"join_public_session":
+{ Args: { "p_display_name": string,"p_session": string,"p_user": string }; Returns: { claim_token: string, group_id: string, member_id: string }[]
+                           },
 "delete_tournament":
 { Args: { "p_tournament": string }; Returns: undefined
                            },
@@ -625,6 +628,9 @@ isOneToOne: true
                            },
 "request_actor":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"rsvp_going":
+{ Args: { "p_member": string,"p_session": string }; Returns: undefined
                            },
 "save_bill":
 { Args: { "p_expense": Json,"p_op": string,"p_present": (string)[],"p_session": string,"p_settlements": Json,"p_shares": Json,"p_version": number }; Returns: number

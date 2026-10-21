@@ -81,10 +81,12 @@ create table sessions (                      -- satu kali mabar
   status        session_status not null default 'planned',
   share_token   text not null unique default gen_token(),-- halaman publik sesi/tagihan/recap
   recap_public  boolean not null default true,
+  is_listed     boolean not null default true,           -- tampil di /jelajah bila grup publik (migrasi 0027)
   created_by    uuid references members(id),
   created_at    timestamptz not null default now()
 );
 create index on sessions (group_id, starts_at desc);
+create index sessions_planned_idx on sessions (starts_at) where status = 'planned';
 
 create table attendees (
   session_id    uuid not null references sessions(id) on delete cascade,
