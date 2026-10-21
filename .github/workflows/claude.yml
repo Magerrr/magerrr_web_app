@@ -54,7 +54,7 @@ jobs:
           # or https://code.claude.com/docs/en/cli-reference for available options
           claude_args: |
             --max-turns 30
-            --allowedTools "Bash(gh issue create:*),Bash(gh issue comment:*),Bash(gh issue list:*),Bash(gh issue view:*),Bash(npm ci),Bash(npm run lint),Bash(npm run typecheck),Bash(npm run test:*),Bash(npm run build)"
+            --allowedTools "Bash(gh issue create:*),Bash(gh issue comment:*),Bash(gh issue list:*),Bash(gh issue view:*),Bash(npm:*),Bash(npx:*)"
         env:
           GH_TOKEN: ${{ github.token }}
 
