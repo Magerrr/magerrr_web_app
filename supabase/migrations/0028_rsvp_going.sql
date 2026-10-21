@@ -1,4 +1,4 @@
--- 0027 — RSVP "ikut" atomik untuk Jelajah (MAGERRR-19). Mengunci baris sesi, menolak sesi selesai, lalu upsert kehadiran
+-- 0028 — RSVP "ikut" atomik untuk Jelajah (MAGERRR-19). Mengunci baris sesi, menolak sesi selesai, lalu upsert kehadiran
 -- dengan rsvp = going. Idempoten: memanggil ulang tidak menggandakan baris dan tidak mengubah kolom present.
 
 create or replace function public.rsvp_going(p_session uuid, p_member uuid) returns void

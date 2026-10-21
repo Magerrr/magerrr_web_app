@@ -83,7 +83,7 @@ export function FeaturedSession({
           </li>
         )}
       </ul>
-      {s.status !== "finished" && <RsvpSummary counts={s.rsvpCounts} courtCount={s.courtCount} />}
+      {s.status !== "finished" && <RsvpSummary counts={s.rsvpCounts} courtCount={s.courtCount} compact />}
       <div className="mt-auto flex items-center justify-between gap-3">
         <p className="text-small">
           {s.presentCount} hadir · {s.courtCount} lapangan
