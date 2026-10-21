@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { courtFit, summarizeRsvp } from "./rsvp";
+import { courtFit, joinBlockReason, summarizeRsvp } from "./rsvp";
+
+describe("joinBlockReason", () => {
+  const startsAt = new Date("2026-10-21T10:00:00Z");
+  it("terbuka sebelum dan selama sesi", () => {
+    expect(joinBlockReason({ status: "planned", startsAt, durationMin: 120 }, new Date("2026-10-21T09:00:00Z"))).toBeNull();
+    expect(joinBlockReason({ status: "running", startsAt, durationMin: 120 }, new Date("2026-10-21T11:59:00Z"))).toBeNull();
+  });
+  it("menolak sesi selesai dan sesi yang sudah lewat", () => {
+    expect(joinBlockReason({ status: "finished", startsAt, durationMin: 120 }, new Date("2026-10-21T09:00:00Z"))).toBe("Sesi ini sudah selesai.");
+    expect(joinBlockReason({ status: "planned", startsAt, durationMin: 120 }, new Date("2026-10-21T12:00:00Z"))).toBe("Sesi ini sudah lewat.");
+  });
+});
 
 describe("summarizeRsvp", () => {
   it("0 jawaban: semua belum menjawab", () => {
