@@ -29,6 +29,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
+          
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
 
       - name: Run Claude Code
         id: claude
@@ -47,8 +53,8 @@ jobs:
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://code.claude.com/docs/en/cli-reference for available options
           claude_args: |
-            --max-turns 15
-            --allowedTools "Bash(gh issue create:*),Bash(gh issue comment:*),Bash(gh issue list:*),Bash(gh issue view:*)"
+            --max-turns 30
+            --allowedTools "Bash(gh issue create:*),Bash(gh issue comment:*),Bash(gh issue list:*),Bash(gh issue view:*),Bash(npm:*),Bash(npx:*)"
         env:
           GH_TOKEN: ${{ github.token }}
 
