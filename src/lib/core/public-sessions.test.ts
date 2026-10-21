@@ -1,7 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { joinBlocker, quotaLabel, rangeFor } from "./public-sessions";
+import { joinBlocker, quotaLabel, rangeFor, rangeFromParams } from "./public-sessions";
 
 const iso = (r: { from: Date; to: Date } | null) => r && [r.from.toISOString(), r.to.toISOString()];
+
+describe("rangeFromParams", () => {
+  const now = new Date("2026-10-21T01:00:00Z");
+  it("today / week / date", () => {
+    expect(iso(rangeFromParams("today", undefined, now))).toEqual(iso(rangeFor({ kind: "today" }, now)));
+    expect(iso(rangeFromParams("week", undefined, now))).toEqual(iso(rangeFor({ kind: "week" }, now)));
+    expect(rangeFromParams("date", "2026-10-24", now)?.from.toISOString()).toBe("2026-10-23T17:00:00.000Z");
+  });
+  it("nilai asing, tanggal kosong, atau tidak valid → null", () => {
+    expect(rangeFromParams(undefined, undefined, now)).toBeNull();
+    expect(rangeFromParams("semua", "2026-10-24", now)).toBeNull();
+    expect(rangeFromParams("date", undefined, now)).toBeNull();
+    expect(rangeFromParams("date", "2026-02-31", now)).toBeNull();
+  });
+});
 
 describe("rangeFor", () => {
   it("hari ini WIB (Rabu 21 Okt 2026 08.00 WIB)", () => {

@@ -197,6 +197,9 @@ export const rsvpSchema = z.object({ rsvp: z.enum(["going", "not_going", "maybe"
 
 export const sessionStatusSchema = z.object({ status: z.enum(["running", "finished"]) }).strict();
 
+/** Tampil/sembunyikan sesi dari pencarian publik (Jelajah, #15). */
+export const sessionListedSchema = z.object({ listed: z.boolean() }).strict();
+
 const teamSchema = z.array(uuidSchema).min(1).max(2);
 const gameSchema = z.object({ a: z.int().min(0).max(99), b: z.int().min(0).max(99) }).strict();
 const kindSchema = z.enum(["doubles", "singles"]);

@@ -21,7 +21,7 @@ import { PLAY_MODE_LABEL, STATUS_LABEL, STATUS_TONE } from "../status";
 import { RsvpSummary } from "@/components/rsvp-summary";
 import { ApplyRsvp, RsvpPicker } from "./rsvp";
 import { SeriesPanel } from "./series-panel";
-import { AttendanceEditor, DeleteSession, StatusActions } from "./session-admin";
+import { AttendanceEditor, DeleteSession, ListedToggle, StatusActions } from "./session-admin";
 
 export const metadata: Metadata = { title: "Sesi" };
 
@@ -208,6 +208,10 @@ export default async function SessionPage({ params }: PageProps<"/g/[groupId]/se
               isAdmin={isAdmin}
               canStart={session.status !== "finished"}
             />
+
+            {isAdmin && group.isPublic && session.status === "planned" && (
+              <ListedToggle groupId={groupId} sessionId={session.id} listed={session.isListed} />
+            )}
 
             {isAdmin && (
               <DeleteSession
