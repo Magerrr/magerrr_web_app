@@ -26,7 +26,7 @@ vi.mock("@/lib/db/members", () => ({
   },
 }));
 vi.mock("@/lib/db/sessions", () => ({
-  findPublicSession: async () => db.session,
+  findPublicSessionRef: async () => db.session,
   rsvpGoing: async (_session: string, memberId: string) => void db.going.add(memberId),
 }));
 

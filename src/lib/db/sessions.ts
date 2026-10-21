@@ -63,6 +63,8 @@ export interface SessionDetail extends SessionSummary {
   location: VenueLocation;
   /** seri sesi berulang (S5); null = tidak berulang */
   seriesId: string | null;
+  /** tampil di pencarian publik bila grupnya publik (#15); false = disembunyikan admin */
+  isListed: boolean;
 }
 
 const SUMMARY_COLUMNS = "id, starts_at, duration_min, venue, court_count, status, attendees(count)" as const;
@@ -155,7 +157,7 @@ export async function getSession(groupId: string, sessionId: string): Promise<Se
   const { data: s, error } = await db
     .from("sessions")
     .select(
-      "id, group_id, starts_at, duration_min, venue, venue_url, venue_lat, venue_lng, court_count, status, play_mode, rules, match_games, note, created_by, rotation_queue, share_token, recap_public, shuttle_price_per_slop, shuttle_per_slop, shuttles_used, fixed_pairs, flat_fee, template_id, attendees(member_id, present, rsvp), expenses(id, name, amount, paid_by, mode, preset, split_all, meta)",
+      "id, group_id, starts_at, duration_min, venue, venue_url, venue_lat, venue_lng, court_count, status, play_mode, rules, match_games, note, created_by, rotation_queue, share_token, recap_public, shuttle_price_per_slop, shuttle_per_slop, shuttles_used, fixed_pairs, flat_fee, template_id, is_listed, attendees(member_id, present, rsvp), expenses(id, name, amount, paid_by, mode, preset, split_all, meta)",
     )
     .eq("id", sessionId)
     .eq("group_id", groupId)
@@ -197,6 +199,7 @@ export async function getSession(groupId: string, sessionId: string): Promise<Se
     flatFee: s.flat_fee,
     location: { url: s.venue_url, lat: s.venue_lat, lng: s.venue_lng },
     seriesId: s.template_id,
+    isListed: s.is_listed,
     expenses: s.expenses.map((e) => ({
       id: e.id,
       name: e.name,
@@ -391,13 +394,14 @@ export interface PublicSessionRef {
   status: SessionStatus;
 }
 
-/** Sesi milik grup publik lewat id sesi saja (Jelajah); grup privat atau sesi tidak ada → null, tanpa membedakan keduanya. */
-export async function findPublicSession(sessionId: string): Promise<PublicSessionRef | null> {
+/** Sesi milik grup publik lewat id sesi saja (Jelajah); grup privat, sesi tersembunyi, atau tidak ada → null, tanpa membedakan ketiganya. */
+export async function findPublicSessionRef(sessionId: string): Promise<PublicSessionRef | null> {
   const { data, error } = await serviceClient()
     .from("sessions")
     .select("id, group_id, starts_at, duration_min, status, groups!inner(is_public)")
     .eq("id", sessionId)
     .eq("groups.is_public", true)
+    .eq("is_listed", true)
     .maybeSingle();
   if (error) throw error;
   if (!data) return null;
@@ -443,6 +447,12 @@ export async function lastShuttlePrice(groupId: string): Promise<number | null> 
 
 export async function setRecapPublic(session: SessionDetail, value: boolean): Promise<void> {
   const { error } = await serviceClient().from("sessions").update({ recap_public: value }).eq("id", session.id);
+  if (error) throw error;
+}
+
+/** Tampil/sembunyikan sesi dari pencarian publik. Trigger audit_session_listed menulis audit_log (pelaku dari header). */
+export async function setListed(session: SessionDetail, listed: boolean, actorId: string): Promise<void> {
+  const { error } = await serviceClient(actorId).from("sessions").update({ is_listed: listed }).eq("id", session.id);
   if (error) throw error;
 }
 
