@@ -267,3 +267,16 @@ Test vector — Oktober = match §2 (M1–M3, satu sesi s1); September: M0 A=[p4
 - `rankChanges` vs September (p3, p4 peringkat 1 bersama; p1, p2 peringkat 3 bersama): p2 1 (dari 3, +2), p1 2 (dari 3, +1), p3 3 (dari 1, −2), p4 4 (dari 1, −3). Tanpa pembanding → semua `previousRank`/`change` null.
 - Periode tanpa match → totals 0, semua sorotan null, `podium`/`rankChanges` kosong.
 - `previousMonth({2027,1})` → `{2026,12}`; `previousSeasonId([{a,'2026-01-01'},{b,'2026-04-01'},{c,'2026-07-01'}], 'c')` → b, untuk a → null.
+
+## 8. Sesi publik `rangeFor`, `joinBlocker`, `quotaLabel` (#15, P1)
+
+Fungsi murni di `src/lib/core/public-sessions.ts`; waktu (`now`) selalu argumen. Batas hari memakai `Asia/Jakarta` (UTC+7), rentang setengah-terbuka `[from, to)`.
+- `rangeFor(today)`: 00.00 WIB hari `now` s.d. 00.00 hari berikutnya. `week`: Senin 00.00 s.d. Senin berikutnya 00.00 WIB. `date YYYY-MM-DD`: hari itu; format/tanggal tidak valid → `null`.
+- `joinBlocker(ctx, now)` → pesan atau `null`. Urutan cek: wasit → dibatalkan → selesai → sudah bergabung → `planned` dengan `startsAt < now` (lewat).
+- `quotaLabel(joined, quota)`: `quota` null/≤0 → "N pemain"; sisa > 0 → "N slot tersisa"; selain itu "Penuh".
+
+Test vector (`now` = 2026-10-21T01:00Z = Rabu 08.00 WIB):
+- today → [2026-10-20T17:00Z, 2026-10-21T17:00Z); week → [2026-10-18T17:00Z, 2026-10-25T17:00Z); date 2026-10-09 → [2026-10-08T17:00Z, 2026-10-09T17:00Z); `2026-02-30` → null.
+- `now` 2026-10-20T23:30Z → today mulai 2026-10-20T17:00Z. Minggu 2026-10-25T10:00Z → pekan mulai 2026-10-18T17:00Z; Senin 2026-10-25T17:00Z → pekan baru.
+- `joinBlocker`: wasit → "Wasit tidak bisa bergabung sebagai pemain."; cancelled → "Sesi ini dibatalkan."; finished → "Sesi ini sudah selesai."; planned lewat → "Sesi ini sudah lewat."; sudah bergabung → "Kamu sudah bergabung di sesi ini."; planned masa depan / running → null.
+- `quotaLabel(5,8)` "3 slot tersisa"; `(8,8)` dan `(9,8)` "Penuh"; `(5,null)` "5 pemain".
