@@ -29,6 +29,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
+          
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
 
       - name: Run Claude Code
         id: claude
@@ -48,7 +54,7 @@ jobs:
           # or https://code.claude.com/docs/en/cli-reference for available options
           claude_args: |
             --max-turns 30
-            --allowedTools "Bash(gh issue create:*),Bash(gh issue comment:*),Bash(gh issue list:*),Bash(gh issue view:*)"
+            --allowedTools "Bash(gh issue create:*),Bash(gh issue comment:*),Bash(gh issue list:*),Bash(gh issue view:*),Bash(npm ci),Bash(npm run lint),Bash(npm run typecheck),Bash(npm run test:*),Bash(npm run build)"
         env:
           GH_TOKEN: ${{ github.token }}
 
