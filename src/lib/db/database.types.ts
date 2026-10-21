@@ -626,6 +626,9 @@ isOneToOne: true
 "request_actor":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
+"rsvp_going":
+{ Args: { "p_member": string,"p_session": string }; Returns: undefined
+                           },
 "save_bill":
 { Args: { "p_expense": Json,"p_op": string,"p_present": (string)[],"p_session": string,"p_settlements": Json,"p_shares": Json,"p_version": number }; Returns: number
                            },

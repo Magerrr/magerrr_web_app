@@ -382,6 +382,34 @@ export async function setRsvp(session: SessionDetail, memberId: string, rsvp: Rs
   if (error) throw error;
 }
 
+export interface PublicSessionRef {
+  id: string;
+  groupId: string;
+  startsAt: Date;
+  durationMin: number | null;
+  status: SessionStatus;
+}
+
+/** Sesi milik grup publik lewat id sesi saja (Jelajah); grup privat atau sesi tidak ada → null, tanpa membedakan keduanya. */
+export async function findPublicSession(sessionId: string): Promise<PublicSessionRef | null> {
+  const { data, error } = await serviceClient()
+    .from("sessions")
+    .select("id, group_id, starts_at, duration_min, status, groups!inner(is_public)")
+    .eq("id", sessionId)
+    .eq("groups.is_public", true)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return { id: data.id, groupId: data.group_id, startsAt: new Date(data.starts_at), durationMin: data.duration_min, status: data.status };
+}
+
+/** RSVP "ikut" atomik (RPC rsvp_going): idempoten, menolak sesi selesai. */
+export async function rsvpGoing(sessionId: string, memberId: string): Promise<void> {
+  const { error } = await serviceClient().rpc("rsvp_going", { p_session: sessionId, p_member: memberId });
+  if (error?.code === "P0001") throw new HttpError(422, "Sesi ini sudah selesai.");
+  if (error) throw error;
+}
+
 /** Pasangan tetap (mode fix_pasangan). Panggil setelah validasi pasangan & kehadiran. */
 export async function setFixedPairs(session: SessionDetail, pairs: [string, string][]): Promise<void> {
   assertEditable(session);

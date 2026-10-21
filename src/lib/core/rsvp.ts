@@ -36,3 +36,16 @@ export function courtFit(courtCount: number, going: number): CourtFit {
   if (diff < 0) return { kind: "short", diff: -diff, label: `Kurang ${-diff} pemain` };
   return { kind: "enough", diff: 0, label: "Cukup" };
 }
+
+/**
+ * Alasan sesi tidak bisa diikuti lewat Jelajah, atau null bila masih terbuka. `now` diberikan pemanggil.
+ * Sesi dianggap lewat setelah jam mulai + durasi (bawaan 120 menit bila durasi kosong).
+ */
+export function joinBlockReason(
+  session: { status: "planned" | "running" | "finished"; startsAt: Date; durationMin: number | null },
+  now: Date,
+): string | null {
+  if (session.status === "finished") return "Sesi ini sudah selesai.";
+  if (session.startsAt.getTime() + (session.durationMin ?? 120) * 60_000 <= now.getTime()) return "Sesi ini sudah lewat.";
+  return null;
+}
