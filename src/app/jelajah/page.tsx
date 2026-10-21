@@ -6,23 +6,56 @@ import { Icon } from "@/components/icons";
 import { Card, Page, TopBar, buttonClass, inputBase } from "@/components/ui";
 import { listPublicGroups } from "@/lib/db/groups";
 import { THEME_BG } from "@/lib/group-theme";
+import { SessionsTab } from "./sessions-tab";
 
-export const metadata: Metadata = { title: "Jelajahi grup" };
+export const metadata: Metadata = { title: "Jelajahi" };
 
-/** Daftar grup publik (MAGERRR-6): siapa pun bisa melihat dan bergabung tanpa tautan undangan. */
+const TABS = [
+  { key: "grup", label: "Grup", href: "/jelajah" },
+  { key: "sesi", label: "Sesi", href: "/jelajah?tab=sesi" },
+] as const;
+
+/** Jelajah publik: tab Grup (MAGERRR-6, bergabung tanpa tautan undangan) dan tab Sesi (#15-D, pratinjau sesi publik). */
 export default async function ExplorePage({ searchParams }: PageProps<"/jelajah">) {
-  const q = (await searchParams).q;
-  const query = typeof q === "string" ? q.trim() : "";
-  const groups = await listPublicGroups(query);
+  const params = await searchParams;
+  const tab = params.tab === "sesi" ? "sesi" : "grup";
 
   return (
     <Page>
       <TopBar back="/" />
       <div className="flex flex-col gap-2">
-        <h1 className="text-title">Jelajahi grup</h1>
-        <p className="text-ui">Grup mabar yang terbuka untuk umum. Gabung tanpa tautan undangan.</p>
+        <h1 className="text-title">{tab === "sesi" ? "Jelajahi sesi" : "Jelajahi grup"}</h1>
+        <p className="text-ui">
+          {tab === "sesi"
+            ? "Sesi mabar publik yang akan datang. Lihat dulu tanpa perlu masuk."
+            : "Grup mabar yang terbuka untuk umum. Gabung tanpa tautan undangan."}
+        </p>
       </div>
 
+      <nav aria-label="Jenis hasil" className="grid grid-cols-2 gap-1 rounded-2xl border border-ink-black bg-pure-white p-1">
+        {TABS.map((t) => (
+          <Link
+            key={t.key}
+            href={t.href}
+            aria-current={t.key === tab ? "page" : undefined}
+            className="inline-flex min-h-11 items-center justify-center rounded-lg px-3 py-2 text-ui text-ink-black aria-[current=page]:bg-ink-black aria-[current=page]:text-cream-paper"
+          >
+            {t.label}
+          </Link>
+        ))}
+      </nav>
+
+      {tab === "sesi" ? <SessionsTab searchParams={params} /> : <GroupsTab q={params.q} />}
+    </Page>
+  );
+}
+
+async function GroupsTab({ q }: { q: string | string[] | undefined }) {
+  const query = typeof q === "string" ? q.trim() : "";
+  const groups = await listPublicGroups(query);
+
+  return (
+    <>
       <form role="search" className="flex gap-2">
         <label htmlFor="cari-grup" className="sr-only">
           Cari nama grup
@@ -61,6 +94,6 @@ export default async function ExplorePage({ searchParams }: PageProps<"/jelajah"
           ))}
         </ul>
       )}
-    </Page>
+    </>
   );
 }
