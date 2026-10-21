@@ -6,7 +6,7 @@ import { courtCost, type Expense, type SettlementState } from "@/lib/core/split"
 import { HttpError } from "@/lib/http-error";
 import { fromJakartaParts } from "@/lib/time";
 import type { VenueLocation } from "@/lib/venue";
-import { isToken, type SessionCreateInput, type SessionUpdateInput } from "@/lib/validation";
+import { isToken, isUuid, type SessionCreateInput, type SessionUpdateInput } from "@/lib/validation";
 import { recomputeBill } from "./bill";
 import { recordMetric } from "./metrics";
 import { assignSeasons } from "./seasons";
@@ -458,4 +458,129 @@ export async function setStatus(session: SessionDetail, to: SessionStatus): Prom
   if (error) throw error;
   if (data.length === 0) throw new HttpError(409, "Status sesi sudah berubah. Muat ulang halaman.");
   if (to === "finished") await recordMetric(session.groupId, session.id, "session_finished");
+}
+
+export type PlayMode = SessionDetail["playMode"];
+
+/** Kartu sesi publik (/jelajah). Sengaja tanpa nama peserta, skor, biaya, dan share_token. */
+export interface PublicSession {
+  id: string;
+  groupId: string;
+  groupName: string;
+  groupEmoji: string | null;
+  startsAt: Date;
+  durationMin: number | null;
+  venue: string | null;
+  courtCount: number;
+  playMode: PlayMode;
+  /** peserta yang menjawab "ikut" */
+  goingCount: number;
+}
+
+export interface PublicSessionFilter {
+  /** cari nama grup / tempat */
+  query?: string;
+  /** hari main, YYYY-MM-DD (WIB) */
+  date?: string;
+  playMode?: PlayMode;
+}
+
+const PUBLIC_SESSION_LIMIT = 50;
+const PLAY_MODES: readonly PlayMode[] = ["kocok", "rotasi", "fix_pasangan", "round_robin"];
+const PUBLIC_SESSION_COLUMNS =
+  "id, group_id, starts_at, duration_min, venue, court_count, play_mode, groups!inner(name, emoji), attendees(count)" as const;
+
+type PublicSessionRow = {
+  id: string;
+  group_id: string;
+  starts_at: string;
+  duration_min: number | null;
+  venue: string | null;
+  court_count: number;
+  play_mode: PlayMode;
+  groups: { name: string; emoji: string | null };
+  attendees: { count: number }[];
+};
+
+function toPublicSession(row: PublicSessionRow): PublicSession {
+  return {
+    id: row.id,
+    groupId: row.group_id,
+    groupName: row.groups.name,
+    groupEmoji: row.groups.emoji,
+    startsAt: new Date(row.starts_at),
+    durationMin: row.duration_min,
+    venue: row.venue,
+    courtCount: row.court_count,
+    playMode: row.play_mode,
+    goingCount: row.attendees[0]?.count ?? 0,
+  };
+}
+
+/** Sesi Rencana mendatang dari grup publik yang tidak disembunyikan; hanya ini yang boleh keluar ke publik. */
+function publicSessionQuery() {
+  return serviceClient()
+    .from("sessions")
+    .select(PUBLIC_SESSION_COLUMNS)
+    .eq("status", "planned")
+    .eq("is_listed", true)
+    .eq("groups.is_public", true)
+    .eq("attendees.rsvp", "going")
+    .gte("starts_at", new Date().toISOString());
+}
+
+/** Daftar sesi publik untuk /jelajah, waktu mulai terdekat dulu, paling banyak 50. */
+export async function listPublicSessions(filter: PublicSessionFilter = {}): Promise<PublicSession[]> {
+  let request = publicSessionQuery().order("starts_at", { ascending: true }).limit(PUBLIC_SESSION_LIMIT);
+
+  if (filter.playMode && PLAY_MODES.includes(filter.playMode)) request = request.eq("play_mode", filter.playMode);
+
+  if (filter.date) {
+    const from = fromJakartaParts(filter.date, "00:00");
+    if (!from) return [];
+    request = request.gte("starts_at", from.toISOString()).lt("starts_at", new Date(from.getTime() + 86_400_000).toISOString());
+  }
+
+  const term = searchTerm(filter.query ?? "");
+  if (term) {
+    const { data: groups, error: groupError } = await serviceClient()
+      .from("groups")
+      .select("id")
+      .eq("is_public", true)
+      .ilike("name", `%${term}%`)
+      .limit(PUBLIC_SESSION_LIMIT);
+    if (groupError) throw groupError;
+    const ids = groups.map((g) => g.id);
+    request = request.or(ids.length > 0 ? `venue.ilike.%${term}%,group_id.in.(${ids.join(",")})` : `venue.ilike.%${term}%`);
+  }
+
+  const { data, error } = await request;
+  if (error) throw error;
+  return data.map(toPublicSession);
+}
+
+/** Satu sesi publik (halaman pratinjau & gabung), atau null bila tidak ada / tidak lagi tampil. */
+export async function findPublicSession(sessionId: string): Promise<PublicSession | null> {
+  if (!isUuid(sessionId)) return null;
+  const { data, error } = await publicSessionQuery().eq("id", sessionId).maybeSingle();
+  if (error) throw error;
+  return data && toPublicSession(data);
+}
+
+/** Gabung ke grup publik + RSVP "ikut" dalam satu transaksi (idempoten). claimToken hanya untuk tamu baru. */
+export async function joinPublicSession(
+  sessionId: string,
+  displayName: string,
+  userId: string | null,
+): Promise<{ groupId: string; memberId: string; claimToken: string | null }> {
+  const { data, error } = await serviceClient().rpc("join_public_session", {
+    p_session: sessionId,
+    p_display_name: displayName,
+    p_user: userId as string,
+  });
+  if (error?.message.includes("session_not_open")) throw new HttpError(404, "Sesi ini sudah tidak dibuka untuk umum.");
+  if (error?.code === "23505") throw new HttpError(409, "Nama ini sudah dipakai di grup. Coba nama lain.");
+  if (error) throw error;
+  const row = data[0];
+  return { groupId: row.group_id, memberId: row.member_id, claimToken: row.claim_token };
 }
