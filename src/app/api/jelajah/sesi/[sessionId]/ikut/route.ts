@@ -3,7 +3,7 @@ import { canPlay } from "@/lib/core/roles";
 import { joinBlockReason } from "@/lib/core/rsvp";
 import { getMembership, getUser, setGuestCookie } from "@/lib/db/authz";
 import { joinGroup } from "@/lib/db/members";
-import { findPublicSession, rsvpGoing } from "@/lib/db/sessions";
+import { findPublicSessionRef, rsvpGoing } from "@/lib/db/sessions";
 import { HttpError } from "@/lib/http-error";
 import { isUuid, joinSchema } from "@/lib/validation";
 
@@ -16,7 +16,7 @@ const NOT_FOUND = "Sesi tidak ditemukan atau grupnya privat.";
  */
 export const POST = route<RouteContext<"/api/jelajah/sesi/[sessionId]/ikut">>(async (request, { params }) => {
   const { sessionId } = await params;
-  const session = isUuid(sessionId) ? await findPublicSession(sessionId) : null;
+  const session = isUuid(sessionId) ? await findPublicSessionRef(sessionId) : null;
   if (!session) throw new HttpError(404, NOT_FOUND);
 
   const blocked = joinBlockReason(session, new Date());

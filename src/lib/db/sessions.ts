@@ -391,7 +391,7 @@ export interface PublicSessionRef {
 }
 
 /** Sesi milik grup publik lewat id sesi saja (Jelajah); grup privat atau sesi tidak ada → null, tanpa membedakan keduanya. */
-export async function findPublicSession(sessionId: string): Promise<PublicSessionRef | null> {
+export async function findPublicSessionRef(sessionId: string): Promise<PublicSessionRef | null> {
   const { data, error } = await serviceClient()
     .from("sessions")
     .select("id, group_id, starts_at, duration_min, status, groups!inner(is_public)")
