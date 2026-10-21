@@ -2,9 +2,10 @@ import "server-only";
 import type { GameRules } from "@/lib/core/rules";
 import { summarizeRsvp, type RsvpCounts } from "@/lib/core/rsvp";
 import { checkTransition, type SessionStatus } from "@/lib/core/session";
+import type { DateRange } from "@/lib/core/public-sessions";
+import { fromJakartaParts } from "@/lib/time";
 import { courtCost, type Expense, type SettlementState } from "@/lib/core/split";
 import { HttpError } from "@/lib/http-error";
-import { fromJakartaParts } from "@/lib/time";
 import type { VenueLocation } from "@/lib/venue";
 import { isToken, isUuid, type SessionCreateInput, type SessionUpdateInput } from "@/lib/validation";
 import { recomputeBill } from "./bill";
@@ -490,8 +491,8 @@ export interface PublicSession {
 export interface PublicSessionFilter {
   /** cari nama grup / tempat */
   query?: string;
-  /** hari main, YYYY-MM-DD (WIB) */
-  date?: string;
+  /** rentang waktu mulai [from, to) */
+  range?: DateRange;
   playMode?: PlayMode;
 }
 
@@ -545,11 +546,7 @@ export async function listPublicSessions(filter: PublicSessionFilter = {}): Prom
 
   if (filter.playMode && PLAY_MODES.includes(filter.playMode)) request = request.eq("play_mode", filter.playMode);
 
-  if (filter.date) {
-    const from = fromJakartaParts(filter.date, "00:00");
-    if (!from) return [];
-    request = request.gte("starts_at", from.toISOString()).lt("starts_at", new Date(from.getTime() + 86_400_000).toISOString());
-  }
+  if (filter.range) request = request.gte("starts_at", filter.range.from.toISOString()).lt("starts_at", filter.range.to.toISOString());
 
   const term = searchTerm(filter.query ?? "");
   if (term) {
@@ -570,7 +567,7 @@ export async function listPublicSessions(filter: PublicSessionFilter = {}): Prom
 }
 
 /** Satu sesi publik (halaman pratinjau & gabung), atau null bila tidak ada / tidak lagi tampil. */
-export async function findPublicSession(sessionId: string): Promise<PublicSession | null> {
+export async function findPublicSessionPreview(sessionId: string): Promise<PublicSession | null> {
   if (!isUuid(sessionId)) return null;
   const { data, error } = await publicSessionQuery().eq("id", sessionId).maybeSingle();
   if (error) throw error;
