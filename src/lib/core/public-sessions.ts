@@ -60,6 +60,13 @@ export function joinBlocker(ctx: JoinContext, now: Date): string | null {
   return null;
 }
 
+/** Rentang dari parameter URL `when` (+ `date`); nilai asing atau tanggal tidak valid → null (tanpa filter tanggal). */
+export function rangeFromParams(when: string | undefined, date: string | undefined, now: Date): DateRange | null {
+  if (when === "today" || when === "week") return rangeFor({ kind: when }, now);
+  if (when === "date" && date) return rangeFor({ kind: "date", date }, now);
+  return null;
+}
+
 /** Label kuota, mis. "3 slot tersisa", "Penuh", "5 pemain" (tanpa batas). */
 export function quotaLabel(joined: number, quota: number | null): string {
   const n = Math.max(0, Math.floor(joined));

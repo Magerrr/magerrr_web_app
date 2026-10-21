@@ -105,6 +105,40 @@ export function AttendanceEditor({
   );
 }
 
+/** Sembunyikan sesi dari pencarian publik walau grupnya publik (#15). Hanya admin; server memvalidasi ulang. */
+export function ListedToggle({ groupId, sessionId, listed: initial }: { groupId: string; sessionId: string; listed: boolean }) {
+  const router = useRouter();
+  const [listed, setListed] = useState(initial);
+  const [pending, setPending] = useState(false);
+
+  async function toggle() {
+    const next = !listed;
+    setPending(true);
+    const result = await sendJson(`/api/groups/${groupId}/sessions/${sessionId}/listed`, "PUT", { listed: next });
+    setPending(false);
+    if (!result.ok) return toast.error(result.error);
+    setListed(next);
+    toast(next ? "Sesi tampil di pencarian publik." : "Sesi disembunyikan dari pencarian publik.");
+    router.refresh();
+  }
+
+  return (
+    <section aria-labelledby="tampil-publik" className="flex flex-col gap-3 rounded-2xl border-1 bg-pure-white p-5" data-testid="listed-toggle">
+      <h2 id="tampil-publik" className="text-sub">
+        Tampil di pencarian publik
+      </h2>
+      <p className="text-small">
+        {listed
+          ? "Sesi ini bisa ditemukan orang lain di Jelajahi. Sembunyikan bila hanya untuk anggota."
+          : "Sesi ini disembunyikan dari Jelajahi. Anggota tetap bisa membukanya lewat tautan grup."}
+      </p>
+      <Button variant="secondary" onClick={toggle} loading={pending} aria-pressed={!listed}>
+        {listed ? "Sembunyikan dari pencarian" : "Tampilkan di pencarian"}
+      </Button>
+    </section>
+  );
+}
+
 /** Hapus sesi (MAGERRR-17): dua langkah — tombol lalu konfirmasi berisi apa saja yang ikut terhapus. */
 export function DeleteSession({ groupId, sessionId, label, hasCosts }: { groupId: string; sessionId: string; label: string; hasCosts: boolean }) {
   const router = useRouter();
