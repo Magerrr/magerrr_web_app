@@ -327,6 +327,8 @@ export const shareEventSchema = z
   .strict();
 
 export const joinSchema = z.object({ displayName: displayNameSchema }).strict();
+/** Body join Mabar Instan memakai snake_case sesuai spesifikasi issue #45. */
+export const instantJoinSchema = z.object({ display_name: displayNameSchema }).strict();
 
 /** Kostum Kiko; null = kembali ke kostum otomatis sesuai level. */
 export const kikoOutfitSchema = z

@@ -608,6 +608,9 @@ isOneToOne: true
 "join_public_session":
 { Args: { "p_display_name": string,"p_session": string,"p_user": string }; Returns: { claim_token: string, group_id: string, member_id: string }[]
                            },
+"join_instant_session":
+{ Args: { "p_display_name": string,"p_token": string,"p_user": string }; Returns: { claim_token: string, group_id: string, member_id: string, session_id: string }[]
+                           },
 "delete_tournament":
 { Args: { "p_tournament": string }; Returns: undefined
                            },
