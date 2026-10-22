@@ -51,7 +51,7 @@ export interface GroupSettings extends GroupLook {
 const GROUP_COLUMNS =
   "id, name, emoji, theme, logo_path, cover_path, owner_id, rules, match_games, scoring, round_to, default_play_mode, is_public" as const;
 
-function toSettings(row: Omit<GroupRow, "invite_code" | "created_at">): GroupSettings {
+function toSettings(row: Omit<GroupRow, "invite_code" | "created_at" | "is_instant">): GroupSettings {
   return {
     ...toLook(row),
     ownerId: row.owner_id,
