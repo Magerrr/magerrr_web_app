@@ -187,7 +187,7 @@ export const instantSessionSchema = z
     courtCount: sessionDetailsShape.courtCount,
     playMode: sessionDetailsShape.playMode,
     note: sessionDetailsShape.note,
-    slotCount: z.int("Jumlah slot harus bilangan bulat.").min(2, "Minimal 2 slot.").max(200, "Maksimal 200 slot."),
+    slotCount: z.int("Jumlah slot harus bilangan bulat.").min(2, "Minimal 2 slot.").max(40, "Maksimal 40 slot."),
   })
   .strict();
 export type InstantSessionInput = z.infer<typeof instantSessionSchema>;

@@ -60,6 +60,7 @@ describe("POST /api/sessions/instant", () => {
 
   it("400 untuk payload tidak valid (slot kurang, field asing, JSON rusak)", async () => {
     expect((await post({ ...valid, slotCount: 1 })).status).toBe(400);
+    expect((await post({ ...valid, slotCount: 41 })).status).toBe(400);
     expect((await post({ ...valid, isListed: true })).status).toBe(400);
     expect((await post("{rusak")).status).toBe(400);
     expect(db.calls).toEqual([]);

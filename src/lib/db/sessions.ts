@@ -367,6 +367,37 @@ export async function createInstantSession(hostUserId: string, input: InstantSes
   return { groupId: row.group_id, sessionId: row.session_id, shareToken: row.share_token };
 }
 
+export interface InstantTokenRotated {
+  shareToken: string;
+  expiresAt: Date;
+}
+
+type RotateRpc = (
+  fn: string,
+  args: object,
+) => Promise<{ data: { share_token: string; share_token_expires_at: string }[] | null; error: Error | null }>;
+
+/** Grup pemilik sesi, atau null bila id bukan UUID / sesi tidak ada. */
+export async function findSessionGroupId(sessionId: string): Promise<string | null> {
+  if (!isUuid(sessionId)) return null;
+  const { data, error } = await serviceClient().from("sessions").select("group_id").eq("id", sessionId).maybeSingle();
+  if (error) throw error;
+  return data?.group_id ?? null;
+}
+
+/** Ganti share_token Mabar Instan (RPC rotate_instant_token): hanya host atau admin grup; token lama langsung tak berlaku. */
+export async function rotateInstantToken(sessionId: string, actorMemberId: string): Promise<InstantTokenRotated> {
+  // Tipe RPC belum ada di database.types.ts (belum di-regenerate).
+  const rpc = serviceClient().rpc.bind(serviceClient()) as unknown as RotateRpc;
+  const { data, error } = await rpc("rotate_instant_token", { p_session: sessionId, p_actor: actorMemberId });
+  if (error?.message.includes("session_not_found")) throw new HttpError(404, "Sesi tidak ditemukan.");
+  if (error?.message.includes("not_authorized")) throw new HttpError(403, "Hanya host atau admin yang boleh mengganti tautan.");
+  if (error) throw error;
+  const row = data?.[0];
+  if (!row) throw new Error("rotate_instant_token tidak mengembalikan baris");
+  return { shareToken: row.share_token, expiresAt: new Date(row.share_token_expires_at) };
+}
+
 function assertEditable(session: SessionDetail): void {
   if (session.status === "finished") throw new HttpError(422, "Sesi sudah selesai dan tidak bisa diubah.");
 }
