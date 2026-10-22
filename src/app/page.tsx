@@ -120,6 +120,11 @@ export default async function Home() {
               Menu
             </h2>
             <ul className="grid grid-cols-2 gap-3 @xl:grid-cols-4 @3xl:grid-cols-2">
+              <MenuTile
+                href={user ? '/instan/baru' : '/masuk?next=/instan/baru'}
+                icon="calendar"
+                title="Buat Mabar Instan"
+              />
               <MenuTile href="/grup" icon="people" title="Grup" />
               <MenuTile href="/obrolan" icon="chat" title="Obrolan" />
               <MenuTile
