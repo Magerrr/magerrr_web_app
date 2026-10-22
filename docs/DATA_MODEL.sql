@@ -39,6 +39,7 @@ create table groups (
   scoring       jsonb not null default '{"winPoints":3,"lossPoints":0,"lossBonus":null,"minMatches":0}',
   default_play_mode play_mode not null default 'kocok',
   round_to      smallint not null default 500 check (round_to in (1,500,1000)),
+  is_instant    boolean not null default false,          -- grup dari alur Mabar Instan (migrasi 0028)
   created_at    timestamptz not null default now()
 );
 
@@ -82,6 +83,8 @@ create table sessions (                      -- satu kali mabar
   share_token   text not null unique default gen_token(),-- halaman publik sesi/tagihan/recap
   recap_public  boolean not null default true,
   is_listed     boolean not null default true,           -- tampil di /jelajah bila grup publik (migrasi 0027)
+  slot_count    smallint check (slot_count between 2 and 40),  -- slot pemain; null = tanpa batas (migrasi 0028)
+  share_token_expires_at timestamptz,                    -- kedaluwarsa tautan publik; null = tidak (migrasi 0028)
   created_by    uuid references members(id),
   created_at    timestamptz not null default now()
 );
