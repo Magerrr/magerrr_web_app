@@ -7,7 +7,7 @@ import { fromJakartaParts } from "@/lib/time";
 import { courtCost, type Expense, type SettlementState } from "@/lib/core/split";
 import { HttpError } from "@/lib/http-error";
 import type { VenueLocation } from "@/lib/venue";
-import { isToken, isUuid, type SessionCreateInput, type SessionUpdateInput } from "@/lib/validation";
+import { isToken, isUuid, type InstantSessionInput, type SessionCreateInput, type SessionUpdateInput } from "@/lib/validation";
 import { recomputeBill } from "./bill";
 import { recordMetric } from "./metrics";
 import { assignSeasons } from "./seasons";
@@ -329,6 +329,73 @@ export async function createSession(group: GroupSettings, actorMemberId: string,
   if (session) await recomputeBill(group, session, actorMemberId).catch((e) => console.error(e));
   await assignSeasons(group.id);
   return data;
+}
+
+export interface InstantSessionCreated {
+  groupId: string;
+  sessionId: string;
+  shareToken: string;
+}
+
+type InstantRpc = (
+  fn: string,
+  args: object,
+) => Promise<{ data: { group_id: string; session_id: string; share_token: string }[] | null; error: Error | null }>;
+
+/** Mabar Instan: grup tersembunyi + sesi dalam satu transaksi (RPC create_instant_session, service role). */
+export async function createInstantSession(hostUserId: string, input: InstantSessionInput): Promise<InstantSessionCreated> {
+  const startsAt = fromJakartaParts(input.date, input.time);
+  if (!startsAt) throw new HttpError(400, "Tanggal atau jam tidak valid.");
+  const session = {
+    starts_at: startsAt.toISOString(),
+    venue: input.venue,
+    venue_url: input.venueUrl,
+    venue_lat: input.venuePoint?.lat ?? null,
+    venue_lng: input.venuePoint?.lng ?? null,
+    court_count: input.courtCount,
+    duration_min: input.durationMin,
+    play_mode: input.playMode,
+    note: input.note,
+    slot_count: input.slotCount,
+  };
+  // Tipe RPC belum ada di database.types.ts (belum di-regenerate).
+  const rpc = serviceClient().rpc.bind(serviceClient()) as unknown as InstantRpc;
+  const { data, error } = await rpc("create_instant_session", { p_host: hostUserId, p_session: session });
+  if (error) throw error;
+  const row = data?.[0];
+  if (!row) throw new Error("create_instant_session tidak mengembalikan baris");
+  return { groupId: row.group_id, sessionId: row.session_id, shareToken: row.share_token };
+}
+
+export interface InstantTokenRotated {
+  shareToken: string;
+  expiresAt: Date;
+}
+
+type RotateRpc = (
+  fn: string,
+  args: object,
+) => Promise<{ data: { share_token: string; share_token_expires_at: string }[] | null; error: Error | null }>;
+
+/** Grup pemilik sesi, atau null bila id bukan UUID / sesi tidak ada. */
+export async function findSessionGroupId(sessionId: string): Promise<string | null> {
+  if (!isUuid(sessionId)) return null;
+  const { data, error } = await serviceClient().from("sessions").select("group_id").eq("id", sessionId).maybeSingle();
+  if (error) throw error;
+  return data?.group_id ?? null;
+}
+
+/** Ganti share_token Mabar Instan (RPC rotate_instant_token): hanya host atau admin grup; token lama langsung tak berlaku. */
+export async function rotateInstantToken(sessionId: string, actorMemberId: string): Promise<InstantTokenRotated> {
+  // Tipe RPC belum ada di database.types.ts (belum di-regenerate).
+  const rpc = serviceClient().rpc.bind(serviceClient()) as unknown as RotateRpc;
+  const { data, error } = await rpc("rotate_instant_token", { p_session: sessionId, p_actor: actorMemberId });
+  if (error?.message.includes("session_not_found")) throw new HttpError(404, "Sesi tidak ditemukan.");
+  if (error?.message.includes("not_authorized")) throw new HttpError(403, "Hanya host atau admin yang boleh mengganti tautan.");
+  if (error) throw error;
+  const row = data?.[0];
+  if (!row) throw new Error("rotate_instant_token tidak mengembalikan baris");
+  return { shareToken: row.share_token, expiresAt: new Date(row.share_token_expires_at) };
 }
 
 function assertEditable(session: SessionDetail): void {

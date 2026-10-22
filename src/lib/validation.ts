@@ -175,6 +175,23 @@ export const sessionCreateSchema = z
   .strict();
 export type SessionCreateInput = z.infer<typeof sessionCreateSchema>;
 
+/** Mabar Instan: sesi sekali pakai tanpa grup permanen. Aturan/jumlah game ikut bawaan; slot = kuota peserta. */
+export const instantSessionSchema = z
+  .object({
+    date: sessionDetailsShape.date,
+    time: sessionDetailsShape.time,
+    durationMin: sessionDetailsShape.durationMin,
+    venue: sessionDetailsShape.venue,
+    venueUrl: sessionDetailsShape.venueUrl,
+    venuePoint: sessionDetailsShape.venuePoint,
+    courtCount: sessionDetailsShape.courtCount,
+    playMode: sessionDetailsShape.playMode,
+    note: sessionDetailsShape.note,
+    slotCount: z.int("Jumlah slot harus bilangan bulat.").min(2, "Minimal 2 slot.").max(40, "Maksimal 40 slot."),
+  })
+  .strict();
+export type InstantSessionInput = z.infer<typeof instantSessionSchema>;
+
 export const sessionUpdateSchema = z.object(sessionDetailsShape).strict();
 export type SessionUpdateInput = z.infer<typeof sessionUpdateSchema>;
 
