@@ -18,7 +18,7 @@ create type grade         as enum ('A', 'B', 'C', 'D');
 
 -- Token acak 128 bit (hex 32 karakter)
 create or replace function gen_token() returns text language sql as
-$$ select encode(gen_random_bytes(16), 'hex') $$;
+$$ select encode(extensions.gen_random_bytes(16), 'hex') $$;
 
 create table profiles (                      -- 1:1 dengan auth.users
   id            uuid primary key references auth.users(id) on delete cascade,
