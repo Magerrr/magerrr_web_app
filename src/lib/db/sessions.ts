@@ -7,7 +7,7 @@ import { fromJakartaParts } from "@/lib/time";
 import { courtCost, type Expense, type SettlementState } from "@/lib/core/split";
 import { HttpError } from "@/lib/http-error";
 import type { VenueLocation } from "@/lib/venue";
-import { isToken, isUuid, type SessionCreateInput, type SessionUpdateInput } from "@/lib/validation";
+import { isToken, isUuid, type InstantSessionInput, type SessionCreateInput, type SessionUpdateInput } from "@/lib/validation";
 import { recomputeBill } from "./bill";
 import { recordMetric } from "./metrics";
 import { assignSeasons } from "./seasons";
@@ -329,6 +329,42 @@ export async function createSession(group: GroupSettings, actorMemberId: string,
   if (session) await recomputeBill(group, session, actorMemberId).catch((e) => console.error(e));
   await assignSeasons(group.id);
   return data;
+}
+
+export interface InstantSessionCreated {
+  groupId: string;
+  sessionId: string;
+  shareToken: string;
+}
+
+type InstantRpc = (
+  fn: string,
+  args: object,
+) => Promise<{ data: { group_id: string; session_id: string; share_token: string }[] | null; error: Error | null }>;
+
+/** Mabar Instan: grup tersembunyi + sesi dalam satu transaksi (RPC create_instant_session, service role). */
+export async function createInstantSession(hostUserId: string, input: InstantSessionInput): Promise<InstantSessionCreated> {
+  const startsAt = fromJakartaParts(input.date, input.time);
+  if (!startsAt) throw new HttpError(400, "Tanggal atau jam tidak valid.");
+  const session = {
+    starts_at: startsAt.toISOString(),
+    venue: input.venue,
+    venue_url: input.venueUrl,
+    venue_lat: input.venuePoint?.lat ?? null,
+    venue_lng: input.venuePoint?.lng ?? null,
+    court_count: input.courtCount,
+    duration_min: input.durationMin,
+    play_mode: input.playMode,
+    note: input.note,
+    slot_count: input.slotCount,
+  };
+  // Tipe RPC belum ada di database.types.ts (belum di-regenerate).
+  const rpc = serviceClient().rpc.bind(serviceClient()) as unknown as InstantRpc;
+  const { data, error } = await rpc("create_instant_session", { p_host: hostUserId, p_session: session });
+  if (error) throw error;
+  const row = data?.[0];
+  if (!row) throw new Error("create_instant_session tidak mengembalikan baris");
+  return { groupId: row.group_id, sessionId: row.session_id, shareToken: row.share_token };
 }
 
 function assertEditable(session: SessionDetail): void {
