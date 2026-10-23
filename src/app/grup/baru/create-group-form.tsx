@@ -1,13 +1,13 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "@/components/toast";
 import { Button, Field, inputBase, inputClass } from "@/components/ui";
+import { useNavigate } from "@/components/use-navigate";
 import { sendJson } from "@/lib/api-client";
 
 export function CreateGroupForm() {
-  const router = useRouter();
+  const { navigate, pending: navigating } = useNavigate();
   const [pending, setPending] = useState(false);
 
   async function submit(form: FormData) {
@@ -18,7 +18,7 @@ export function CreateGroupForm() {
     });
     if (result.ok) {
       toast("Grup dibuat.");
-      router.push(`/g/${result.data.id}`);
+      navigate(`/g/${result.data.id}`);
     } else {
       toast.error(result.error);
       setPending(false);
@@ -33,8 +33,8 @@ export function CreateGroupForm() {
       <Field label="Ikon (opsional)" htmlFor="emoji" hint="Satu emoji sebagai ikon grup.">
         <input id="emoji" name="emoji" maxLength={16} autoComplete="off" className={`${inputBase} w-24`} />
       </Field>
-      <Button type="submit" size="lg" loading={pending}>
-        {pending ? "Membuat…" : "Buat grup"}
+      <Button type="submit" size="lg" loading={pending || navigating}>
+        {pending || navigating ? "Membuat…" : "Buat grup"}
       </Button>
     </form>
   );

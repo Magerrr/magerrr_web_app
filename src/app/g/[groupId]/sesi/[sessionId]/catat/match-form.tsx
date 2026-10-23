@@ -1,9 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "@/components/toast";
 import { Button, Card, Field, Segmented, inputBase, inputClass } from "@/components/ui";
+import { useNavigate } from "@/components/use-navigate";
 import { sendJson } from "@/lib/api-client";
 import { checkGames, type GameRules } from "@/lib/core/rules";
 import type { GameScore, MatchKind } from "@/lib/core/types";
@@ -37,7 +37,7 @@ export function MatchForm({
   gamesMax: 1 | 3 | 5;
   initial?: MatchFormInitial;
 }) {
-  const router = useRouter();
+  const { navigate, pending: navigating } = useNavigate();
   const [kind, setKind] = useState<MatchKind>(initial?.kind ?? "doubles");
   const [courtNo, setCourtNo] = useState(initial?.courtNo ? String(initial.courtNo) : "");
   const [teams, setTeams] = useState<{ A: string[]; B: string[] }>({
@@ -87,8 +87,7 @@ export function MatchForm({
       return;
     }
     toast(initial ? "Skor diubah." : "Skor disimpan.");
-    router.push(`/g/${groupId}/sesi/${sessionId}/main`);
-    router.refresh();
+    navigate(`/g/${groupId}/sesi/${sessionId}/main`, { refresh: true });
   }
 
   return (
@@ -171,7 +170,7 @@ export function MatchForm({
         </p>
       </Card>
 
-      <Button type="submit" size="lg" loading={pending}>
+      <Button type="submit" size="lg" loading={pending || navigating}>
         {pending ? "Menyimpan…" : initial ? "Simpan perubahan" : "Simpan match"}
       </Button>
     </form>

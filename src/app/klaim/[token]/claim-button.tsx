@@ -1,13 +1,13 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "@/components/toast";
 import { Button } from "@/components/ui";
+import { useNavigate } from "@/components/use-navigate";
 import { sendJson } from "@/lib/api-client";
 
 export function ClaimButton({ token, name }: { token: string; name: string }) {
-  const router = useRouter();
+  const { navigate, pending: navigating } = useNavigate();
   const [pending, setPending] = useState(false);
   async function claim() {
     setPending(true);
@@ -15,13 +15,12 @@ export function ClaimButton({ token, name }: { token: string; name: string }) {
     setPending(false);
     if (!result.ok) return toast.error(result.error);
     toast(`Profil ${name} sekarang terhubung ke akunmu.`);
-    router.push(`/g/${result.data.groupId}`);
-    router.refresh();
+    navigate(`/g/${result.data.groupId}`, { refresh: true });
   }
   return (
     <div className="flex flex-col gap-3">
-      <Button size="lg" onClick={claim} loading={pending}>
-        {pending ? "Menghubungkan…" : `Klaim profil ${name}`}
+      <Button size="lg" onClick={claim} loading={pending || navigating}>
+        {pending || navigating ? "Menghubungkan…" : `Klaim profil ${name}`}
       </Button>
     </div>
   );

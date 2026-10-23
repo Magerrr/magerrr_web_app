@@ -1,7 +1,10 @@
 // Kelas tombol Meadow, aman dipakai di server maupun klien. Warna hanya dari token (globals.css).
 export const cx = (...classes: (string | false | null | undefined)[]) => classes.filter(Boolean).join(" ");
 
-export type Variant = "primary" | "accent" | "secondary" | "outline";
+/** Untuk `<Link>` yang berisi `<LinkPending />`: meredup dan tak menerima klik ulang selama navigasi berjalan. */
+export const PENDING_LINK = "has-[[data-pending]]:pointer-events-none has-[[data-pending]]:opacity-60";
+
+export type Variant ="primary" | "accent" | "secondary" | "outline";
 export type Size = "md" | "lg";
 
 const BUTTON_BASE =
@@ -32,5 +35,5 @@ export const textButtonClass =
   "inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg px-2 text-small underline underline-offset-4 transition-colors hover:bg-fresh-grass/25 aria-busy:cursor-wait";
 
 export function buttonClass(variant: Variant = "primary", size: Size = "md", className?: string) {
-  return cx(BUTTON_BASE, BUTTON_VARIANT[variant], BUTTON_SIZE[size], className);
+  return cx(BUTTON_BASE, PENDING_LINK, BUTTON_VARIANT[variant], BUTTON_SIZE[size], className);
 }

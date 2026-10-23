@@ -1,14 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "@/components/toast";
 import { Button, Field, inputClass } from "@/components/ui";
+import { useNavigate } from "@/components/use-navigate";
 import { sendJson } from "@/lib/api-client";
 
 /** `url`: `/api/join/<kode undangan>` atau `/api/groups/<id>/join` (grup publik). */
 export function JoinForm({ url, defaultName, withAccount }: { url: string; defaultName: string; withAccount: boolean }) {
-  const router = useRouter();
+  const { navigate, pending: navigating } = useNavigate();
   const [pending, setPending] = useState(false);
 
   async function submit(form: FormData) {
@@ -18,8 +18,7 @@ export function JoinForm({ url, defaultName, withAccount }: { url: string; defau
     });
     if (result.ok) {
       toast("Berhasil gabung grup.");
-      router.push(`/g/${result.data.groupId}`);
-      router.refresh();
+      navigate(`/g/${result.data.groupId}`, { refresh: true });
     } else {
       toast.error(result.error);
       setPending(false);
@@ -43,8 +42,8 @@ export function JoinForm({ url, defaultName, withAccount }: { url: string; defau
           className={inputClass}
         />
       </Field>
-      <Button type="submit" size="lg" loading={pending}>
-        {pending ? "Bergabung…" : "Gabung grup"}
+      <Button type="submit" size="lg" loading={pending || navigating}>
+        {pending || navigating ? "Bergabung…" : "Gabung grup"}
       </Button>
     </form>
   );

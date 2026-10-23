@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AttendeePicker, type PickerMember } from "@/components/attendee-picker";
 import { CostEstimate } from "@/components/cost-estimate";
@@ -9,6 +8,7 @@ import type { Point } from "@/components/venue-picker";
 import { NumberField, RulesPicker, draftFromRules, rulesFromDraft, toInt } from "@/components/rules-picker";
 import { toast } from "@/components/toast";
 import { Button, Card, Field, Segmented, dateInputClass, inputClass } from "@/components/ui";
+import { useNavigate } from "@/components/use-navigate";
 import { sendJson } from "@/lib/api-client";
 import type { GameRules } from "@/lib/core/rules";
 import { courtCost } from "@/lib/core/split";
@@ -69,7 +69,7 @@ export function SessionForm({
   /** hanya mode buat: peserta & biaya */
   create?: CreateExtras;
 }) {
-  const router = useRouter();
+  const { navigate, pending: navigating } = useNavigate();
   const [date, setDate] = useState(defaults.date);
   const [time, setTime] = useState(defaults.time);
   const [durationMin, setDurationMin] = useState(defaults.durationMin);
@@ -126,8 +126,7 @@ export function SessionForm({
       return;
     }
     toast(sessionId ? "Sesi diperbarui." : repeat.frequency !== "none" ? "Sesi berulang dibuat." : "Sesi dibuat.");
-    router.push(`/g/${groupId}/sesi/${result.data.id}`);
-    router.refresh();
+    navigate(`/g/${groupId}/sesi/${result.data.id}`, { refresh: true });
   }
 
   return (
@@ -246,7 +245,7 @@ export function SessionForm({
 
       {/* CTA lengket di bawah layar (desain "Buat Mabar"); fresh-grass dengan teks ink-black. */}
       <div className="sticky bottom-0 z-10 -mx-5 -mb-16 bg-cream-paper px-5 pt-3 pb-6 sm:-mx-8 sm:px-8 lg:-mb-20">
-        <Button type="submit" variant="accent" size="lg" loading={pending}>
+        <Button type="submit" variant="accent" size="lg" loading={pending || navigating}>
           {pending ? "Menyimpan…" : sessionId ? "Simpan perubahan" : "Simpan sesi"}
         </Button>
       </div>
