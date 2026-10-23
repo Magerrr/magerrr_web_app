@@ -28,8 +28,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: dev
           fetch-depth: 1
-          
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -41,6 +42,9 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+          # Branch kerja berasal dari dev dan PR menargetkan dev (bukan main, agar tidak langsung ter-deploy)
+          base_branch: dev
 
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
