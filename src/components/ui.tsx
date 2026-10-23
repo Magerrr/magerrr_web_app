@@ -2,11 +2,11 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { LinkPending } from "./button";
-import { buttonClass, cx, type Size, type Variant } from "./button-class";
+import { PENDING_LINK, buttonClass, cx, type Size, type Variant } from "./button-class";
 import { Spinner } from "./spinner";
 
 export { Button, SubmitButton } from "./button";
-export { buttonClass, textButtonClass } from "./button-class";
+export { buttonClass, textButtonClass, PENDING_LINK } from "./button-class";
 export { Spinner };
 
 export function ButtonLink({
@@ -209,8 +209,9 @@ export function BackLink({ href, label = "Kembali" }: { href: string; label?: st
     <Link
       href={href}
       aria-label={label}
-      className="flex size-11 shrink-0 items-center justify-center rounded-full border border-ink-black bg-pure-white text-ink-black transition-colors hover:bg-fresh-grass"
+      className={`${PENDING_LINK} relative flex size-11 shrink-0 items-center justify-center rounded-full border border-ink-black bg-pure-white text-ink-black transition-colors hover:bg-fresh-grass`}
     >
+      <LinkPending className="absolute inset-0 flex items-center justify-center rounded-full bg-pure-white" />
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M15 5l-7 7 7 7" />
       </svg>

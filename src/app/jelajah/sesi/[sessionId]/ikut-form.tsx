@@ -1,9 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "@/components/toast";
 import { Button, Field, Notice, inputClass } from "@/components/ui";
+import { useNavigate } from "@/components/use-navigate";
 
 /** Tombol "Ikut sesi" + konfirmasi transparan. API membalas 303 ke halaman sesi; kegagalan berupa JSON `{ error }`. */
 export function IkutForm({
@@ -19,7 +19,7 @@ export function IkutForm({
   withAccount: boolean;
   isMember: boolean;
 }) {
-  const router = useRouter();
+  const { navigate, pending: navigating } = useNavigate();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,8 +40,7 @@ export function IkutForm({
       });
       if (response.ok && response.redirected) {
         toast("Kamu ikut sesi ini.");
-        router.push(new URL(response.url).pathname);
-        router.refresh();
+        navigate(new URL(response.url).pathname, { refresh: true });
         return;
       }
       const data = await response.json().catch(() => ({}));
@@ -76,8 +75,8 @@ export function IkutForm({
         </>
       )}
       {error && <Notice tone="error">{error}</Notice>}
-      <Button type="submit" size="lg" loading={pending}>
-        {pending ? "Mendaftar…" : "Ikut sesi ini"}
+      <Button type="submit" size="lg" loading={pending || navigating}>
+        {pending || navigating ? "Mendaftar…" : "Ikut sesi ini"}
       </Button>
     </form>
   );

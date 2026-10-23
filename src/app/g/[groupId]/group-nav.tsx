@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { LinkPending } from "@/components/button";
+import { PENDING_LINK } from "@/components/button-class";
 
 interface Item {
   href: string;
@@ -53,11 +55,12 @@ export function GroupNav({ groupId, isAdmin, unread }: { groupId: string; isAdmi
                 href={item.href}
                 aria-current={exact ? "page" : within ? "true" : undefined}
                 className={
-                  "flex min-h-11 items-center gap-3 rounded-full px-4 text-ui " +
+                  PENDING_LINK + " flex min-h-11 items-center gap-3 rounded-full px-4 text-ui " +
                   (exact || within ? "bg-ink-black text-cream-paper" : "text-ink-black hover:bg-sandstone")
                 }
               >
                 <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                <LinkPending />
                 {count > 0 && (
                   <>
                     <span

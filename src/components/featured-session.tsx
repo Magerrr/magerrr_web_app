@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { SessionSummary } from "@/lib/db/sessions";
 import { formatShortDateId, formatTimeRangeId } from "@/lib/format";
 import { toJakartaParts } from "@/lib/time";
+import { LinkPending } from "./button";
+import { PENDING_LINK } from "./button-class";
 import { RsvpSummary } from "./rsvp-summary";
 import { Icon } from "./icons";
 
@@ -91,8 +93,9 @@ export function FeaturedSession({
         <Link
           href={`/g/${groupId}/sesi/${s.id}`}
           aria-label={groupName ? `Detail sesi ${groupName} ${formatShortDateId(s.startsAt)}` : undefined}
-          className={`inline-flex min-h-12 shrink-0 items-center rounded-full px-5 text-ui ${t.button}`}
+          className={`${PENDING_LINK} inline-flex min-h-12 shrink-0 items-center gap-2 rounded-full px-5 text-ui ${t.button}`}
         >
+          <LinkPending />
           Detail
         </Link>
       </div>

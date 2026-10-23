@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { LinkPending } from "@/components/button";
+import { PENDING_LINK } from "@/components/button-class";
 import { Icon } from "@/components/icons";
 import { RsvpSummary } from "@/components/rsvp-summary";
 import { Badge } from "@/components/ui";
@@ -31,7 +33,7 @@ export function SessionLink({
       href={`/g/${groupId}/sesi/${s.id}`}
       aria-current={current ? "page" : undefined}
       className={
-        "flex h-full min-h-16 items-center rounded-2xl border px-4 py-3 " + (compact ? "gap-2 " : "gap-4 ") +
+        PENDING_LINK + " flex h-full min-h-16 items-center rounded-2xl border px-4 py-3 " + (compact ? "gap-2 " : "gap-4 ") +
         (current ? "border-1 border-ink-black bg-fresh-grass" : "border-ink-black bg-pure-white hover:bg-cream-paper")
       }
       data-testid={testId ? "session-item" : undefined}
@@ -53,6 +55,7 @@ export function SessionLink({
         </span>
         {!compact && s.status !== "finished" && <RsvpSummary counts={s.rsvpCounts} courtCount={s.courtCount} />}
       </span>
+      <LinkPending />
       <Badge tone={STATUS_TONE[s.status]}>{STATUS_LABEL[s.status]}</Badge>
     </Link>
   );

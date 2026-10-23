@@ -39,9 +39,16 @@ export function SubmitButton(props: Omit<ComponentProps<typeof Button>, "type" |
   return <Button type="submit" loading={pending} {...props} />;
 }
 
-/** Spinner di dalam `<Link>` selama navigasi ke tujuannya belum selesai. */
-export function LinkPending() {
+/**
+ * Spinner di dalam `<Link>` selama navigasi ke tujuannya belum selesai. Penanda `data-pending` membuat link yang
+ * memakai kelas `PENDING_LINK` meredup dan tak menerima klik ulang. `className` = penempatan (mis. `absolute`).
+ */
+export function LinkPending({ className }: { className?: string }) {
   const { pending } = useLinkStatus();
   useBusy(pending);
-  return pending ? <Spinner /> : null;
+  return pending ? (
+    <span data-pending="" className={className ?? "inline-flex shrink-0"}>
+      <Spinner />
+    </span>
+  ) : null;
 }

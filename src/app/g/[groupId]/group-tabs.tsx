@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { LinkPending } from "@/components/button";
+import { PENDING_LINK } from "@/components/button-class";
 
 interface Props {
   groupId: string;
@@ -50,6 +52,8 @@ const PLUS = (
   </svg>
 );
 
+const pendingSpinner = <LinkPending className="absolute top-1.5 right-1.5 inline-flex" />;
+
 /**
  * Navigasi utama grup: rail 88px di tablet (sm ≤ lebar < lg, semua halaman grup). Desktop memakai sidebar
  * (layout.tsx); ponsel tanpa bar bawah, menunya ada di dalam layar Beranda. Penanda aktif dari URL; teks aktif
@@ -77,8 +81,9 @@ export function GroupTabs({ groupId, memberId, canCreate }: Props) {
         <Link
           href={create.href}
           aria-label={create.label}
-          className="mb-3 flex size-14 items-center justify-center rounded-full border border-ink-black bg-fresh-grass text-ink-black"
+          className={`${PENDING_LINK} mb-3 flex size-14 items-center justify-center rounded-full border border-ink-black bg-fresh-grass text-ink-black`}
         >
+          {pendingSpinner}
           {PLUS}
         </Link>
       )}
@@ -90,10 +95,11 @@ export function GroupTabs({ groupId, memberId, canCreate }: Props) {
             href={tab.href}
             aria-current={active ? "page" : undefined}
             className={
-              "relative flex min-h-14 w-18 flex-col items-center justify-center gap-1 rounded-2xl text-caption " +
+              PENDING_LINK + " relative flex min-h-14 w-18 flex-col items-center justify-center gap-1 rounded-2xl text-caption " +
               (active ? "bg-ink-black text-fresh-grass" : "text-ink-black hover:bg-sandstone")
             }
           >
+            {pendingSpinner}
             {tab.icon}
             {tab.label}
           </Link>
